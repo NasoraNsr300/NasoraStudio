@@ -1,0 +1,16 @@
+.worktrees/
+node_modules/
+.next/
+.open-next/
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+.env.*.local
+!.env.example
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.superpowers/
