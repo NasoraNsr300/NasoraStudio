@@ -114,8 +114,8 @@
 }
 
 @media (min-width: 1024px) {
-  .navbarFootprint { min-height: 96px; }
-  .navbar { padding-block: var(--space-6); }
+  .navbarFootprint { min-height: 72px; }
+  .navbar { padding-block: var(--space-3); }
 }
 
 .pageContent:has([role="dialog"]) {
