@@ -156,9 +156,9 @@
 
 @media (min-width: 1024px) {
   .home {
-    max-width: 1680px;
+    max-width: 1440px;
     padding: 0 0 5rem;
-    width: 88vw;
+    width: 76vw;
   }
 
   .hero {
