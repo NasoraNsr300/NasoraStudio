@@ -1,0 +1,129 @@
+.portfolio {
+  margin: 0 auto;
+  max-width: 1440px;
+  padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 3vw, 2rem) 7rem;
+}
+
+.heading {
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  max-width: 42rem;
+}
+
+.heading p {
+  color: var(--brand-gold);
+  font-size: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin: 0 0 var(--space-3);
+  text-transform: uppercase;
+}
+
+.heading h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 6rem);
+  letter-spacing: -0.06em;
+  line-height: 0.94;
+  margin: 0;
+}
+
+.heading span { color: var(--text-secondary); display: block; margin-top: var(--space-5); }
+
+.controls {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.categoryFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.categoryFilters button,
+.sortControl select,
+.closeButton {
+  border: var(--border-subtle) solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.categoryFilters button {
+  background: var(--surface-strong);
+  color: var(--text-secondary);
+  cursor: pointer;
+  min-height: 42px;
+  padding: 0 var(--space-4);
+}
+
+.categoryFilters button[aria-pressed="true"] {
+  background: var(--brand-gold);
+  border-color: var(--brand-gold);
+  color: #2a1a12;
+  font-weight: 700;
+}
+
+.sortControl { color: var(--text-secondary); display: grid; font-size: var(--font-label); gap: var(--space-1); }
+.sortControl select { background: var(--background-elevated); color: var(--text-primary); min-height: 42px; padding: 0 var(--space-3); }
+
+.gallery { display: grid; gap: clamp(0.75rem, 1.5vw, 1.25rem); grid-auto-flow: dense; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+
+.card {
+  background: var(--background-elevated);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: zoom-in;
+  display: block;
+  min-height: 14rem;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  text-align: left;
+}
+
+.card img { display: block; height: 100%; inset: 0; object-fit: cover; position: absolute; transition: transform 220ms ease; width: 100%; }
+.card:hover img, .card:focus-visible img { transform: scale(1.035); }
+.card:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 3px; }
+.standard { aspect-ratio: 4 / 3; grid-column: span 4; }
+.wide { aspect-ratio: 16 / 9; grid-column: span 8; }
+.tall { aspect-ratio: 4 / 5; grid-column: span 4; grid-row: span 2; }
+
+.cardOverlay {
+  align-items: flex-start;
+  background: linear-gradient(180deg, transparent 42%, rgb(6 8 20 / 88%));
+  bottom: 0;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  justify-content: flex-end;
+  left: 0;
+  padding: var(--space-5);
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.cardOverlay span { color: var(--brand-gold); font-size: var(--font-label); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.cardOverlay strong { font-family: var(--font-display); font-size: clamp(1.25rem, 2vw, 1.7rem); }
+
+.lightboxBackdrop { align-items: center; background: rgb(4 6 16 / 88%); display: flex; inset: 0; justify-content: center; padding: clamp(1rem, 5vw, 4rem); position: fixed; z-index: var(--z-overlay); }
+.lightboxFigure { display: grid; margin: 0; max-height: 100%; max-width: min(100%, 80rem); position: relative; }
+.lightboxImage { display: block; height: auto; max-height: calc(100dvh - 8rem); max-width: 100%; object-fit: contain; width: auto; }
+.lightboxFigure figcaption { color: var(--text-primary); margin-top: var(--space-3); text-align: center; }
+.closeButton { background: var(--surface-strong); color: var(--text-primary); cursor: pointer; font-size: 2rem; height: 44px; line-height: 1; position: absolute; right: var(--space-2); top: var(--space-2); width: 44px; z-index: 1; }
+
+@media (max-width: 780px) {
+  .standard, .tall { grid-column: span 6; grid-row: span 1; }
+  .wide { grid-column: span 12; }
+}
+
+@media (max-width: 520px) {
+  .gallery { grid-template-columns: 1fr; }
+  .standard, .wide, .tall { aspect-ratio: 4 / 3; grid-column: auto; }
+  .controls { align-items: stretch; }
+  .sortControl { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card img { transition: none; }
+}
