@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
@@ -39,19 +39,11 @@ function getSearchConfig(locale: Locale, pathname: string | null) {
 
 export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
   const theme = useSyncExternalStore(subscribeToTheme, currentTheme, () => "night");
   const dictionary = getDictionary(locale);
   const alternateLocale = locale === "th" ? "en" : "th";
   const search = getSearchConfig(locale, usePathname());
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
-
-  useEffect(() => {
-    const updateCompactState = () => setCompact(window.scrollY > 32);
-    updateCompactState();
-    window.addEventListener("scroll", updateCompactState, { passive: true });
-    return () => window.removeEventListener("scroll", updateCompactState);
-  }, []);
 
   const toggleTheme = () => {
     const nextTheme = currentTheme() === "night" ? "autumn" : "night";
@@ -62,7 +54,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
   return (
     <>
       <div className={styles.navbarFootprint} data-navbar-footprint="true">
-      <header className={styles.navbar} data-compact={compact}>
+      <header className={styles.navbar}>
         <IconButton aria-label={dictionary.menu} className={styles.iconButton} onClick={() => setSidebarOpen(true)}>
           ☰
         </IconButton>

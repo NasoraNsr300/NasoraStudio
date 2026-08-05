@@ -63,16 +63,17 @@ test("Sidebar authentication preview receives focus, closes with Escape, and res
   await expect(login).toBeFocused();
 });
 
-test("floating Navbar compacts on scroll while its reserved footprint stays stable", async ({ page }) => {
+test("floating Navbar keeps the same dimensions after scroll", async ({ page }) => {
   await page.goto("/en");
   const navbar = page.getByRole("banner");
-  const footprint = page.locator('[data-navbar-footprint="true"]');
-  const before = await footprint.boundingBox();
+  const before = await navbar.boundingBox();
 
   await page.evaluate(() => window.scrollTo(0, 320));
-  await expect(navbar).toHaveAttribute("data-compact", "true");
-  const after = await footprint.boundingBox();
+  const after = await navbar.boundingBox();
+
+  expect(after?.width).toBe(before?.width);
   expect(after?.height).toBe(before?.height);
+  await expect(navbar).not.toHaveAttribute("data-compact");
 });
 
 test("locale switch opens the alternate localized home", async ({ page }) => {

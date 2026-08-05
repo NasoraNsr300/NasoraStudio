@@ -72,18 +72,18 @@ describe("PublicShell sidebar", () => {
   });
 });
 
-describe("Floating navbar compact state", () => {
-  it("sets a scroll-driven compact attribute on the inner navbar", () => {
+describe("Floating navbar size", () => {
+  it("keeps one navbar state after scrolling", () => {
     navigation.pathname = "/en";
     navigation.usePathname.mockImplementation(() => navigation.pathname);
     Object.defineProperty(window, "scrollY", { configurable: true, value: 0, writable: true });
     render(<PublicShell locale="en">Page content</PublicShell>);
 
     const navbar = screen.getByRole("banner");
-    expect(navbar).toHaveAttribute("data-compact", "false");
+    expect(navbar).not.toHaveAttribute("data-compact");
     window.scrollY = 80;
     fireEvent.scroll(window);
-    expect(navbar).toHaveAttribute("data-compact", "true");
+    expect(navbar).not.toHaveAttribute("data-compact");
   });
 });
 

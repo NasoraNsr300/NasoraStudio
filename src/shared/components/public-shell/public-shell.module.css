@@ -25,11 +25,11 @@
 }
 
 .navbarFootprint {
-  margin: var(--space-4) auto;
+  margin: var(--space-8) auto 0;
   min-height: 64px;
   position: sticky;
   top: var(--space-4);
-  width: min(100% - var(--space-8), 1440px);
+  width: min(88vw, 1680px);
   z-index: var(--z-navbar);
 }
 
@@ -44,13 +44,7 @@
   gap: var(--space-3);
   grid-template-columns: auto auto minmax(12rem, 1fr) auto auto auto auto;
   padding: var(--space-2) var(--space-3);
-  transition: padding 180ms ease, transform 180ms ease, background-color 180ms ease;
   width: 100%;
-}
-
-.navbar[data-compact="true"] {
-  padding-block: 0;
-  transform: translateY(-2px);
 }
 
 .brand {
