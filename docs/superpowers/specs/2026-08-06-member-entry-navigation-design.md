@@ -1,52 +1,52 @@
-# Member Entry and Navigation Design
+# การออกแบบทางเข้าสู่พื้นที่สมาชิกและระบบนำทาง
 
-## Goal
+## เป้าหมาย
 
-Make the signed-in member area easy to enter from anywhere without replacing the website's existing sidebar navigation.
+ทำให้สมาชิกที่เข้าสู่ระบบแล้วสามารถเข้าพื้นที่สมาชิกได้สะดวกจากทุกหน้า โดยยังคง Sidebar หลักของเว็บไซต์ไว้ตามเดิม
 
-## Entry point
+## ทางเข้าสู่พื้นที่สมาชิก
 
-- Keep the existing global website sidebar unchanged.
-- The floating account button at the bottom-right is the member entry point.
-- Clicking the floating button opens a compact popover with exactly two actions:
-  1. Notifications, including an unread count when applicable.
-  2. Member area.
-- Notifications open a small contextual notification panel.
-- Member area navigates to the member estimate-request page at `/{locale}/member/requests`.
-- For the current UI mockup, authentication and notification data remain fixtures.
+- คง Sidebar หลักของเว็บไซต์ไว้โดยไม่เปลี่ยนแปลง
+- ใช้ปุ่มบัญชีแบบ Floating ที่มุมขวาล่างเป็นทางเข้าสำหรับสมาชิก
+- เมื่อกดปุ่ม Floating จะแสดง Popover ขนาดเล็กซึ่งมี 2 ตัวเลือกเท่านั้น:
+  1. แจ้งเตือน พร้อมจำนวนรายการที่ยังไม่ได้อ่านเมื่อมีข้อมูล
+  2. พื้นที่สมาชิก
+- เมื่อกด “แจ้งเตือน” จะแสดงแผงรายการแจ้งเตือนขนาดเล็กในบริเวณเดิม
+- เมื่อกด “พื้นที่สมาชิก” จะเข้าสู่หน้าแบบประเมินที่ `/{locale}/member/requests`
+- ในขั้นทำ UI Mockup นี้ สถานะการเข้าสู่ระบบและข้อมูลแจ้งเตือนจะใช้ข้อมูลตัวอย่างก่อน
 
-## Member-area navigation
+## ระบบนำทางภายในพื้นที่สมาชิก
 
-- Member pages use a persistent horizontal tab bar near the top of the content.
-- The tabs are Estimate requests, Messages, Payments, and Profile.
-- The active tab is visually distinct and each tab is a direct route link.
-- A message unread badge appears on the Messages tab.
-- The current member side rail is removed from the four member overview pages.
-- Job detail remains a separate page reached from member content. It uses the same member-area tab navigation instead of duplicating a side rail.
+- หน้าสมาชิกจะแสดงแถบแท็บแนวนอนบริเวณด้านบนของเนื้อหาเสมอ
+- แท็บประกอบด้วย แบบประเมิน, ข้อความ, การชำระเงิน และโปรไฟล์
+- แท็บที่กำลังเปิดอยู่ต้องมีสถานะเด่นชัด และแต่ละแท็บเชื่อมไปยังหน้าโดยตรง
+- แท็บข้อความสามารถแสดงจำนวนข้อความที่ยังไม่ได้อ่าน
+- นำ Sidebar สมาชิกเดิมออกจากหน้าภาพรวมสมาชิกทั้ง 4 หน้า
+- หน้ารายละเอียดงานยังคงเป็นหน้าแยกซึ่งเปิดจากข้อมูลในพื้นที่สมาชิก และใช้แถบแท็บสมาชิกแบบเดียวกันแทนการทำ Sidebar สมาชิกซ้ำ
 
-## Layout boundaries
+## การแยกส่วน Layout
 
-- The floating account control and its popovers are one shared global component.
-- The member tab bar is one shared member-navigation component.
-- Each member page keeps its own content component and layout styles so changing one page does not unexpectedly alter another.
-- Member content uses the shared page-shell width already used across the site.
+- ปุ่มบัญชีแบบ Floating และ Popover เป็น Component ส่วนกลางหนึ่งชุด
+- แถบแท็บสมาชิกเป็น Component ระบบนำทางของพื้นที่สมาชิกหนึ่งชุด
+- เนื้อหาและ Layout ของแต่ละหน้าสมาชิกยังแยก Component และไฟล์ Style ของตัวเอง เพื่อป้องกันการแก้ไขหน้าหนึ่งแล้วกระทบอีกหน้า
+- พื้นที่เนื้อหาสมาชิกใช้ความกว้างมาตรฐานเดียวกับหน้าหลักอื่นของเว็บไซต์
 
-## Interaction and accessibility
+## การโต้ตอบและการเข้าถึง
 
-- The floating popover closes by clicking outside, pressing Escape, or choosing an action.
-- Buttons expose expanded state and the popover is keyboard reachable.
-- Active member tabs use `aria-current="page"`.
-- Unread counts include readable labels rather than relying only on color.
+- Popover ของปุ่ม Floating ปิดได้ด้วยการกดพื้นที่ว่าง กดปุ่ม Escape หรือเลือกเมนูแล้ว
+- ปุ่มและ Popover รองรับการใช้งานด้วยคีย์บอร์ด และระบุสถานะเปิดหรือปิดอย่างเหมาะสม
+- แท็บสมาชิกที่กำลังเปิดใช้ `aria-current="page"`
+- จำนวนรายการที่ยังไม่ได้อ่านต้องมีข้อความสำหรับโปรแกรมอ่านหน้าจอ ไม่สื่อสารด้วยสีเพียงอย่างเดียว
 
-## Scope
+## ขอบเขตงานรอบนี้
 
-This pass covers visual layout, navigation links, and local mock interactions. Backend authentication, persisted notifications, and live unread counts are deferred.
+รอบนี้ทำเฉพาะ Layout, ลิงก์นำทาง และ Interaction ตัวอย่างภายในหน้า UI ก่อน ระบบยืนยันตัวตนจริง ข้อมูลแจ้งเตือนจากฐานข้อมูล และจำนวนรายการที่ยังไม่ได้อ่านแบบเรียลไทม์จะทำภายหลัง
 
-## Acceptance criteria
+## เกณฑ์การยอมรับ
 
-- The global sidebar is still available.
-- The bottom-right floating account button opens two actions: Notifications and Member area.
-- Member area opens the estimate-request page.
-- All four member pages display the same horizontal tab bar and no member side rail.
-- The job-detail page can navigate back into the member area through the same tab pattern.
-- Existing page-specific content remains intact.
+- Sidebar หลักของเว็บไซต์ยังใช้งานได้ตามเดิม
+- ปุ่มบัญชีมุมขวาล่างเปิดตัวเลือก “แจ้งเตือน” และ “พื้นที่สมาชิก”
+- เมนูพื้นที่สมาชิกเปิดหน้าแบบประเมิน
+- หน้าสมาชิกทั้ง 4 หน้าแสดงแถบแท็บแนวนอนชุดเดียวกัน และไม่มี Sidebar สมาชิก
+- หน้ารายละเอียดงานสามารถกลับเข้าสู่หน้าต่าง ๆ ของพื้นที่สมาชิกผ่านแถบแท็บเดียวกัน
+- เนื้อหาเดิมของแต่ละหน้าสมาชิกยังอยู่ครบ
