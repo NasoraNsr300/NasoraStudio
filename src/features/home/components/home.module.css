@@ -48,8 +48,7 @@
 
 .primaryAction,
 .secondaryAction,
-.featuredCopy a,
-.carouselControls button {
+.motionToggle {
   align-items: center;
   border-radius: var(--radius-sm);
   display: inline-flex;
@@ -64,7 +63,7 @@
 .primaryAction { background: var(--brand-gold); color: #2a1a12; }
 
 .secondaryAction,
-.carouselControls button {
+.motionToggle {
   background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
   border: var(--border-subtle) solid var(--brand-violet);
   color: var(--text-primary);
@@ -101,21 +100,44 @@
 
 .sectionHeading { align-items: end; display: flex; justify-content: space-between; margin-bottom: var(--space-4); }
 .sectionHeading h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0; }
-.position { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-
-.featuredCard { display: grid; gap: var(--space-5); grid-template-columns: minmax(9rem, 0.75fr) minmax(0, 1fr); }
-.featuredMedia { aspect-ratio: var(--featured-aspect-ratio, 4 / 5); background: var(--background-elevated); border-radius: var(--radius-md); overflow: hidden; }
-.featuredMedia img { display: block; height: 100%; object-fit: cover; width: 100%; }
-.featuredCopy { align-self: center; }
-.featuredCopy h3 { font-family: var(--font-display); font-size: clamp(1.25rem, 2vw, 1.75rem); margin: 0; }
-.featuredCopy > p:not(.eyebrow), .infoContent > p:last-child { color: var(--text-secondary); line-height: 1.65; }
-.featuredCopy a { color: var(--brand-gold); padding-left: 0; }
-.carouselControls { align-items: center; display: flex; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-4); }
-.carouselControls button { cursor: pointer; }
-.positionControls { display: inline-flex; gap: 6px; }
-.carouselControls .positionControl { background: transparent; border: 0; min-height: 44px; min-width: 44px; padding: 0; position: relative; }
-.carouselControls .positionControl::before { background: var(--text-secondary); border-radius: 999px; content: ""; height: 10px; left: 50%; position: absolute; top: 50%; transform: translate(-50%, -50%); width: 10px; }
-.carouselControls .positionControl[aria-current="true"]::before { background: var(--brand-gold); width: 24px; }
+.motionToggle { cursor: pointer; min-width: 44px; padding: 0; }
+.loopViewport { container-type: inline-size; overflow: hidden; }
+.loopTrack {
+  --loop-gap: var(--space-4);
+  animation: featured-loop var(--loop-duration, 30s) linear infinite;
+  display: flex;
+  gap: var(--loop-gap);
+  width: max-content;
+  will-change: transform;
+}
+.loopTrack[data-paused="true"] { animation-play-state: paused; }
+.loopGroup { display: flex; gap: var(--loop-gap); }
+.loopCard {
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  flex: 0 0 calc((100cqw - 3 * var(--loop-gap)) / 4);
+  isolation: isolate;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+.loopMedia { aspect-ratio: 4 / 5; background: var(--background-elevated); display: block; }
+.loopMedia img { display: block; height: 100%; object-fit: cover; width: 100%; }
+.loopMark {
+  align-items: center;
+  background: rgb(9 13 31 / 78%);
+  border: 1px solid var(--brand-gold);
+  border-radius: 50%;
+  color: var(--brand-gold);
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  position: absolute;
+  right: var(--space-2);
+  top: var(--space-2);
+  width: 2rem;
+}
+.infoContent > p:last-child { color: var(--text-secondary); line-height: 1.65; }
 
 .quickInfo { min-height: 100%; }
 .tabList { border-bottom: var(--border-subtle) solid var(--border); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -133,11 +155,14 @@
 
 @media (max-width: 480px) {
   .home { padding-inline: var(--space-4); }
-  .featuredCard { grid-template-columns: 7rem minmax(0, 1fr); }
-  .carouselControls { justify-content: stretch; }
-  .carouselControls button { flex: 1; }
+  .loopCard { flex-basis: calc((100cqw - var(--loop-gap)) / 2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .heroImage { scroll-behavior: auto; }
+  .loopTrack { animation: none; transform: none; will-change: auto; }
+}
+
+@keyframes featured-loop {
+  to { transform: translateX(calc(-50% - var(--loop-gap) / 2)); }
 }
