@@ -47,6 +47,15 @@
 .searchResults small { color: var(--text-secondary); font-size: 1rem; }
 .empty { background: var(--surface); border-radius: var(--radius-md); color: var(--text-secondary); padding: var(--space-6); }
 
+@media (min-width: 1024px) {
+  .commissionPage {
+    padding: 2rem 0 7rem;
+    width: 76vw;
+  }
+  .heading { margin-bottom: 2rem; }
+  .albumTile { aspect-ratio: 7 / 5; }
+}
+
 @media (max-width: 1180px) { .albumGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .serviceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 780px) { .albumGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dialogBody { grid-template-columns: 1fr; } .detailDialog { max-height: calc(100dvh - 1rem); }.dialogHeader, .dialogBody, .dialogActions { padding: var(--space-4); } }
 @media (max-width: 520px) { .albumGrid, .serviceGrid { grid-template-columns: 1fr; }.albumTile { aspect-ratio: 4 / 3; }.dialogActions > div { width: 100%; }.dialogActions button { flex: 1; } }
