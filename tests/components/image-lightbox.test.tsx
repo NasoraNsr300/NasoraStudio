@@ -22,7 +22,7 @@ describe("ImageLightbox", () => {
     rerender(
       <>
         <button type="button">Open artwork</button>
-        <ImageLightbox item={portfolioItems[0]} onClose={onClose} />
+        <ImageLightbox item={portfolioItems[0]} locale="en" onClose={onClose} />
       </>,
     );
     await user.click(screen.getByRole("button", { name: "Close artwork" }));
@@ -33,7 +33,7 @@ describe("ImageLightbox", () => {
 
   it("closes on Escape and backdrop clicks while locking body scroll", () => {
     const onClose = vi.fn();
-    render(<ImageLightbox item={portfolioItems[0]} onClose={onClose} />);
+    render(<ImageLightbox item={portfolioItems[0]} locale="en" onClose={onClose} />);
 
     const dialog = screen.getByRole("dialog", { name: "Starlit Traveler" });
     expect(document.body.style.overflow).toBe("hidden");
@@ -46,8 +46,35 @@ describe("ImageLightbox", () => {
   });
 
   it("does not render when no item is selected", () => {
-    render(<ImageLightbox item={null} onClose={() => undefined} />);
+    render(<ImageLightbox item={null} locale="en" onClose={() => undefined} />);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("renders a single controlled video asset when the selected media is video", () => {
+    const item = portfolioItems.find((candidate) => candidate.media.kind === "video");
+    if (!item) throw new Error("Expected a video fixture");
+
+    render(<ImageLightbox item={item} locale="en" onClose={() => undefined} />);
+
+    const dialog = screen.getByRole("dialog", { name: item.title.en });
+    const video = dialog.querySelector("video");
+    expect(video).toHaveAttribute("src", item.media.detailSrc);
+    expect(video).toHaveAttribute("poster", item.media.posterSrc);
+    expect(video).toHaveAttribute("preload", "none");
+    expect(video).toHaveAttribute("controls");
+    expect(dialog.querySelectorAll("img")).toHaveLength(0);
+  });
+
+  it("traps Tab and Shift+Tab focus inside the lightbox", () => {
+    render(<ImageLightbox item={portfolioItems[0]} locale="en" onClose={() => undefined} />);
+
+    const close = screen.getByRole("button", { name: "Close artwork" });
+    close.focus();
+
+    expect(fireEvent.keyDown(document, { key: "Tab" })).toBe(false);
+    expect(close).toHaveFocus();
+    expect(fireEvent.keyDown(document, { key: "Tab", shiftKey: true })).toBe(false);
+    expect(close).toHaveFocus();
   });
 });

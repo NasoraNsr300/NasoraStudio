@@ -7,11 +7,13 @@ import { PortfolioGallery } from "./portfolio-gallery";
 import styles from "./portfolio.module.css";
 
 export type PortfolioPageProps = {
+  initialCategory?: string | null;
+  initialQuery?: string | null;
   items: PortfolioItem[];
   locale: Locale;
 };
 
-export function PortfolioPage({ items, locale }: PortfolioPageProps) {
+export function PortfolioPage({ initialCategory, initialQuery, items, locale }: PortfolioPageProps) {
   return (
     <main className={styles.portfolio}>
       <header className={styles.heading}>
@@ -19,7 +21,7 @@ export function PortfolioPage({ items, locale }: PortfolioPageProps) {
         <h1>{locale === "th" ? "พอร์ตโฟลิโอ" : "Portfolio"}</h1>
         <span>{locale === "th" ? "เลือกดูผลงานเพื่อเปิดภาพเต็ม" : "Choose an artwork to view it in full."}</span>
       </header>
-      <PortfolioGallery items={items} />
+      <PortfolioGallery initialCategory={initialCategory} initialQuery={initialQuery} items={items} locale={locale} />
     </main>
   );
 }
