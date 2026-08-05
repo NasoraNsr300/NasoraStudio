@@ -1,11 +1,7 @@
 import {
   CalendarDays,
   Check,
-  CircleUserRound,
   Clock3,
-  CreditCard,
-  FileText,
-  FolderOpen,
   HelpCircle,
   LockKeyhole,
   MessageSquareText,
@@ -13,12 +9,12 @@ import {
   Send,
   Sparkles,
   UserRound,
-  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 
 import type { Locale } from "@/shared/i18n/locales";
 
+import { MemberTabs } from "./member-tabs";
 import styles from "./member.module.css";
 
 const copy = {
@@ -84,24 +80,10 @@ const copy = {
   },
 } as const;
 
-const navIcons = [FolderOpen, FileText, MessageSquareText, WalletCards, CircleUserRound];
-const navSections = ["jobs/demo", "requests", "messages", "payments", "profile"];
-
 export function MemberJobPage({ locale }: { locale: Locale }) {
   const labels = copy[locale];
   return <main className={styles.memberPage}>
-    <aside className={styles.memberRail}>
-      <div className={styles.memberIdentity}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- fixture avatar */}
-        <img alt="Stardust" src="/fixtures/derivatives/moonlit-thumbnail.webp" />
-        <strong>Stardust</strong><span>{labels.member}</span>
-      </div>
-      <nav>{labels.nav.map((label, index) => {
-        const Icon = navIcons[index];
-        return <Link aria-current={index === 0 ? "page" : undefined} href={`/${locale}/member/${navSections[index]}`} key={label}><Icon size={19} />{label}{index === 2 ? <b>3</b> : null}</Link>;
-      })}</nav>
-      <div className={styles.memberHelp}><HelpCircle size={20} /><strong>{labels.help}</strong><Link href="#">{labels.contact}</Link></div>
-    </aside>
+    <MemberTabs active="requests" locale={locale} />
 
     <section className={styles.jobWorkspace}>
       <header className={styles.jobHeader}>

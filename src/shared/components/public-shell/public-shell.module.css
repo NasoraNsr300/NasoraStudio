@@ -285,7 +285,6 @@
 .notificationList article { border-top: 1px solid var(--border); display: grid; gap: .65rem; grid-template-columns: auto 1fr; padding: .75rem; }.notificationList article:first-child { border-top: 0; }
 .notificationList article > span { align-items: center; background: rgb(92 64 166 / 24%); border-radius: 50%; color: var(--brand-violet); display: flex; height: 2rem; justify-content: center; width: 2rem; }
 .notificationList strong { font-size: .72rem; }.notificationList p { color: var(--text-secondary); font-size: .65rem; line-height: 1.45; margin: .2rem 0; }.notificationList time { color: var(--brand-gold); font-size: .6rem; }
-}
 
 .visuallyHidden {
   clip: rect(0 0 0 0);
