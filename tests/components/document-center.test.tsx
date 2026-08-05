@@ -6,7 +6,14 @@ import { documents } from "@/data/fixtures/public-content";
 import { DocumentCenterPage } from "@/features/documents/components/document-center-page";
 import { DocumentReader } from "@/features/documents/components/document-reader";
 
-afterEach(cleanup);
+const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
+vi.mock("next/navigation", () => ({ useSearchParams: navigation.useSearchParams }));
+
+afterEach(() => {
+  cleanup();
+  navigation.params = new URLSearchParams();
+  navigation.useSearchParams.mockImplementation(() => navigation.params);
+});
 
 const publishedDocuments = documents.filter((document) => document.published);
 
@@ -19,16 +26,28 @@ describe("DocumentCenterPage", () => {
     expect(documentLinks[0]).toHaveAttribute("href", "/en/documents/commission-terms");
   });
 
-  it("filters documents by category and page-scoped search", () => {
+  it("filters documents by category and current documents q parameter", () => {
+    navigation.params = new URLSearchParams("q=clear");
+    navigation.useSearchParams.mockImplementation(() => navigation.params);
     render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Guides" }));
     expect(screen.getByText("Revision Guide")).toBeVisible();
     expect(screen.queryByText("Commission Terms")).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search documents" }), { target: { value: "clear" } });
     expect(screen.getByText("Revision Guide")).toBeVisible();
-    expect(window.location.search).toBe("");
+    expect(screen.getByRole("searchbox", { name: "Search documents" })).toHaveValue("clear");
+  });
+
+  it("updates document q filtering after client navigation", () => {
+    navigation.params = new URLSearchParams("q=privacy");
+    navigation.useSearchParams.mockImplementation(() => navigation.params);
+    const { rerender } = render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    expect(screen.getByText("Privacy Policy")).toBeVisible();
+
+    navigation.params = new URLSearchParams("q=revision");
+    rerender(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    expect(screen.getByText("Revision Guide")).toBeVisible();
   });
 
   it("fully localizes document labels", () => {
@@ -56,6 +75,14 @@ describe("DocumentReader", () => {
     render(<DocumentReader document={publishedDocuments[0]} mode="route" />);
 
     expect(screen.getByRole("link", { name: "Back to documents" })).toHaveAttribute("href", "/en/documents");
+  });
+
+  it("localizes known reader categories with a safe category-key fallback", () => {
+    const termsDocument = publishedDocuments[0];
+    const { container } = render(<><DocumentReader document={termsDocument} locale="th" mode="route" /><DocumentReader document={{ ...termsDocument, category: "future-notice" }} locale="en" mode="route" /></>);
+
+    expect(container.querySelector("p[class*='category']")).toHaveTextContent(termsDocument.tags[0].th);
+    expect(screen.getByText("future-notice")).toBeVisible();
   });
 
   it("traps focus in the dialog and returns it to the opener", () => {

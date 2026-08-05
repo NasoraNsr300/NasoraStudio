@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { getDocumentCategoryLabel } from "./document-category";
 import { DocumentReader } from "./document-reader";
 import styles from "./documents.module.css";
 import type { Locale } from "@/shared/i18n/locales";
@@ -11,13 +13,19 @@ import type { DocumentSummary } from "@/shared/types/public-content";
 export type DocumentCenterPageProps = { documents: DocumentSummary[]; locale: Locale };
 
 const copy = {
-  en: { all: "All", announcement: "Terms, process notes, and public policies in one place.", category: { guide: "Guides", privacy: "Privacy", terms: "Terms" }, empty: "No documents match that selection.", eyebrow: "Public information", pinned: "Pinned", read: "Read document", search: "Search documents", title: "Document center" },
-  th: { all: "ทั้งหมด", announcement: "เงื่อนไข ขั้นตอน และนโยบายสาธารณะรวมอยู่ที่นี่", category: { guide: "คู่มือ", privacy: "ความเป็นส่วนตัว", terms: "เงื่อนไข" }, empty: "ไม่พบเอกสารที่ตรงกับการเลือก", eyebrow: "ข้อมูลสาธารณะ", pinned: "ปักหมุด", read: "อ่านเอกสาร", search: "ค้นหาเอกสาร", title: "ศูนย์เอกสาร" },
+  en: { all: "All", announcement: "Terms, process notes, and public policies in one place.", empty: "No documents match that selection.", eyebrow: "Public information", pinned: "Pinned", read: "Read document", search: "Search documents", title: "Document center" },
+  th: { all: "ทั้งหมด", announcement: "เงื่อนไข ขั้นตอน และนโยบายสาธารณะรวมอยู่ที่นี่", empty: "ไม่พบเอกสารที่ตรงกับการเลือก", eyebrow: "ข้อมูลสาธารณะ", pinned: "ปักหมุด", read: "อ่านเอกสาร", search: "ค้นหาเอกสาร", title: "ศูนย์เอกสาร" },
 } as const;
 
 export function DocumentCenterPage({ documents, locale }: DocumentCenterPageProps) {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  return <DocumentCenterContent documents={documents} initialQuery={urlQuery} key={urlQuery} locale={locale} />;
+}
+
+function DocumentCenterContent({ documents, initialQuery, locale }: DocumentCenterPageProps & { initialQuery: string }) {
   const [category, setCategory] = useState<string>("all");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [activeDocument, setActiveDocument] = useState<DocumentSummary | null>(null);
   const labels = copy[locale];
   const categories = Array.from(new Set(documents.map((document) => document.category))).sort();
@@ -32,12 +40,12 @@ export function DocumentCenterPage({ documents, locale }: DocumentCenterPageProp
     <div className={styles.controls}>
       <div aria-label={labels.title} className={styles.filters} role="group">
         <button aria-pressed={category === "all"} onClick={() => setCategory("all")} type="button">{labels.all}</button>
-        {categories.map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)} type="button">{labels.category[value as keyof typeof labels.category]}</button>)}
+        {categories.map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)} type="button">{getDocumentCategoryLabel(locale, value)}</button>)}
       </div>
       <label className={styles.search}><span>{labels.search}</span><input aria-label={labels.search} onChange={(event) => setQuery(event.target.value)} placeholder={labels.search} type="search" value={query} /></label>
     </div>
     {visibleDocuments.length ? <div className={styles.documentList}>{visibleDocuments.map((document) => <article className={styles.card} key={document.slug}>
-      <div><p>{document.pinned ? `★ ${labels.pinned}` : labels.category[document.category as keyof typeof labels.category]}</p><h2><Link href={`/${locale}/documents/${document.slug}`}>{document.title[locale]}</Link></h2><span>{document.summary[locale]}</span></div>
+      <div><p>{document.pinned ? `★ ${labels.pinned}` : getDocumentCategoryLabel(locale, document.category)}</p><h2><Link href={`/${locale}/documents/${document.slug}`}>{document.title[locale]}</Link></h2><span>{document.summary[locale]}</span></div>
       <button onClick={() => setActiveDocument(document)} type="button">{labels.read}</button>
     </article>)}</div> : <p className={styles.empty} role="status">{labels.empty}</p>}
     {activeDocument ? <DocumentReader document={activeDocument} locale={locale} mode="dialog" onClose={() => setActiveDocument(null)} /> : null}

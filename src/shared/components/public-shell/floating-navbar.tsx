@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -11,15 +12,8 @@ import type { ThemeName } from "@/shared/theme/theme";
 import { Sidebar } from "./sidebar";
 import styles from "./public-shell.module.css";
 
-export type SearchConfig = {
-  label: string;
-  action: string;
-  queryName: "q";
-};
-
 type FloatingNavbarProps = {
   locale: Locale;
-  search: SearchConfig;
   availability?: "open" | "closed";
 };
 
@@ -33,11 +27,22 @@ function subscribeToTheme(onStoreChange: () => void) {
   return () => observer.disconnect();
 }
 
-export function FloatingNavbar({ locale, search, availability = "open" }: FloatingNavbarProps) {
+function getSearchConfig(locale: Locale, pathname: string | null) {
+  const basePath = `/${locale}`;
+  const route = pathname ?? basePath;
+  if (route.startsWith(`${basePath}/portfolio`)) return { action: `${basePath}/portfolio`, label: locale === "th" ? "ค้นหาผลงาน" : "Search portfolio" };
+  if (route.startsWith(`${basePath}/commission`)) return { action: `${basePath}/commission`, label: locale === "th" ? "ค้นหาคอมมิชชัน" : "Search commissions" };
+  if (route.startsWith(`${basePath}/queue`)) return { action: `${basePath}/queue`, label: locale === "th" ? "ค้นหาคิว" : "Search queue" };
+  if (route.startsWith(`${basePath}/documents`)) return { action: `${basePath}/documents`, label: locale === "th" ? "ค้นหาเอกสาร" : "Search documents" };
+  return { action: basePath, label: locale === "th" ? "ค้นหา Nasora" : "Search Nasora" };
+}
+
+export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeToTheme, currentTheme, () => "night");
   const dictionary = getDictionary(locale);
   const alternateLocale = locale === "th" ? "en" : "th";
+  const search = getSearchConfig(locale, usePathname());
 
   const toggleTheme = () => {
     const nextTheme = currentTheme() === "night" ? "autumn" : "night";
@@ -54,7 +59,7 @@ export function FloatingNavbar({ locale, search, availability = "open" }: Floati
         <Link aria-label="Nasora home" className={styles.brand} href={`/${locale}`}>NASORA</Link>
         <form action={search.action} aria-label={search.label} className={styles.search} role="search">
           <label className={styles.visuallyHidden} htmlFor="nasora-search">{search.label}</label>
-          <input id="nasora-search" name={search.queryName} placeholder={search.label} type="search" />
+          <input id="nasora-search" name="q" placeholder={search.label} type="search" />
         </form>
         <span className={styles.availability} data-state={availability}>{availability.toUpperCase()}</span>
         <Link className={styles.queueLink} href={`/${locale}/queue`}>{dictionary.queue}</Link>

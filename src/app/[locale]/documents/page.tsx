@@ -8,5 +8,6 @@ export default async function DocumentsRoute({ params }: Readonly<{ params: Prom
   const { locale } = await params;
   if (!isLocale(locale)) return null;
   const documents = await getPublicContentRepository().getDocuments(locale);
-  return <DocumentCenterPage documents={documents} locale={locale} />;
+  return <Suspense fallback={null}><DocumentCenterPage documents={documents} locale={locale} /></Suspense>;
 }
+import { Suspense } from "react";

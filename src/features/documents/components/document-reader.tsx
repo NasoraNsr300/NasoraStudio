@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import type { Locale } from "@/shared/i18n/locales";
 import type { DocumentSummary } from "@/shared/types/public-content";
 
+import { getDocumentCategoryLabel } from "./document-category";
 import styles from "./documents.module.css";
 
 export type DocumentReaderProps = {
@@ -22,7 +23,7 @@ const copy = {
 
 function ReaderBody({ document, locale }: Pick<DocumentReaderProps, "document"> & { locale: Locale }) {
   return <article className={styles.readerBody}>
-    <p className={styles.category}>{document.category}</p>
+    <p className={styles.category}>{getDocumentCategoryLabel(locale, document.category)}</p>
     <h1>{document.title[locale]}</h1>
     <p className={styles.summary}>{document.summary[locale]}</p>
     <div className={styles.content}>{document.content[locale]}</div>

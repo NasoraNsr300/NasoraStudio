@@ -8,5 +8,6 @@ export default async function QueueRoute({ params }: Readonly<{ params: Promise<
   const { locale } = await params;
   if (!isLocale(locale)) return null;
   const items = await getPublicContentRepository().getQueue(locale);
-  return <QueuePage items={items} locale={locale} />;
+  return <Suspense fallback={null}><QueuePage items={items} locale={locale} /></Suspense>;
 }
+import { Suspense } from "react";

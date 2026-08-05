@@ -1,12 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { privateQueueFixtureRecords } from "@/data/fixtures/public-content";
 import { projectPublicQueueItem } from "@/data/fixture-public-content-repository";
-import { QueuePage } from "@/features/queue/components/queue-page";
 import type { PublicQueueItem } from "@/shared/types/public-content";
 
-afterEach(cleanup);
+const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
+vi.mock("next/navigation", () => ({ useSearchParams: navigation.useSearchParams }));
+
+import { QueuePage } from "@/features/queue/components/queue-page";
+
+afterEach(() => {
+  cleanup();
+  navigation.params = new URLSearchParams();
+  navigation.useSearchParams.mockImplementation(() => navigation.params);
+});
 
 const queue: PublicQueueItem[] = privateQueueFixtureRecords.map((item) => projectPublicQueueItem(item, "en"));
 
@@ -33,13 +41,27 @@ describe("QueuePage", () => {
     expect(screen.queryByText(/quote-mali|payment-mali|mali@example\.test|private\.example/)).not.toBeInTheDocument();
   });
 
-  it("filters the already public queue in the page without changing the URL", () => {
+  it("filters supplied public queue records from the current queue q parameter", () => {
+    navigation.params = new URLSearchParams("q=Coloring");
+    navigation.useSearchParams.mockImplementation(() => navigation.params);
     render(<QueuePage items={queue} locale="en" />);
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search queue" }), { target: { value: "Coloring" } });
     expect(screen.getByText("Nox")).toBeVisible();
     expect(screen.queryByText("Mali")).not.toBeInTheDocument();
-    expect(window.location.search).toBe("");
+    expect(screen.getByRole("searchbox", { name: "Search queue" })).toHaveValue("Coloring");
+  });
+
+  it("updates its filter when client navigation supplies a new q parameter and still accepts local input", () => {
+    navigation.params = new URLSearchParams("q=Coloring");
+    navigation.useSearchParams.mockImplementation(() => navigation.params);
+    const { rerender } = render(<QueuePage items={queue} locale="en" />);
+    expect(screen.getByText("Nox")).toBeVisible();
+
+    navigation.params = new URLSearchParams("q=Sketching");
+    rerender(<QueuePage items={queue} locale="en" />);
+    expect(screen.getByText("Mali")).toBeVisible();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search queue" }), { target: { value: "Queued" } });
+    expect(screen.getByText("Guest Comet")).toBeVisible();
   });
 
   it("uses Thai labels when requested", () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -16,7 +17,13 @@ const copy = {
 } as const;
 
 export function QueuePage({ items, locale }: QueuePageProps) {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  return <QueueContent initialQuery={urlQuery} items={items} key={urlQuery} locale={locale} />;
+}
+
+function QueueContent({ initialQuery, items, locale }: QueuePageProps & { initialQuery: string }) {
+  const [query, setQuery] = useState(initialQuery);
   const labels = copy[locale];
   const visibleItems = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();

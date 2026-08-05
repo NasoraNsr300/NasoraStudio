@@ -17,7 +17,7 @@ export default async function LocaleLayout({
   return (
     <>
       <ThemeScript />
-      <PublicShell locale={locale} search={{ label: "Search", action: `/${locale}/portfolio`, queryName: "q" }}>
+      <PublicShell locale={locale}>
         {children}
       </PublicShell>
     </>
