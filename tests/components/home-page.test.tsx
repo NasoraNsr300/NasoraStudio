@@ -25,16 +25,37 @@ describe("HomePage", () => {
     expect(preload).toHaveAttribute("imagesizes", "(min-width: 900px) 52vw, 100vw");
   });
 
-  it("keeps its selected hero stable across rerenders", () => {
+  it("keeps its selected Hero media stable across rerenders", () => {
     const { rerender } = render(
       <HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0.75} />,
     );
 
-    expect(screen.getByRole("heading", { name: "Welcome to Nasora's universe" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
 
     rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
 
-    expect(screen.getByRole("heading", { name: "Welcome to Nasora's universe" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+  });
+
+  it("changes only Hero media after client selection while fallback copy stays stable", () => {
+    const staticMarkup = renderToStaticMarkup(
+      <HomeHero heroItems={heroItems} locale="en" randomValue={0.75} />,
+    );
+    expect(staticMarkup).toContain('alt="Character under moonlight"');
+
+    const { rerender } = render(
+      <HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0.75} />,
+    );
+
+    expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+
+    rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
+
+    expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
   });
 
   it("keeps the static Hero frame dimensions after client selection", () => {

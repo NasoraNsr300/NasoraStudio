@@ -32,7 +32,7 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
   // This deterministic first item is emitted during static rendering. The
   // one-time client effect replaces it after mount without changing the frame.
   const [fallbackHero] = useState(() => heroItems[0]);
-  const [hero, setHero] = useState(() => fallbackHero);
+  const [mediaHero, setMediaHero] = useState(() => fallbackHero);
   const initialHeroItems = useRef(heroItems);
   const initialRandomValue = useRef(randomValue);
 
@@ -41,31 +41,31 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
       initialHeroItems.current,
       initialRandomValue.current ?? getClientRandomValue(),
     );
-    setHero(selectedHero);
+    setMediaHero(selectedHero);
   }, []);
 
-  if (!fallbackHero || !hero) {
+  if (!fallbackHero || !mediaHero) {
     throw new Error("HomeHero requires at least one Hero item");
   }
 
   const mediaStyle = {
     "--hero-aspect-ratio": fallbackHero.crop.aspectRatio,
-    objectPosition: hero.crop.objectPosition,
+    objectPosition: mediaHero.crop.objectPosition,
   } as CSSProperties;
 
   return (
     <section aria-labelledby="home-hero-title" className={styles.hero}>
       <link
         as="image"
-        href={hero.media.cardSrc}
+        href={fallbackHero.media.cardSrc}
         imageSizes={HERO_IMAGE_SIZES}
-        imageSrcSet={getResponsiveSourceSet(hero)}
+        imageSrcSet={getResponsiveSourceSet(fallbackHero)}
         rel="preload"
       />
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>NASORA STUDIO</p>
-        <h1 id="home-hero-title">{hero.title[locale]}</h1>
-        <p className={styles.heroDescription}>{hero.description[locale]}</p>
+        <h1 id="home-hero-title">{fallbackHero.title[locale]}</h1>
+        <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>
         <p className={styles.heroServices}>Commission · Illustration · Minecraft</p>
         <div className={styles.heroActions}>
           <a className={styles.primaryAction} href={`/${locale}/commission`}>View commissions</a>
@@ -76,14 +76,14 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
         {/* Public derivatives reserve the same 16:9 placement before the image loads. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          alt={hero.media.alt[locale]}
+          alt={mediaHero.media.alt[locale]}
           className={styles.heroImage}
           fetchPriority="high"
-          height={hero.media.height}
+          height={mediaHero.media.height}
           sizes={HERO_IMAGE_SIZES}
-          src={hero.media.cardSrc}
-          srcSet={getResponsiveSourceSet(hero)}
-          width={hero.media.width}
+          src={mediaHero.media.cardSrc}
+          srcSet={getResponsiveSourceSet(mediaHero)}
+          width={mediaHero.media.width}
         />
       </div>
     </section>
