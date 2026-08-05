@@ -1,0 +1,55 @@
+.tabs {
+  background: rgb(10 21 43 / 82%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: .35rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: .4rem;
+}
+
+.tabs a {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: .55rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: .55rem;
+  justify-content: center;
+  min-height: 3.25rem;
+  position: relative;
+  text-decoration: none;
+}
+
+.tabs a::after {
+  background: transparent;
+  border-radius: 999px;
+  bottom: -.4rem;
+  content: "";
+  height: 2px;
+  left: 22%;
+  position: absolute;
+  right: 22%;
+}
+
+.tabs a:hover {
+  background: rgb(92 64 166 / 14%);
+  color: var(--text-primary);
+}
+
+.tabs a[aria-current="page"] {
+  background: linear-gradient(135deg, rgb(91 62 161 / 42%), rgb(42 33 84 / 32%));
+  border-color: rgb(157 123 233 / 58%);
+  color: white;
+}
+
+.tabs a[aria-current="page"]::after { background: var(--brand-gold); }
+.tabs svg { color: var(--brand-violet); }
+.tabs a[aria-current="page"] svg { color: var(--brand-gold); }
+.tabs span { font-size: .78rem; font-weight: 600; }
+.tabs b { align-items: center; background: var(--brand-violet); border-radius: 999px; color: #281f49; display: flex; font-size: .6rem; height: 1.25rem; justify-content: center; min-width: 1.25rem; padding: 0 .2rem; }
+
+@media (max-width: 640px) {
+  .tabs a { gap: .3rem; }
+  .tabs span { font-size: .68rem; }
+}
