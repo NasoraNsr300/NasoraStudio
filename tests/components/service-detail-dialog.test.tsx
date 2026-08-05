@@ -40,6 +40,7 @@ describe("ServiceDetailDialog", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /submit/i })).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole("button", { name: "Close request preview" }));
     await user.click(screen.getByRole("button", { name: "Close service details" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -67,6 +68,27 @@ describe("ServiceDetailDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "ขอประเมินราคา" }));
     expect(screen.getByRole("dialog", { name: "ตัวอย่างการขอประเมินราคา" })).toHaveTextContent("Stage 2");
+  });
+
+  it("hides the detail dialog from assistive technology until the request preview closes", async () => {
+    const user = userEvent.setup();
+    const service = serviceTypes.find((candidate) => candidate.slug === "illustration-halfbody");
+    if (!service) throw new Error("Expected illustration fixture service");
+
+    render(<ServiceDetailDialog onClose={() => undefined} open service={service} />);
+
+    await user.click(screen.getByRole("button", { name: "Request estimate" }));
+    const detail = screen.getAllByRole("dialog", { hidden: true }).find((dialog) => dialog.getAttribute("aria-label") === service.name.en);
+    if (!detail) throw new Error("Expected hidden detail dialog");
+    expect(detail).toHaveAttribute("aria-hidden", "true");
+    expect(detail).toHaveAttribute("inert");
+    expect(screen.queryByRole("dialog", { name: service.name.en })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close request preview" }));
+    expect(detail).not.toHaveAttribute("aria-hidden");
+    expect(detail).not.toHaveAttribute("inert");
+    expect(screen.getByRole("dialog", { name: service.name.en })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Request estimate" })).toHaveFocus();
   });
 
   it("traps focus and restores the opener for detail and request-preview dialogs", async () => {

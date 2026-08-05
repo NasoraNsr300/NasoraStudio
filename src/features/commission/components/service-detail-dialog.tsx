@@ -177,7 +177,8 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
   if (!open) return null;
 
   return (
-    <div aria-label={service.name[locale]} aria-modal="true" className={styles.dialogBackdrop} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
+    <>
+    <div aria-hidden={previewOpen || undefined} aria-label={service.name[locale]} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
       <section className={styles.detailDialog}>
         <header className={styles.dialogHeader}>
           <div>
@@ -221,7 +222,8 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
           </div>
         </footer>
       </section>
-      {previewOpen ? <RequestPreviewDialog locale={locale} onClose={() => setPreviewOpen(false)} /> : null}
     </div>
+    {previewOpen ? <RequestPreviewDialog locale={locale} onClose={() => setPreviewOpen(false)} /> : null}
+    </>
   );
 }
