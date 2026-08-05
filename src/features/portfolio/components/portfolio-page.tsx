@@ -15,14 +15,12 @@ export type PortfolioPageProps = {
 };
 
 export function PortfolioPage({ initialCategory, initialQuery, initialWork, items, locale }: PortfolioPageProps) {
-  return (
-    <main className={styles.portfolio}>
-      <header className={styles.heading}>
-        <p>{locale === "th" ? "ผลงาน" : "Selected work"}</p>
-        <h1>{locale === "th" ? "พอร์ตโฟลิโอ" : "Portfolio"}</h1>
-        <span>{locale === "th" ? "เลือกดูผลงานเพื่อเปิดภาพเต็ม" : "Choose an artwork to view it in full."}</span>
-      </header>
-      <PortfolioGallery initialCategory={initialCategory} initialQuery={initialQuery} initialWork={initialWork} items={items} locale={locale} />
-    </main>
-  );
+  return <main className={styles.portfolio}>
+    <header className={styles.heading}>
+      <h1>PORTFOLIO <span>—</span> <strong>{locale === "th" ? "ผลงาน" : "Works"}</strong></h1>
+      <i aria-hidden="true" />
+      <p>{locale === "th" ? "รวมผลงานที่สร้างสรรค์ด้วยความตั้งใจ ถ่ายทอดจินตนาการผ่านภาพ แสง และเรื่องราวในสไตล์อันเป็นเอกลักษณ์" : "A collection of carefully crafted work, bringing imagination to life through light, imagery, and story."}</p>
+    </header>
+    <PortfolioGallery initialCategory={initialCategory} initialQuery={initialQuery} initialWork={initialWork} items={items} locale={locale} />
+  </main>;
 }
