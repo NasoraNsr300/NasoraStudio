@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { PublicShell } from "@/shared/components/public-shell/public-shell";
@@ -27,5 +28,25 @@ describe("PublicShell", () => {
     expect(screen.getByRole("button", { name: /account/i })).toBeVisible();
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /log in/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("PublicShell sidebar", () => {
+  it("localizes Thai navigation and opens the shared authentication preview", async () => {
+    const user = userEvent.setup();
+    render(
+      <PublicShell locale="th" search={{ label: "ค้นหา", action: "/th/portfolio", queryName: "q" }}>
+        <main>เนื้อหาหน้า</main>
+      </PublicShell>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "เปิดเมนู" }));
+
+    expect(screen.getByRole("link", { name: "หน้าแรก" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "ผลงาน" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "คอมมิชชัน" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "เข้าสู่ระบบ" }));
+
+    expect(screen.getByRole("region", { name: "Authentication preview" })).toBeVisible();
   });
 });

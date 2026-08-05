@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@/shared/i18n/locales";
 
 import { AccountButton } from "./account-button";
+import { AuthPreviewProvider } from "./auth-preview";
 import { FloatingNavbar, type SearchConfig } from "./floating-navbar";
 import styles from "./public-shell.module.css";
 
@@ -18,11 +19,13 @@ export type PublicShellProps = {
 
 export function PublicShell({ children, locale, search }: PublicShellProps) {
   return (
-    <div className={styles.shell} lang={locale}>
-      <div aria-hidden="true" className={styles.ambient} />
-      <FloatingNavbar locale={locale} search={search} />
-      <div className={styles.pageContent}>{children}</div>
-      <AccountButton locale={locale} />
-    </div>
+    <AuthPreviewProvider>
+      <div className={styles.shell} lang={locale}>
+        <div aria-hidden="true" className={styles.ambient} />
+        <FloatingNavbar locale={locale} search={search} />
+        <div className={styles.pageContent}>{children}</div>
+        <AccountButton locale={locale} />
+      </div>
+    </AuthPreviewProvider>
   );
 }

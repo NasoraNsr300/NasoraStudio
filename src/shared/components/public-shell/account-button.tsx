@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
-
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
 
+import { AuthPreviewPanel, useAuthPreview } from "./auth-preview";
 import styles from "./public-shell.module.css";
 
 export function AccountButton({ locale }: { locale: Locale }) {
-  const [open, setOpen] = useState(false);
+  const { open, toggle } = useAuthPreview();
   const dictionary = getDictionary(locale);
 
   return (
@@ -18,17 +17,11 @@ export function AccountButton({ locale }: { locale: Locale }) {
         aria-expanded={open}
         aria-label={dictionary.account}
         className={styles.accountButton}
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
       >
         ◉
       </IconButton>
-      {open ? (
-        <section aria-label="Authentication preview" className={styles.accountPanel}>
-          <strong>Authentication preview</strong>
-          <p>Sign-in will be connected in Stage 2.</p>
-          <button onClick={() => setOpen(false)} type="button">Close preview</button>
-        </section>
-      ) : null}
+      {open ? <AuthPreviewPanel locale={locale} /> : null}
     </div>
   );
 }

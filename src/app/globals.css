@@ -5,8 +5,8 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #38bdf8;
-  --font-display: "Sora", "Noto Sans Thai", sans-serif;
-  --font-body: "Noto Sans Thai", "Sora", sans-serif;
+  --font-display: var(--font-sora), "Noto Sans Thai", sans-serif;
+  --font-body: var(--font-noto-sans-thai), "Sora", sans-serif;
   --font-label: 0.75rem;
   --space-1: 4px;
   --space-2: 8px;

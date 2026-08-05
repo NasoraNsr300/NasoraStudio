@@ -7,6 +7,7 @@ import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
 
+import { useAuthPreview } from "./auth-preview";
 import styles from "./public-shell.module.css";
 
 type SidebarProps = {
@@ -18,6 +19,7 @@ type SidebarProps = {
 export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const panelRef = useRef<HTMLElement>(null);
   const dictionary = getDictionary(locale);
+  const { show } = useAuthPreview();
 
   useEffect(() => {
     if (!open) {
@@ -67,13 +69,15 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
           ×
         </IconButton>
         <nav className={styles.sidebarNav}>
-          <Link href={`/${locale}`}>Home</Link>
-          <Link href={`/${locale}/portfolio`}>Portfolio</Link>
-          <Link href={`/${locale}/commission`}>Commission</Link>
+          <Link href={`/${locale}`}>{dictionary.home}</Link>
+          <Link href={`/${locale}/portfolio`}>{dictionary.portfolio}</Link>
+          <Link href={`/${locale}/commission`}>{dictionary.commission}</Link>
           <Link href={`/${locale}/queue`}>{dictionary.queue}</Link>
-          <Link href={`/${locale}/documents`}>Documents</Link>
+          <Link href={`/${locale}/documents`}>{dictionary.documents}</Link>
         </nav>
-        <button className={styles.sidebarLogin} type="button">Log in</button>
+        <button className={styles.sidebarLogin} onClick={() => { show(); onClose(); }} type="button">
+          {dictionary.login}
+        </button>
       </aside>
     </div>
   );
