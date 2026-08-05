@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight, Clock3, FileText, Info, RotateCcw, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -25,71 +26,93 @@ const dialogCopy: Record<Locale, {
   availability: Record<ServiceAvailability, string>;
   close: string;
   closeDetails: string;
-  closePreview: string;
+  commercial: string;
   documents: string;
   finalPrice: string;
+  imageHint: string;
   noAdditions: string;
-  preview: string;
-  previewLabel: string;
+  normal: string;
+  normalHint: string;
+  personal: string;
+  referenceNote: string;
   referencePricing: string;
   request: string;
   revisions: string;
+  revisionsHint: string;
   revisionsValue: string;
   rush: string;
+  rushHint: string;
   timing: string;
-  usdGuidance: string;
 }> = {
   en: {
-    additions: "Additions",
-    availability: { open: "Open", limited: "Limited availability", closed: "Closed" },
+    additions: "Additional pricing",
+    availability: { open: "Open", limited: "Limited", closed: "Closed" },
     close: "Close",
     closeDetails: "Close service details",
-    closePreview: "Close request preview",
-    documents: "Helpful documents",
-    finalPrice: "Final pricing is confirmed after reviewing your brief.",
-    noAdditions: "No standard additions listed.",
-    preview: "The interactive estimate form arrives in Stage 2. This preview does not submit or collect any information.",
-    previewLabel: "Request preview",
+    commercial: "Commercial",
+    documents: "Read service terms",
+    finalPrice: "The final price is assessed once the project details have been reviewed.",
+    imageHint: "Click an image to view it full size",
+    noAdditions: "No standard additions listed",
+    normal: "Normal",
+    normalHint: "Standard turnaround",
+    personal: "Personal",
+    referenceNote: "Reference pricing may change based on the project details.",
     referencePricing: "Reference pricing",
     request: "Request estimate",
-    revisions: "Revisions",
-    revisionsValue: "4 standard revisions",
-    rush: "Rush — availability and timing are confirmed case by case.",
-    timing: "Timing",
-    usdGuidance: "USD guidance",
+    revisions: "Standard revisions",
+    revisionsHint: "Additional changes are assessed separately",
+    revisionsValue: "4 rounds",
+    rush: "Rush",
+    rushHint: "Priority queue",
+    timing: "Turnaround",
   },
   th: {
-    additions: "รายการเพิ่มเติม",
+    additions: "ราคาเพิ่มเติม",
     availability: { open: "เปิดรับ", limited: "รับจำนวนจำกัด", closed: "ปิดรับ" },
     close: "ปิด",
     closeDetails: "ปิดรายละเอียดบริการ",
-    closePreview: "ปิดตัวอย่างการขอประเมินราคา",
-    documents: "เอกสารที่เกี่ยวข้อง",
-    finalPrice: "ราคาสุดท้ายจะยืนยันหลังตรวจสอบรายละเอียดบรีฟของคุณ",
-    noAdditions: "ไม่มีรายการเพิ่มเติมมาตรฐาน",
-    preview: "แบบฟอร์มประเมินราคาแบบโต้ตอบจะพร้อมใน Stage 2 ตัวอย่างนี้จะไม่ส่งหรือเก็บข้อมูลใด ๆ",
-    previewLabel: "ตัวอย่างการขอประเมินราคา",
+    commercial: "เชิงพาณิชย์",
+    documents: "อ่านข้อตกลงการใช้งาน",
+    finalPrice: "ราคาสุดท้ายจะประเมินอีกครั้งหลังจากได้รับรายละเอียดของงาน",
+    imageHint: "คลิกที่ภาพเพื่อดูขนาดเต็ม",
+    noAdditions: "ยังไม่มีราคาเพิ่มเติมมาตรฐาน",
+    normal: "NORMAL",
+    normalHint: "ระยะเวลามาตรฐาน",
+    personal: "PERSONAL",
+    referenceNote: "ราคาเป็นราคาอ้างอิง อาจเปลี่ยนแปลงตามรายละเอียดของงาน",
     referencePricing: "ราคาอ้างอิง",
-    request: "ขอประเมินราคา",
-    revisions: "การแก้ไข",
-    revisionsValue: "แก้ไขมาตรฐาน 4 ครั้ง",
-    rush: "เร่งด่วน — ยืนยันคิวและระยะเวลาเป็นรายกรณี",
+    request: "ส่งแบบประเมินราคา",
+    revisions: "แก้ฟรีมาตรฐาน",
+    revisionsHint: "เกินกว่านี้คิดเพิ่มตามรายละเอียด",
+    revisionsValue: "4 ครั้ง",
+    rush: "RUSH",
+    rushHint: "เร่งด่วน",
     timing: "ระยะเวลาทำงาน",
-    usdGuidance: "แนวทางราคา USD",
   },
 };
 
 const documentNames: Record<string, Record<Locale, string>> = {
-  "commission-terms": { en: "Commission Terms", th: "เงื่อนไขการคอมมิชชัน" },
-  "revision-guide": { en: "Revision Guide", th: "คู่มือการแก้ไขงาน" },
+  "commission-terms": { en: "Commission Terms", th: "ข้อตกลงการคอมมิชชัน" },
+  "revision-guide": { en: "Revision Guide", th: "คู่มือการแก้งาน" },
 };
 
 function formatThb(amount: number) {
-  return `THB ${new Intl.NumberFormat("en-US").format(amount)}`;
+  return new Intl.NumberFormat("en-US").format(amount);
+}
+
+function formatUsd(amount: number) {
+  const guidance = serviceReferenceUsd[amount];
+  if (guidance?.startsWith("≈")) return guidance;
+  return `≈ ${Math.round(amount / 33)} USD`;
 }
 
 function formatModifier(kind: "fixed" | "percentage", value: number) {
-  return kind === "fixed" ? `+${formatThb(value)}` : `+${value}%`;
+  return kind === "fixed" ? `+${formatThb(value)} THB` : `+${value}%`;
+}
+
+function titleCaseSlug(slug: string) {
+  return slug.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
 function useDialogFocus(
@@ -125,7 +148,6 @@ function useDialogFocus(
         return;
       }
       if (event.key !== "Tab") return;
-
       const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
       if (!focusable.length) return;
       const first = focusable[0];
@@ -156,62 +178,80 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [previewOpen, setPreviewOpen] = useState(initialPreview);
+  const [activeExample, setActiveExample] = useState(0);
   const close = useDialogFocus(open, onClose, dialogRef, closeRef, !previewOpen);
+  const categoryName = titleCaseSlug(service.categorySlug);
+  const serviceName = service.name[locale].replace(new RegExp(`^${categoryName}\\s+`, "i"), "");
+  const example = service.examples[activeExample] ?? service.examples[0];
+
+  useEffect(() => setActiveExample(0), [service.slug]);
 
   if (!open) return null;
 
-  return (
-    <>
+  return <>
     <div aria-hidden={previewOpen || undefined} aria-label={service.name[locale]} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
       <section className={styles.detailDialog}>
-        <header className={styles.dialogHeader}>
-          <div>
-            <p>{copy.availability[service.availability]}</p>
-            <h2>{service.name[locale]}</h2>
-            <span>{service.description[locale]}</span>
+        <header className={styles.detailHeroHeader}>
+          <div className={styles.detailTitleLine}><Sparkles aria-hidden="true" /><h2>{serviceName}</h2><span>—</span><strong>{categoryName}</strong></div>
+          <div className={styles.detailIntro}>
+            <span className={`${styles.detailAvailability} ${styles[service.availability]}`}>● {copy.availability[service.availability]}</span>
+            <p>{service.description[locale]}</p>
           </div>
-          <button aria-label={copy.closeDetails} className={styles.dialogClose} onClick={close} ref={closeRef} type="button">×</button>
+          <button aria-label={copy.closeDetails} className={styles.detailClose} onClick={close} ref={closeRef} type="button"><X /></button>
         </header>
-        <div className={styles.dialogBody}>
-          <div className={styles.samples}>
-            {service.examples.map((example) => <figure key={example.id}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- stored detail derivative */}
-              <img alt={example.media.alt[locale]} height={example.media.height} sizes="(max-width: 780px) 100vw, 50vw" src={example.media.detailSrc} srcSet={`${example.media.cardSrc} 960w, ${example.media.detailSrc} 1600w`} width={example.media.width} />
-              <figcaption>{example.title[locale]}</figcaption>
-            </figure>)}
+
+        <div className={styles.detailBody}>
+          <div className={styles.detailGallery}>
+            {example ? <button className={styles.detailMainImage} type="button">
+              {/* eslint-disable-next-line @next/next/no-img-element -- stored full detail derivative */}
+              <img alt={example.media.alt[locale]} height={example.media.height} src={example.media.detailSrc} width={example.media.width} />
+            </button> : <div className={styles.detailMainImage} />}
+            <div className={styles.detailThumbnails}>
+              {service.examples.map((item, index) => <button aria-pressed={activeExample === index} key={item.id} onClick={() => setActiveExample(index)} type="button">
+                {/* eslint-disable-next-line @next/next/no-img-element -- stored thumbnail derivative */}
+                <img alt={item.media.alt[locale]} height={item.media.height} src={item.media.thumbnailSrc} width={item.media.width} />
+              </button>)}
+            </div>
+            <p className={styles.detailImageHint}><Sparkles size={14} />{copy.imageHint}</p>
           </div>
-          <div className={styles.guidance}>
-            <section>
-              <h3>{copy.referencePricing}</h3>
-              <dl className={styles.priceTable}>
-                {service.referencePrices.map((price) => <div key={price.usage}><dt>{price.label[locale]}</dt><dd><strong>{formatThb(price.amountThb)}</strong><span>{serviceReferenceUsd[price.amountThb] ?? copy.usdGuidance}</span></dd></div>)}
-              </dl>
-              <p>{copy.rush}</p>
+
+          <aside className={styles.detailSidebar}>
+            <section className={styles.detailPricing}>
+              <h3><Sparkles size={18} />{copy.referencePricing}</h3>
+              <div className={styles.detailPriceTable}>
+                <div className={styles.priceTableHead}><span /><span><strong>{copy.normal}</strong><small>{copy.normalHint}</small></span><span><strong>{copy.rush}</strong><small>{copy.rushHint}</small></span></div>
+                {service.referencePrices.map((price) => {
+                  const rushAmount = Math.ceil((price.amountThb * 1.3) / 50) * 50;
+                  return <div className={styles.detailPriceRow} key={price.usage}>
+                    <span><strong>{price.usage === "commercial" ? copy.commercial : copy.personal}</strong><small>{price.label[locale]}</small></span>
+                    <span><strong>{formatThb(price.amountThb)} THB</strong><small>{formatUsd(price.amountThb)}</small></span>
+                    <span><strong>{formatThb(rushAmount)} THB</strong><small>{formatUsd(rushAmount)}</small></span>
+                  </div>;
+                })}
+              </div>
+              <p>* {copy.referenceNote}</p>
             </section>
-            <section>
-              <h3>{copy.additions}</h3>
+
+            <section className={styles.detailAdditions}>
+              <h3><Sparkles size={18} />{copy.additions}</h3>
               {service.modifiers.length ? <ul>{service.modifiers.map((modifier) => <li key={modifier.label.en}><span>{modifier.label[locale]}</span><strong>{formatModifier(modifier.kind, modifier.value)}</strong></li>)}</ul> : <p>{copy.noAdditions}</p>}
             </section>
-            <section className={styles.timingRevisions}>
-              <div><h3>{copy.timing}</h3><p>{service.timingGuidance[locale]}</p></div>
-              <div><h3>{copy.revisions}</h3><p>{copy.revisionsValue}</p></div>
+
+            <section className={styles.detailFacts}>
+              <div><Clock3 /><span><small>{copy.timing}</small><strong>{service.timingGuidance[locale]}</strong></span></div>
+              <div><RotateCcw /><span><small>{copy.revisions}</small><strong>{copy.revisionsValue}</strong><em>{copy.revisionsHint}</em></span></div>
             </section>
-            <section className={styles.documentLinks}>
-              <h3>{copy.documents}</h3>
-              {service.documentSlugs.map((slug) => <Link href={`/${locale}/documents/${slug}`} key={slug}>{documentNames[slug]?.[locale] ?? slug}</Link>)}
-            </section>
-          </div>
+
+            {service.documentSlugs[0] ? <Link className={styles.detailDocumentLink} href={`/${locale}/documents/${service.documentSlugs[0]}`}><FileText /><span>{documentNames[service.documentSlugs[0]]?.[locale] ?? copy.documents}</span><ChevronRight /></Link> : null}
+          </aside>
         </div>
-        <footer className={styles.dialogActions}>
-          <p>{copy.finalPrice}</p>
-          <div>
-            <button disabled={service.availability === "closed"} onClick={() => setPreviewOpen(true)} type="button">{copy.request}</button>
-            <button className={styles.secondaryButton} onClick={close} type="button">{copy.close}</button>
-          </div>
+
+        <footer className={styles.detailFooter}>
+          <p><Info />{copy.finalPrice}</p>
+          <div><button disabled={service.availability === "closed"} onClick={() => setPreviewOpen(true)} type="button"><Sparkles />{copy.request}</button><button onClick={close} type="button">{copy.close}</button></div>
         </footer>
       </section>
     </div>
     {previewOpen ? <EstimateRequestDialog locale={locale} onClose={() => setPreviewOpen(false)} service={service} /> : null}
-    </>
-  );
+  </>;
 }
