@@ -6,7 +6,7 @@
 
 **Architecture:** Use Next.js App Router with locale-prefixed public routes and React Server Components for page composition. Page-specific feature folders own their composite layouts; only the public shell and low-level primitives are shared. All public data is consumed through `PublicContentRepository`, initially implemented by local fixtures and replaced by Supabase in Stage 2.
 
-**Tech Stack:** Node.js 20.9 or newer, npm, Next.js App Router, React, TypeScript strict mode, CSS Modules, Zod, Vitest, Testing Library, Playwright, `@opennextjs/cloudflare`, and Wrangler.
+**Tech Stack:** Node.js 22 LTS or newer, npm, Next.js App Router, React, TypeScript strict mode, CSS Modules, Zod, Vitest, Testing Library, Playwright, `@opennextjs/cloudflare`, and Wrangler.
 
 ## Global Constraints
 
@@ -23,6 +23,7 @@
 - One-image lightbox has no previous/next navigation and closes with X, Escape, or backdrop
 - No Worker-side image conversion or video transcoding
 - Phase 1 Store, Review, and Share controls remain hidden rather than linking to incomplete pages
+- Cloudflare builds and deployments run in Linux CI or WSL. Native Windows may be used for local development, but is not the supported OpenNext build environment.
 
 ---
 
