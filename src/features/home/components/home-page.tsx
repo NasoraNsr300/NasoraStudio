@@ -12,7 +12,7 @@ export type HomePageProps = {
   heroItems: HeroItem[];
   featuredItems: FeaturedItem[];
   locale: Locale;
-  randomValue: number;
+  randomValue?: number;
 };
 
 export function HomePage({ heroItems, featuredItems, locale, randomValue }: HomePageProps) {
