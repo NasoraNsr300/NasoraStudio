@@ -1,0 +1,235 @@
+.shell {
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: clip;
+}
+
+.ambient {
+  background-image:
+    radial-gradient(circle at 16% 23%, var(--ambient-primary) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 14%, var(--ambient-secondary) 0 1px, transparent 2px),
+    radial-gradient(circle at 55% 82%, var(--ambient-primary) 0 1.5px, transparent 2.5px);
+  inset: 0;
+  opacity: 0.55;
+  pointer-events: none;
+  position: fixed;
+  z-index: var(--z-ambient);
+  animation: drift 16s ease-in-out infinite alternate;
+}
+
+[data-theme="autumn"] .ambient {
+  background-image:
+    radial-gradient(ellipse at 16% 23%, var(--leaf-rust) 0 2px, transparent 3px),
+    radial-gradient(ellipse at 78% 14%, var(--leaf-amber) 0 2px, transparent 3px),
+    radial-gradient(ellipse at 55% 82%, var(--leaf-rust) 0 3px, transparent 4px);
+}
+
+.navbar {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: var(--surface-strong);
+  border: var(--border-subtle) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-floating);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: auto auto minmax(12rem, 1fr) auto auto auto auto;
+  margin: var(--space-4) auto;
+  max-width: calc(100% - var(--space-8));
+  padding: var(--space-2) var(--space-3);
+  position: sticky;
+  top: var(--space-4);
+  width: min(100% - var(--space-8), 1440px);
+  z-index: var(--z-navbar);
+}
+
+.brand {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-decoration: none;
+}
+
+.iconButton,
+.accountButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.iconButton:hover,
+.accountButton:hover {
+  background: color-mix(in srgb, var(--brand-gold) 14%, transparent);
+}
+
+.search input {
+  background: var(--background-elevated);
+  border: var(--border-subtle) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font: inherit;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  width: 100%;
+}
+
+.availability {
+  color: var(--success);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.queueLink,
+.languageLink {
+  align-items: center;
+  color: var(--text-primary);
+  display: inline-flex;
+  font-size: var(--font-label);
+  font-weight: 600;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.pageContent {
+  position: relative;
+  z-index: var(--z-content);
+}
+
+.sidebarLayer {
+  inset: 0;
+  position: fixed;
+  z-index: var(--z-overlay);
+}
+
+.sidebarBackdrop {
+  background: rgb(9 13 31 / 58%);
+  border: 0;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.sidebar {
+  animation: slide-in 260ms ease-out;
+  background: var(--background-elevated);
+  border-right: var(--border-subtle) solid var(--border);
+  box-shadow: var(--elevation-modal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  height: 100%;
+  max-width: 24rem;
+  padding: var(--space-6);
+  position: relative;
+  width: min(88vw, 24rem);
+}
+
+.sidebarNav {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sidebarNav a,
+.sidebarLogin {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font: inherit;
+  min-height: 44px;
+  padding: var(--space-3);
+  text-align: left;
+  text-decoration: none;
+}
+
+.sidebarNav a:hover,
+.sidebarLogin:hover {
+  background: var(--surface);
+}
+
+.accountControl {
+  bottom: max(var(--space-6), env(safe-area-inset-bottom));
+  position: fixed;
+  right: max(var(--space-6), env(safe-area-inset-right));
+  z-index: var(--z-floating);
+}
+
+.accountButton {
+  background: var(--brand-gold);
+  box-shadow: var(--elevation-floating);
+  color: #2a1a12;
+}
+
+.accountPanel {
+  background: var(--background-elevated);
+  border: var(--border-subtle) solid var(--border);
+  border-radius: var(--radius-md);
+  bottom: calc(100% + var(--space-3));
+  box-shadow: var(--elevation-modal);
+  color: var(--text-primary);
+  padding: var(--space-4);
+  position: absolute;
+  right: 0;
+  width: min(20rem, calc(100vw - var(--space-8)));
+}
+
+.accountPanel button {
+  background: var(--brand-gold);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: #2a1a12;
+  font: inherit;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+}
+
+.visuallyHidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@keyframes drift {
+  to { transform: translate3d(0, -0.6rem, 0); }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 720px) {
+  .navbar {
+    grid-template-columns: auto auto 1fr auto auto;
+  }
+
+  .search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .availability { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient,
+  .sidebar { animation: none; }
+}
+
+:global([data-document-hidden="true"]) .ambient {
+  animation-play-state: paused;
+}

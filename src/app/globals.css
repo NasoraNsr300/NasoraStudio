@@ -1,0 +1,87 @@
+:root {
+  --brand-gold: #f6c85f;
+  --brand-violet: #c4b5fd;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #38bdf8;
+  --font-display: "Sora", "Noto Sans Thai", sans-serif;
+  --font-body: "Noto Sans Thai", "Sora", sans-serif;
+  --font-label: 0.75rem;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --border-subtle: 1px;
+  --border-focus: 2px;
+  --elevation-floating: 0 12px 36px rgb(9 13 31 / 24%);
+  --elevation-modal: 0 24px 80px rgb(9 13 31 / 36%);
+  --z-ambient: -1;
+  --z-content: 0;
+  --z-navbar: 20;
+  --z-floating: 30;
+  --z-overlay: 40;
+}
+
+:root,
+:root[data-theme="night"] {
+  --background: #090d1f;
+  --background-elevated: #111831;
+  --surface: rgb(23 37 84 / 62%);
+  --surface-strong: rgb(17 24 49 / 88%);
+  --border: rgb(196 181 253 / 22%);
+  --text-primary: #f8fafc;
+  --text-secondary: #b8c1d9;
+  --ambient-primary: #c4b5fd;
+  --ambient-secondary: #f6c85f;
+  --leaf-rust: #c65d32;
+  --leaf-amber: #e9a23b;
+}
+
+:root[data-theme="autumn"] {
+  --background: #fff7e8;
+  --background-elevated: #fffdf7;
+  --surface: rgb(255 253 247 / 72%);
+  --surface-strong: rgb(255 250 239 / 92%);
+  --border: rgb(138 83 42 / 22%);
+  --text-primary: #2a1a12;
+  --text-secondary: #6f5142;
+  --ambient-primary: #c65d32;
+  --ambient-secondary: #e9a23b;
+  --leaf-rust: #c65d32;
+  --leaf-amber: #e9a23b;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--background); }
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  margin: 0;
+}
+
+button,
+a,
+input { -webkit-tap-highlight-color: transparent; }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: var(--border-focus) solid var(--brand-gold);
+  outline-offset: 3px;
+}
