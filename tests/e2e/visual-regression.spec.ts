@@ -18,6 +18,8 @@ const routes = [
 ] as const;
 
 const screenshotStylePath = path.join(process.cwd(), "tests/e2e/visual-regression.css");
+// Linux font rasterization peaked at 1.655%; 1.8% leaves a narrow cross-platform margin.
+const crossPlatformMaxDiffPixelRatio = 0.018;
 
 test("snapshot paths are platform-neutral", async ({}, testInfo) => {
   expect(path.basename(testInfo.snapshotPath("probe.png"))).toBe("probe.png");
@@ -53,6 +55,7 @@ for (const viewport of viewports) {
         animations: "disabled",
         caret: "initial",
         fullPage: false,
+        maxDiffPixelRatio: crossPlatformMaxDiffPixelRatio,
         stylePath: screenshotStylePath,
       });
     });
@@ -66,6 +69,7 @@ for (const viewport of viewports) {
       animations: "disabled",
       caret: "initial",
       fullPage: false,
+      maxDiffPixelRatio: crossPlatformMaxDiffPixelRatio,
       stylePath: screenshotStylePath,
     });
   });

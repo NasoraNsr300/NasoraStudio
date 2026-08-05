@@ -5,8 +5,6 @@ import { serviceCategories } from "@/data/fixtures/public-content";
 import { ServiceCategoryPage } from "@/features/commission/components/service-category-page";
 import { isLocale, locales } from "@/shared/i18n/locales";
 
-export const dynamicParams = false;
-
 export function generateStaticParams() {
   return locales.flatMap((locale) => serviceCategories.filter((category) => category.published).map((category) => ({ locale, category: category.slug })));
 }

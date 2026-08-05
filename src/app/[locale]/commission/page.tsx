@@ -2,8 +2,6 @@ import { getPublicContentRepository } from "@/data/fixture-public-content-reposi
 import { CommissionAlbumsPage } from "@/features/commission/components/commission-albums-page";
 import { isLocale, locales } from "@/shared/i18n/locales";
 
-export const dynamicParams = false;
-
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
