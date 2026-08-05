@@ -1,0 +1,43 @@
+.commissionPage { margin: 0 auto; max-width: 1440px; padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 3vw, 2rem) 7rem; }
+.heading { margin-bottom: clamp(2rem, 5vw, 4rem); max-width: 46rem; }
+.heading p { color: var(--brand-gold); font-size: var(--font-label); font-weight: 700; letter-spacing: .14em; margin: 0 0 var(--space-3); text-transform: uppercase; }
+.heading h1 { font-family: var(--font-display); font-size: clamp(3rem, 7vw, 6rem); letter-spacing: -.06em; line-height: .94; margin: 0; }
+.heading span { color: var(--text-secondary); display: block; margin-top: var(--space-5); }
+
+.albumGrid { display: grid; gap: clamp(.75rem, 1.5vw, 1.25rem); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); display: block; isolation: isolate; overflow: hidden; position: relative; text-decoration: none; }
+.albumTile img { object-fit: cover; transition: transform 220ms ease; }
+.albumTile:hover img, .albumTile:focus-visible img { transform: scale(1.035); }
+.albumGradient { background: linear-gradient(180deg, transparent 35%, rgb(6 8 20 / 92%)); inset: 0; position: absolute; }
+.albumTitle { bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1.3rem, 2vw, 2rem); font-weight: 700; left: var(--space-5); position: absolute; right: var(--space-5); }
+.countPill, .recommendedBadge, .availabilityBadge { border-radius: 999px; font-size: var(--font-label); font-weight: 700; letter-spacing: .04em; padding: .45rem .65rem; position: absolute; }
+.countPill { background: rgb(9 13 31 / 82%); bottom: var(--space-4); right: var(--space-4); }
+.recommendedBadge { background: var(--brand-gold); color: #2a1a12; left: var(--space-3); top: var(--space-3); }
+.availabilityBadge { right: var(--space-3); top: var(--space-3); }
+.open { color: #86efac; } .limited { color: var(--brand-gold); } .closed { color: #fca5a5; }
+.availabilityBadge.open { background: rgb(20 83 45 / 85%); } .availabilityBadge.limited { background: rgb(120 53 15 / 85%); } .availabilityBadge.closed { background: rgb(127 29 29 / 85%); }
+
+.subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
+.subtypeFilters button, .serviceActions button, .dialogActions button, .dialogClose { border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font: inherit; }
+.subtypeFilters button { background: var(--surface-strong); color: var(--text-secondary); min-height: 42px; padding: 0 var(--space-4); }
+.subtypeFilters button[aria-pressed="true"], .serviceActions button:first-child, .dialogActions button:first-child { background: var(--brand-gold); border-color: var(--brand-gold); color: #2a1a12; font-weight: 700; }
+.serviceGrid { display: grid; gap: var(--space-5); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.serviceCard { background: var(--surface-strong); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.serviceImage { aspect-ratio: 16 / 10; position: relative; } .serviceImage img { object-fit: cover; }
+.serviceContent { padding: var(--space-5); } .serviceContent h2 { font-family: var(--font-display); margin: var(--space-2) 0; } .serviceContent > p { color: var(--text-secondary); }
+.status { font-size: var(--font-label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.price { align-items: baseline; display: flex; flex-wrap: wrap; gap: var(--space-2); } .price strong { color: var(--brand-gold); } .price span { font-size: var(--font-label); }
+.timing { font-size: var(--font-label); }.serviceActions { display: grid; gap: var(--space-2); margin-top: var(--space-5); }.serviceActions button, .dialogActions button { min-height: 44px; padding: 0 var(--space-3); }.secondaryButton { background: transparent !important; color: var(--brand-violet) !important; }
+.serviceActions button:disabled, .dialogActions button:disabled { cursor: not-allowed; opacity: .5; }
+
+.dialogBackdrop { align-items: center; background: rgb(4 6 16 / 86%); display: flex; inset: 0; justify-content: center; padding: clamp(1rem, 4vw, 3rem); position: fixed; z-index: var(--z-overlay); }
+.detailDialog { background: var(--background-elevated); border: var(--border-subtle) solid var(--brand-violet); border-radius: var(--radius-lg); box-shadow: var(--elevation-modal); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: min(52rem, calc(100dvh - 2rem)); max-width: 76rem; overflow: hidden; width: 100%; }
+.dialogHeader { align-items: start; border-bottom: var(--border-subtle) solid var(--border); display: flex; justify-content: space-between; padding: var(--space-6); }.dialogHeader p { color: var(--brand-gold); margin: 0; }.dialogHeader h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 4vw, 3rem); margin: var(--space-2) 0; }.dialogHeader span { color: var(--text-secondary); }.dialogClose { background: transparent; color: var(--text-primary); font-size: 2rem; height: 44px; line-height: 1; width: 44px; }
+.dialogBody { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); overflow-y: auto; padding: var(--space-6); }.samples { display: grid; gap: var(--space-4); align-content: start; }.samples figure { margin: 0; }.samples img { border-radius: var(--radius-md); height: auto; max-width: 100%; width: 100%; }.samples figcaption { color: var(--text-secondary); margin-top: var(--space-2); }
+.guidance { display: grid; align-content: start; gap: var(--space-3); }.guidance section { background: var(--surface); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); padding: var(--space-4); }.guidance h3 { color: var(--brand-gold); font-size: var(--font-label); letter-spacing: .08em; margin: 0 0 var(--space-3); text-transform: uppercase; }.guidance p { color: var(--text-secondary); font-size: .9rem; margin: var(--space-3) 0 0; }.priceTable { margin: 0; }.priceTable div { align-items: baseline; border-top: var(--border-subtle) solid var(--border); display: flex; justify-content: space-between; padding: var(--space-3) 0; }.priceTable dd { display: grid; margin: 0; text-align: right; }.priceTable dd strong { color: var(--brand-gold); }.priceTable dd span { color: var(--text-secondary); font-size: var(--font-label); }.guidance ul { list-style: none; margin: 0; padding: 0; }.guidance li { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; }.guidance li strong { color: var(--brand-gold); }.timingRevisions { display: grid; grid-template-columns: 1fr 1fr; }.documentLinks { display: grid; gap: var(--space-2); }.documentLinks a { color: var(--brand-violet); }
+.dialogActions { align-items: center; border-top: var(--border-subtle) solid var(--border); display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: space-between; padding: var(--space-4) var(--space-6); }.dialogActions > p { color: var(--text-secondary); font-size: var(--font-label); margin: 0; }.dialogActions > div { display: flex; gap: var(--space-2); }.previewNotice { color: var(--brand-gold) !important; flex-basis: 100%; }
+
+@media (max-width: 1180px) { .albumGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .serviceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 780px) { .albumGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dialogBody { grid-template-columns: 1fr; } .detailDialog { max-height: calc(100dvh - 1rem); }.dialogHeader, .dialogBody, .dialogActions { padding: var(--space-4); } }
+@media (max-width: 520px) { .albumGrid, .serviceGrid { grid-template-columns: 1fr; }.albumTile { aspect-ratio: 4 / 3; }.dialogActions > div { width: 100%; }.dialogActions button { flex: 1; } }
+@media (prefers-reduced-motion: reduce) { .albumTile img { transition: none; } }
