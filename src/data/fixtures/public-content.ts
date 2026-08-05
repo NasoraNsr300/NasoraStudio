@@ -155,7 +155,7 @@ export const portfolioItems: PortfolioItem[] = [
   },
 ];
 
-export const serviceCategories: ServiceCategory[] = [
+const publishedServiceCategories: Omit<ServiceCategory, "published">[] = [
   { slug: "chibi", name: { th: "Chibi", en: "Chibi" }, description: { th: "ตัวละครน่ารักขนาดกะทัดรัด", en: "Compact, expressive characters" }, coverMedia: media.amber, coverCrop: { aspectRatio: "4 / 5", objectPosition: "50% 45%" }, displayOrder: 1, availability: "open", recommended: true, typeCount: 2 },
   { slug: "illustration", name: { th: "Illustration", en: "Illustration" }, description: { th: "ภาพประกอบที่เล่าเรื่อง", en: "Story-led illustrations" }, coverMedia: media.violet, coverCrop: { aspectRatio: "4 / 5", objectPosition: "50% 42%" }, displayOrder: 2, availability: "limited", recommended: true, typeCount: 2 },
   { slug: "vtuber", name: { th: "VTuber", en: "VTuber" }, description: { th: "งานออกแบบสำหรับสตรีมเมอร์", en: "Streamer-ready character art" }, coverMedia: media.sky, coverCrop: { aspectRatio: "4 / 5", objectPosition: "50% 45%" }, displayOrder: 3, availability: "limited", recommended: false, typeCount: 1 },
@@ -163,9 +163,14 @@ export const serviceCategories: ServiceCategory[] = [
   { slug: "minecraft-3d-model", name: { th: "Model 3D Minecraft", en: "Minecraft 3D Model" }, description: { th: "โมเดลและพร็อพสำหรับ Minecraft", en: "Minecraft models and props" }, coverMedia: media.moonlit, coverCrop: { aspectRatio: "4 / 5", objectPosition: "50% 50%" }, displayOrder: 5, availability: "closed", recommended: false, typeCount: 1 },
 ];
 
+export const serviceCategories: ServiceCategory[] = [
+  ...publishedServiceCategories.map((category) => ({ ...category, published: true })),
+  { slug: "draft-private", name: { th: "งานร่างส่วนตัว", en: "Private draft" }, description: { th: "ยังไม่เผยแพร่", en: "Not yet published" }, coverMedia: media.moonlit, coverCrop: { aspectRatio: "4 / 5", objectPosition: "50% 50%" }, displayOrder: 99, availability: "closed", recommended: false, typeCount: 1, published: false },
+];
+
 const illustrationExample = { id: "example-forest", title: { th: "Forest Letter", en: "Forest Letter" }, media: media.forest, crop: { aspectRatio: "4 / 3", objectPosition: "48% 50%" } };
 
-export const serviceTypes: ServiceType[] = [
+const publishedServiceTypes: Omit<ServiceType, "published">[] = [
   { slug: "chibi-bust", categorySlug: "chibi", name: { th: "Chibi Bust", en: "Chibi Bust" }, description: { th: "ตัวละครครึ่งตัว", en: "Half-body character" }, availability: "open", displayOrder: 1, timingGuidance: { th: "ประมาณ 7–10 วัน", en: "About 7–10 days" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 900 }, { label: { th: "เชิงพาณิชย์", en: "Commercial" }, usage: "commercial", amountThb: 1800 }], modifiers: [], documentSlugs: ["commission-terms"], examples: [{ id: "example-chibi", title: { th: "Amber Chibi", en: "Amber Chibi" }, media: media.amber, crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" } }] },
   { slug: "chibi-fullbody", categorySlug: "chibi", name: { th: "Chibi Full Body", en: "Chibi Full Body" }, description: { th: "ตัวละครเต็มตัว", en: "Full-body character" }, availability: "open", displayOrder: 2, timingGuidance: { th: "ประมาณ 10–14 วัน", en: "About 10–14 days" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1400 }], modifiers: [], documentSlugs: ["commission-terms"], examples: [{ id: "example-chibi-full", title: { th: "Blue Chibi", en: "Blue Chibi" }, media: media.sky, crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" } }] },
   { slug: "illustration-halfbody", categorySlug: "illustration", name: { th: "Illustration Half Body", en: "Illustration Half Body" }, description: { th: "ภาพประกอบตัวละครครึ่งตัว", en: "Half-body illustration" }, availability: "limited", displayOrder: 1, timingGuidance: { th: "ประมาณ 2–3 สัปดาห์", en: "About 2–3 weeks" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 2500 }, { label: { th: "เชิงพาณิชย์", en: "Commercial" }, usage: "commercial", amountThb: 5000 }], modifiers: [{ label: { th: "พื้นหลังแบบเต็ม", en: "Full background" }, kind: "fixed", value: 1200 }], documentSlugs: ["commission-terms", "revision-guide"], examples: [illustrationExample] },
@@ -173,6 +178,11 @@ export const serviceTypes: ServiceType[] = [
   { slug: "vtuber-reference", categorySlug: "vtuber", name: { th: "VTuber Reference", en: "VTuber Reference" }, description: { th: "ภาพอ้างอิงคาแรกเตอร์", en: "Character reference sheet" }, availability: "limited", displayOrder: 1, timingGuidance: { th: "ประมาณ 3–4 สัปดาห์", en: "About 3–4 weeks" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 6000 }], modifiers: [{ label: { th: "สิทธิ์เชิงพาณิชย์", en: "Commercial usage" }, kind: "percentage", value: 100 }], documentSlugs: ["commission-terms"], examples: [{ id: "example-vtuber", title: { th: "Sky Reference", en: "Sky Reference" }, media: media.sky, crop: { aspectRatio: "4 / 3", objectPosition: "50% 50%" } }] },
   { slug: "minecraft-skin-custom", categorySlug: "minecraft-skin", name: { th: "Custom Skin", en: "Custom Skin" }, description: { th: "สกิน Minecraft แบบกำหนดเอง", en: "A custom Minecraft skin" }, availability: "open", displayOrder: 1, timingGuidance: { th: "ประมาณ 3–5 วัน", en: "About 3–5 days" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 650 }], modifiers: [], documentSlugs: ["commission-terms"], examples: [{ id: "example-skin", title: { th: "Forest Skin", en: "Forest Skin" }, media: media.forest, crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" } }] },
   { slug: "minecraft-3d-model-prop", categorySlug: "minecraft-3d-model", name: { th: "3D Model Prop", en: "3D Model Prop" }, description: { th: "พร็อพโมเดล 3D", en: "A 3D model prop" }, availability: "closed", displayOrder: 1, timingGuidance: { th: "เปิดรับอีกครั้งเร็ว ๆ นี้", en: "Reopening soon" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1800 }], modifiers: [], documentSlugs: ["commission-terms"], examples: [{ id: "example-model", title: { th: "Moonlit Prop", en: "Moonlit Prop" }, media: media.moonlit, crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" } }] },
+];
+
+export const serviceTypes: ServiceType[] = [
+  ...publishedServiceTypes.map((service) => ({ ...service, published: true })),
+  { slug: "draft-private-service", categorySlug: "draft-private", name: { th: "บริการร่าง", en: "Draft service" }, description: { th: "ยังไม่เผยแพร่", en: "Not yet published" }, availability: "closed", displayOrder: 1, timingGuidance: { th: "ยังไม่กำหนด", en: "Not scheduled" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1000 }], modifiers: [], documentSlugs: [], examples: [], published: false },
 ];
 
 /** @internal Private-shaped fixture records must cross the repository projection boundary. */

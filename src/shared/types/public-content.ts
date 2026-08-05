@@ -62,6 +62,7 @@ export type ServiceCategory = {
   availability: ServiceAvailability;
   recommended: boolean;
   typeCount: number;
+  published: boolean;
 };
 
 export type ServicePrice = {
@@ -95,6 +96,7 @@ export type ServiceType = {
   modifiers: ServiceModifier[];
   documentSlugs: string[];
   examples: CommissionExample[];
+  published: boolean;
 };
 
 /**

@@ -8,7 +8,7 @@ import { isLocale, locales } from "@/shared/i18n/locales";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return locales.flatMap((locale) => serviceCategories.map((category) => ({ locale, category: category.slug })));
+  return locales.flatMap((locale) => serviceCategories.filter((category) => category.published).map((category) => ({ locale, category: category.slug })));
 }
 
 export default async function CommissionCategoryRoute({ params }: Readonly<{ params: Promise<{ locale: string; category: string }> }>) {

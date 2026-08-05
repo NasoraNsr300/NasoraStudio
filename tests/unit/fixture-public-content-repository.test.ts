@@ -6,6 +6,7 @@ import {
 } from "@/data/fixture-public-content-repository";
 import { privateQueueFixtureRecords } from "@/data/fixtures/public-content";
 import type { PublicQueueItem } from "@/shared/types/public-content";
+import { serviceCategories } from "@/data/fixtures/public-content";
 
 const privateQueueRecord = {
   position: 1,
@@ -44,6 +45,16 @@ describe("fixture public content repository", () => {
       "minecraft-skin",
       "minecraft-3d-model",
     ]);
+  });
+
+  it("exposes only published service categories and types", async () => {
+    const categories = await fixturePublicContentRepository.getServiceCategories("en");
+    const unpublished = serviceCategories.find((category) => category.slug === "draft-private");
+
+    expect(unpublished).toMatchObject({ published: false });
+    expect(categories.every((category) => category.published)).toBe(true);
+    expect(categories.map((category) => category.slug)).not.toContain("draft-private");
+    expect(await fixturePublicContentRepository.getServiceCategory("en", "draft-private")).toBeNull();
   });
 
   it("projects private fixture records to the downstream public queue contract", async () => {

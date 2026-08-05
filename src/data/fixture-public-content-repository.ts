@@ -58,16 +58,16 @@ export const fixturePublicContentRepository: PublicContentRepository = {
   },
 
   async getServiceCategories(_locale: Locale) {
-    return [...serviceCategories].sort((a, b) => a.displayOrder - b.displayOrder);
+    return serviceCategories.filter((item) => item.published).sort((a, b) => a.displayOrder - b.displayOrder);
   },
 
   async getServiceCategory(_locale: Locale, slug: string) {
-    const category = serviceCategories.find((item) => item.slug === slug);
+    const category = serviceCategories.find((item) => item.slug === slug && item.published);
     if (!category) return null;
     return {
       category,
       types: serviceTypes
-        .filter((item) => item.categorySlug === slug)
+        .filter((item) => item.categorySlug === slug && item.published)
         .sort((a, b) => a.displayOrder - b.displayOrder),
     };
   },

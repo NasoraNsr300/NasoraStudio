@@ -13,12 +13,18 @@ export type AlbumTileProps = {
 
 const availabilityCopy: Record<Locale, Record<ServiceCategory["availability"], string>> = {
   en: { open: "Open", limited: "Limited", closed: "Closed" },
-  th: { open: "à¹€à¸›à¸´à¸”à¸£à¸±à¸š", limited: "à¸£à¸±à¸šà¸ˆà¸³à¸à¸±à¸”", closed: "à¸›à¸´à¸”à¸£à¸±à¸š" },
+  th: { open: "เปิดรับ", limited: "รับจำนวนจำกัด", closed: "ปิดรับ" },
+};
+
+const albumCopy: Record<Locale, { recommended: string; typeCount: (count: number) => string; view: (name: string) => string }> = {
+  en: { recommended: "Recommended", typeCount: (count) => `${count} ${count === 1 ? "type" : "types"}`, view: (name) => `View ${name} album` },
+  th: { recommended: "แนะนำ", typeCount: (count) => `${count} รูปแบบ`, view: (name) => `ดูอัลบั้ม ${name}` },
 };
 
 export function AlbumTile({ category, locale = "en" }: AlbumTileProps) {
-  const countLabel = locale === "en" ? `${category.typeCount} ${category.typeCount === 1 ? "type" : "types"}` : `${category.typeCount} à¸£à¸¹à¸›à¹à¸šà¸š`;
-  const viewLabel = locale === "en" ? `View ${category.name.en} album` : `à¸”à¸¹à¸­à¸±à¸¥à¸šà¸±à¹‰à¸¡ ${category.name.th}`;
+  const copy = albumCopy[locale];
+  const countLabel = copy.typeCount(category.typeCount);
+  const viewLabel = copy.view(category.name[locale]);
 
   return (
     <Link aria-label={viewLabel} className={styles.albumTile} href={`/${locale}/commission/${category.slug}`}>
@@ -30,7 +36,7 @@ export function AlbumTile({ category, locale = "en" }: AlbumTileProps) {
         style={{ objectPosition: category.coverCrop.objectPosition }}
       />
       <span className={styles.albumGradient} />
-      {category.recommended ? <span className={styles.recommendedBadge}>Recommended</span> : null}
+      {category.recommended ? <span className={styles.recommendedBadge}>{copy.recommended}</span> : null}
       <span className={`${styles.availabilityBadge} ${styles[category.availability]}`}>{availabilityCopy[locale][category.availability]}</span>
       <span className={styles.albumTitle}>{category.name[locale]}</span>
       <span className={styles.countPill}>{countLabel}</span>

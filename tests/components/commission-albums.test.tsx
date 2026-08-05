@@ -22,6 +22,20 @@ describe("Commission albums", () => {
     expect(screen.queryByRole("button", { name: /request/i })).not.toBeInTheDocument();
   });
 
+  it("localizes album badges and service price guidance for Thai and English visitors", () => {
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    const closedService = serviceTypes.find((service) => service.availability === "closed");
+    if (!chibi || !closedService) throw new Error("Expected fixture services");
+
+    const { rerender } = render(<CommissionAlbumsPage categories={[chibi]} locale="th" />);
+    expect(screen.getByText("แนะนำ")).toBeVisible();
+    expect(screen.getByText("เปิดรับ")).toBeVisible();
+    expect(screen.queryByText("Recommended")).not.toBeInTheDocument();
+
+    rerender(<ServiceCategoryPage category={serviceCategories.find((category) => category.slug === closedService.categorySlug)!} locale="en" services={[closedService]} />);
+    expect(screen.getByText("Starting reference price")).toBeVisible();
+  });
+
   it("shows service-level price and actions only within a category, and disables requests for closed services", async () => {
     const user = userEvent.setup();
     const closedService = serviceTypes.find((service) => service.availability === "closed");

@@ -1,4 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -35,7 +36,7 @@ describe("ServiceDetailDialog", () => {
     render(<ServiceDetailDialog onClose={onClose} open service={service} />);
 
     await user.click(screen.getByRole("button", { name: "Request estimate" }));
-    expect(screen.getByRole("status")).toHaveTextContent("The interactive estimate form arrives in Stage 2.");
+    expect(screen.getByRole("dialog", { name: "Request preview" })).toHaveTextContent("The interactive estimate form arrives in Stage 2.");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /submit/i })).not.toBeInTheDocument();
 
@@ -47,5 +48,66 @@ describe("ServiceDetailDialog", () => {
     render(<ServiceDetailDialog onClose={() => undefined} open={false} service={serviceTypes[0]} />);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("fully localizes headings, guidance, actions, and preview copy for Thai visitors", async () => {
+    const user = userEvent.setup();
+    const service = serviceTypes.find((candidate) => candidate.slug === "illustration-halfbody");
+    if (!service) throw new Error("Expected illustration fixture service");
+
+    render(<ServiceDetailDialog locale="th" onClose={() => undefined} open service={service} />);
+
+    const dialog = screen.getByRole("dialog", { name: service.name.th });
+    expect(dialog).toHaveTextContent("ราคาอ้างอิง");
+    expect(dialog).toHaveTextContent("รายการเพิ่มเติม");
+    expect(dialog).toHaveTextContent("ระยะเวลาทำงาน");
+    expect(dialog).toHaveTextContent("แก้ไขมาตรฐาน 4 ครั้ง");
+    expect(screen.getByRole("button", { name: "ขอประเมินราคา" })).toBeVisible();
+    expect(screen.queryByText("Reference pricing")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "ขอประเมินราคา" }));
+    expect(screen.getByRole("dialog", { name: "ตัวอย่างการขอประเมินราคา" })).toHaveTextContent("Stage 2");
+  });
+
+  it("traps focus and restores the opener for detail and request-preview dialogs", async () => {
+    const user = userEvent.setup();
+    const service = serviceTypes.find((candidate) => candidate.slug === "illustration-halfbody");
+    if (!service) throw new Error("Expected illustration fixture service");
+    const illustrationService = service;
+
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return <><button onClick={() => setOpen(true)} type="button">Open details</button><ServiceDetailDialog onClose={() => setOpen(false)} open={open} service={illustrationService} /></>;
+    }
+
+    render(<Harness />);
+    const opener = screen.getByRole("button", { name: "Open details" });
+    await user.click(opener);
+
+    const detailClose = screen.getByRole("button", { name: "Close service details" });
+    expect(detailClose).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(detailClose).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Request estimate" }));
+    const preview = screen.getByRole("dialog", { name: "Request preview" });
+    const previewClose = screen.getByRole("button", { name: "Close request preview" });
+    expect(previewClose).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(previewClose).toHaveFocus();
+    fireEvent.click(preview);
+    expect(screen.queryByRole("dialog", { name: "Request preview" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request estimate" })).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Request estimate" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Request preview" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request estimate" })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("dialog", { name: service.name.en }));
+    expect(screen.queryByRole("dialog", { name: service.name.en })).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
   });
 });
