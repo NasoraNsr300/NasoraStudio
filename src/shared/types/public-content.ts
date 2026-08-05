@@ -97,12 +97,28 @@ export type ServiceType = {
   examples: CommissionExample[];
 };
 
-/** Deliberately excludes IDs, contacts, payments, quotes, and delivery data. */
+/**
+ * Public queue projection only. `never` guards prevent known private record
+ * categories from being assigned through a structurally wider variable.
+ */
 export type PublicQueueItem = {
+  position: number;
   displayName: string;
-  status: LocalizedText;
-  serviceType: LocalizedText;
-  deadline: string;
+  serviceName: string;
+  statusLabel: string;
+  deadlineLabel: string;
+} & {
+  quoteId?: never;
+  quote?: never;
+  paymentId?: never;
+  payment?: never;
+  messageId?: never;
+  messages?: never;
+  contact?: never;
+  contactDetails?: never;
+  deliveryId?: never;
+  deliveryUrl?: never;
+  delivery?: never;
 };
 
 export type DocumentSummary = {

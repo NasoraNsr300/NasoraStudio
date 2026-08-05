@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { PublicMedia } from "@/shared/types/public-content";
+import type { MediaCrop, PublicMedia } from "@/shared/types/public-content";
 
 import styles from "./media-frame.module.css";
 
@@ -12,6 +12,7 @@ type ResponsiveMediaProps = {
   priority?: boolean;
   className?: string;
   aspectRatio?: string;
+  crop?: MediaCrop;
 };
 
 export function ResponsiveMedia({
@@ -20,9 +21,13 @@ export function ResponsiveMedia({
   sizes,
   priority = false,
   className,
-  aspectRatio = `${media.width} / ${media.height}`,
+  aspectRatio,
+  crop,
 }: ResponsiveMediaProps) {
-  const frameStyle = { "--media-aspect-ratio": aspectRatio } as CSSProperties;
+  const frameStyle = {
+    "--media-aspect-ratio": crop?.aspectRatio ?? aspectRatio ?? `${media.width} / ${media.height}`,
+  } as CSSProperties;
+  const mediaStyle = { objectPosition: crop?.objectPosition ?? "50% 50%" };
 
   if (media.kind === "video") {
     return (
@@ -33,6 +38,7 @@ export function ResponsiveMedia({
           controls
           poster={media.posterSrc ?? media.cardSrc}
           preload="none"
+          style={mediaStyle}
         >
           <source src={media.detailSrc} />
         </video>
@@ -52,6 +58,7 @@ export function ResponsiveMedia({
         sizes={sizes}
         src={media.cardSrc}
         srcSet={`${media.thumbnailSrc} 480w, ${media.cardSrc} 960w, ${media.detailSrc} 1600w`}
+        style={mediaStyle}
         width={media.width}
       />
     </div>

@@ -1,14 +1,36 @@
 import type { Locale } from "@/shared/i18n/locales";
 import type { PublicContentRepository } from "@/data/public-content-repository";
+import type { LocalizedText, PublicQueueItem } from "@/shared/types/public-content";
 import {
   documents,
   featuredItems,
   heroItems,
   portfolioItems,
-  publicQueueItems,
+  privateQueueFixtureRecords,
   serviceCategories,
   serviceTypes,
 } from "@/data/fixtures/public-content";
+
+type QueueProjectionSource = {
+  position: number;
+  displayName: string;
+  serviceName: LocalizedText;
+  statusLabel: LocalizedText;
+  deadlineLabel: string;
+};
+
+export function projectPublicQueueItem(
+  source: QueueProjectionSource,
+  locale: Locale,
+): PublicQueueItem {
+  return {
+    position: source.position,
+    displayName: source.displayName,
+    serviceName: source.serviceName[locale],
+    statusLabel: source.statusLabel[locale],
+    deadlineLabel: source.deadlineLabel,
+  };
+}
 
 function normalized(value: string) {
   return value.trim().toLocaleLowerCase();
@@ -51,9 +73,11 @@ export const fixturePublicContentRepository: PublicContentRepository = {
   },
 
   async getQueue(locale: Locale, query?: string) {
-    return publicQueueItems.filter((item) =>
-      includesQuery([item.displayName, item.status[locale], item.serviceType[locale], item.deadline], query),
-    );
+    return privateQueueFixtureRecords
+      .map((item) => projectPublicQueueItem(item, locale))
+      .filter((item) =>
+        includesQuery([item.displayName, item.serviceName, item.statusLabel, item.deadlineLabel], query),
+      );
   },
 
   async getDocuments(locale: Locale, query?: string) {

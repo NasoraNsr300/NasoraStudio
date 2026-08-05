@@ -2,9 +2,9 @@ import type {
   DocumentSummary,
   FeaturedItem,
   HeroItem,
+  LocalizedText,
   PortfolioItem,
   PublicMedia,
-  PublicQueueItem,
   ServiceCategory,
   ServiceType,
 } from "@/shared/types/public-content";
@@ -164,10 +164,22 @@ export const serviceTypes: ServiceType[] = [
   { slug: "minecraft-3d-model-prop", categorySlug: "minecraft-3d-model", name: { th: "3D Model Prop", en: "3D Model Prop" }, description: { th: "พร็อพโมเดล 3D", en: "A 3D model prop" }, availability: "closed", displayOrder: 1, timingGuidance: { th: "เปิดรับอีกครั้งเร็ว ๆ นี้", en: "Reopening soon" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1800 }], modifiers: [], documentSlugs: ["commission-terms"], examples: [{ id: "example-model", title: { th: "Moonlit Prop", en: "Moonlit Prop" }, media: media.moonlit, crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" } }] },
 ];
 
-export const publicQueueItems: PublicQueueItem[] = [
-  { displayName: "Mali", status: { th: "กำลังร่าง", en: "Sketching" }, serviceType: { th: "Illustration Half Body", en: "Illustration Half Body" }, deadline: "2026-08-18" },
-  { displayName: "Nox", status: { th: "กำลังลงสี", en: "Coloring" }, serviceType: { th: "Chibi Full Body", en: "Chibi Full Body" }, deadline: "2026-08-23" },
-  { displayName: "Guest Comet", status: { th: "รอคิว", en: "Queued" }, serviceType: { th: "VTuber Reference", en: "VTuber Reference" }, deadline: "2026-09-02" },
+/** @internal Private-shaped fixture records must cross the repository projection boundary. */
+export const privateQueueFixtureRecords: Array<{
+  position: number;
+  displayName: string;
+  serviceName: LocalizedText;
+  statusLabel: LocalizedText;
+  deadlineLabel: string;
+  quoteId: string;
+  paymentId: string;
+  messageId: string;
+  contact: string;
+  deliveryUrl: string;
+}> = [
+  { position: 1, displayName: "Mali", serviceName: { th: "Illustration Half Body", en: "Illustration Half Body" }, statusLabel: { th: "กำลังร่าง", en: "Sketching" }, deadlineLabel: "18 Aug 2026", quoteId: "quote-mali", paymentId: "payment-mali", messageId: "message-mali", contact: "mali@example.test", deliveryUrl: "https://private.example/delivery/mali" },
+  { position: 2, displayName: "Nox", serviceName: { th: "Chibi Full Body", en: "Chibi Full Body" }, statusLabel: { th: "กำลังลงสี", en: "Coloring" }, deadlineLabel: "23 Aug 2026", quoteId: "quote-nox", paymentId: "payment-nox", messageId: "message-nox", contact: "nox@example.test", deliveryUrl: "https://private.example/delivery/nox" },
+  { position: 3, displayName: "Guest Comet", serviceName: { th: "VTuber Reference", en: "VTuber Reference" }, statusLabel: { th: "รอคิว", en: "Queued" }, deadlineLabel: "2 Sep 2026", quoteId: "quote-comet", paymentId: "payment-comet", messageId: "message-comet", contact: "comet@example.test", deliveryUrl: "https://private.example/delivery/comet" },
 ];
 
 export const documents: DocumentSummary[] = [

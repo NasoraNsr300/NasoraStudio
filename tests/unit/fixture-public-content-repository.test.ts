@@ -1,6 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { fixturePublicContentRepository } from "@/data/fixture-public-content-repository";
+import {
+  fixturePublicContentRepository,
+  projectPublicQueueItem,
+} from "@/data/fixture-public-content-repository";
+import { privateQueueFixtureRecords } from "@/data/fixtures/public-content";
+import type { PublicQueueItem } from "@/shared/types/public-content";
+
+const privateQueueRecord = {
+  position: 1,
+  displayName: "Private source",
+  serviceName: "Illustration",
+  statusLabel: "Sketching",
+  deadlineLabel: "18 Aug 2026",
+  quoteId: "quote-private",
+  paymentId: "payment-private",
+  messageId: "message-private",
+  contact: "private@example.com",
+  deliveryUrl: "https://private.example/delivery",
+};
+
+// @ts-expect-error Public queue rows reject approved private record categories.
+const unsafePublicQueueAssignment: PublicQueueItem = privateQueueRecord;
+void unsafePublicQueueAssignment;
 
 describe("fixture public content repository", () => {
   it("returns an enabled Home hero pool and display-ordered featured work", async () => {
@@ -24,16 +46,24 @@ describe("fixture public content repository", () => {
     ]);
   });
 
-  it("exposes only safe public queue fields", async () => {
+  it("projects private fixture records to the downstream public queue contract", async () => {
     const queue = await fixturePublicContentRepository.getQueue("en");
+    const projected = projectPublicQueueItem(privateQueueFixtureRecords[0], "en");
 
     expect(queue).not.toHaveLength(0);
     expect(Object.keys(queue[0] ?? {})).toEqual([
+      "position",
       "displayName",
-      "status",
-      "serviceType",
-      "deadline",
+      "serviceName",
+      "statusLabel",
+      "deadlineLabel",
     ]);
+    expect(projected).toEqual(queue[0]);
+    expect(projected).not.toHaveProperty("quoteId");
+    expect(projected).not.toHaveProperty("paymentId");
+    expect(projected).not.toHaveProperty("messageId");
+    expect(projected).not.toHaveProperty("contact");
+    expect(projected).not.toHaveProperty("deliveryUrl");
   });
 
   it("returns published documents only", async () => {
