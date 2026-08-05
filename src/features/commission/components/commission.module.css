@@ -19,7 +19,7 @@
 
 .subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
 .subtypeFilters button, .serviceActions button, .dialogActions button, .dialogClose { border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font: inherit; }
-.subtypeFilters button { background: var(--surface-strong); color: var(--text-secondary); min-height: 42px; padding: 0 var(--space-4); }
+.subtypeFilters button { background: var(--surface-strong); color: var(--text-secondary); min-height: 44px; padding: 0 var(--space-4); }
 .subtypeFilters button[aria-pressed="true"], .serviceActions button:first-child, .dialogActions button:first-child { background: var(--brand-gold); border-color: var(--brand-gold); color: #2a1a12; font-weight: 700; }
 .serviceGrid { display: grid; gap: var(--space-5); grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .serviceCard { background: var(--surface-strong); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); overflow: hidden; }

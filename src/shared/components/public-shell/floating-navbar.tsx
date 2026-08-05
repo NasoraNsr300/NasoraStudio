@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
@@ -43,6 +43,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
   const dictionary = getDictionary(locale);
   const alternateLocale = locale === "th" ? "en" : "th";
   const search = getSearchConfig(locale, usePathname());
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   const toggleTheme = () => {
     const nextTheme = currentTheme() === "night" ? "autumn" : "night";
@@ -68,7 +69,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
           {theme === "night" ? "☾" : "☀"}
         </IconButton>
       </header>
-      <Sidebar locale={locale} onClose={() => setSidebarOpen(false)} open={sidebarOpen} />
+      <Sidebar locale={locale} onClose={closeSidebar} open={sidebarOpen} />
     </>
   );
 }

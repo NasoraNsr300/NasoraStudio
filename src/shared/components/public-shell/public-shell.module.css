@@ -105,6 +105,10 @@
   z-index: var(--z-content);
 }
 
+.pageContent:has([role="dialog"]) {
+  z-index: var(--z-overlay);
+}
+
 .sidebarLayer {
   inset: 0;
   position: fixed;

@@ -18,6 +18,7 @@ type SidebarProps = {
 
 export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const panelRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const dictionary = getDictionary(locale);
   const { show } = useAuthPreview();
 
@@ -26,6 +27,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
       return;
     }
 
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
     const focusableSelector =
       'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -58,7 +60,10 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
     const firstItem = focusable()[0];
     firstItem?.focus();
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      openerRef.current?.focus();
+    };
   }, [onClose, open]);
 
   return (
@@ -69,12 +74,12 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
           ×
         </IconButton>
         <nav className={styles.sidebarNav}>
-          <Link href={`/${locale}`}>{dictionary.home}</Link>
-          <Link href={`/${locale}/portfolio`}>{dictionary.portfolio}</Link>
-          <Link href={`/${locale}/commission`}>{dictionary.commission}</Link>
-          <Link href={`/${locale}/queue`}>{dictionary.queue}</Link>
-          <Link href={`/${locale}/documents`}>{dictionary.documents}</Link>
-          <Link href={`/${locale}/about`}>{dictionary.about}</Link>
+          <Link href={`/${locale}`} onClick={onClose}>{dictionary.home}</Link>
+          <Link href={`/${locale}/portfolio`} onClick={onClose}>{dictionary.portfolio}</Link>
+          <Link href={`/${locale}/commission`} onClick={onClose}>{dictionary.commission}</Link>
+          <Link href={`/${locale}/queue`} onClick={onClose}>{dictionary.queue}</Link>
+          <Link href={`/${locale}/documents`} onClick={onClose}>{dictionary.documents}</Link>
+          <Link href={`/${locale}/about`} onClick={onClose}>{dictionary.about}</Link>
         </nav>
         <button className={styles.sidebarLogin} onClick={() => { show(); onClose(); }} type="button">
           {dictionary.login}

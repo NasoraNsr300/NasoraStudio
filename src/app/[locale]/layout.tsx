@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { PublicShell } from "@/shared/components/public-shell/public-shell";
 import { isLocale } from "@/shared/i18n/locales";
-import { ThemeScript } from "@/shared/theme/theme-script";
 
 export default async function LocaleLayout({
   children,
@@ -15,11 +14,8 @@ export default async function LocaleLayout({
   }
 
   return (
-    <>
-      <ThemeScript />
-      <PublicShell locale={locale}>
-        {children}
-      </PublicShell>
-    </>
+    <PublicShell locale={locale}>
+      {children}
+    </PublicShell>
   );
 }

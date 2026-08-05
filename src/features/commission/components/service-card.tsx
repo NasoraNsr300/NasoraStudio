@@ -7,6 +7,7 @@ import type { ServiceType } from "@/shared/types/public-content";
 import styles from "./commission.module.css";
 
 export type ServiceCardProps = {
+  eager?: boolean;
   locale: Locale;
   onRequest(service: ServiceType): void;
   onViewDetails(service: ServiceType): void;
@@ -44,7 +45,7 @@ function displayUsd(amount: number, locale: Locale) {
   return serviceReferenceUsd[amount] ?? serviceCopy[locale].usdGuidance;
 }
 
-export function ServiceCard({ locale, onRequest, onViewDetails, service }: ServiceCardProps) {
+export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, service }: ServiceCardProps) {
   const fromPrice = service.referencePrices[0];
   const isClosed = service.availability === "closed";
   const copy = serviceCopy[locale];
@@ -54,7 +55,7 @@ export function ServiceCard({ locale, onRequest, onViewDetails, service }: Servi
   return (
     <article className={styles.serviceCard}>
       <div className={styles.serviceImage}>
-        <Image alt={service.examples[0]?.media.alt[locale] ?? service.name[locale]} fill sizes="(max-width: 720px) 100vw, 33vw" src={service.examples[0]?.media.cardSrc ?? "/fixtures/moonlit.svg"} style={{ objectPosition: service.examples[0]?.crop.objectPosition }} />
+        <Image alt={service.examples[0]?.media.alt[locale] ?? service.name[locale]} fetchPriority={eager ? "high" : undefined} fill loading={eager ? "eager" : undefined} sizes="(max-width: 720px) 100vw, 33vw" src={service.examples[0]?.media.cardSrc ?? "/fixtures/moonlit.svg"} style={{ objectPosition: service.examples[0]?.crop.objectPosition }} />
       </div>
       <div className={styles.serviceContent}>
         <span className={`${styles.status} ${styles[service.availability]}`}>{copy.availability[service.availability]}</span>

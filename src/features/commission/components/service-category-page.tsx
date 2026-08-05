@@ -33,7 +33,7 @@ export function ServiceCategoryPage({ category, locale, services }: ServiceCateg
         {services.map((service) => <button aria-pressed={filter === service.slug} key={service.slug} onClick={() => setFilter(service.slug)} type="button">{service.name[locale]}</button>)}
       </div>
       <section aria-label={locale === "en" ? `${category.name.en} services` : `${category.name.th} à¸£à¸¹à¸›à¹à¸šà¸šà¸‡à¸²à¸™`} className={styles.serviceGrid}>
-        {visibleServices.map((service) => <ServiceCard key={service.slug} locale={locale} onRequest={setPreviewService} onViewDetails={setSelectedService} service={service} />)}
+        {visibleServices.map((service, index) => <ServiceCard eager={index === 0} key={service.slug} locale={locale} onRequest={setPreviewService} onViewDetails={setSelectedService} service={service} />)}
       </section>
       <ServiceDetailDialog initialPreview={Boolean(previewService)} key={`${(selectedService ?? previewService)?.slug ?? "none"}-${Boolean(previewService)}`} locale={locale} onClose={() => { setSelectedService(null); setPreviewService(null); }} open={Boolean(selectedService ?? previewService)} service={selectedService ?? previewService ?? services[0]} />
     </main>

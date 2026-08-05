@@ -8,6 +8,7 @@ import styles from "./commission.module.css";
 
 export type AlbumTileProps = {
   category: ServiceCategory;
+  eager?: boolean;
   locale?: Locale;
 };
 
@@ -21,7 +22,7 @@ const albumCopy: Record<Locale, { recommended: string; typeCount: (count: number
   th: { recommended: "แนะนำ", typeCount: (count) => `${count} รูปแบบ`, view: (name) => `ดูอัลบั้ม ${name}` },
 };
 
-export function AlbumTile({ category, locale = "en" }: AlbumTileProps) {
+export function AlbumTile({ category, eager = false, locale = "en" }: AlbumTileProps) {
   const copy = albumCopy[locale];
   const countLabel = copy.typeCount(category.typeCount);
   const viewLabel = copy.view(category.name[locale]);
@@ -30,7 +31,9 @@ export function AlbumTile({ category, locale = "en" }: AlbumTileProps) {
     <Link aria-label={viewLabel} className={styles.albumTile} href={`/${locale}/commission/${category.slug}`}>
       <Image
         alt={category.coverMedia.alt[locale]}
+        fetchPriority={eager ? "high" : undefined}
         fill
+        loading={eager ? "eager" : undefined}
         sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
         src={category.coverMedia.cardSrc}
         style={{ objectPosition: category.coverCrop.objectPosition }}

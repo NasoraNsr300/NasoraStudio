@@ -51,7 +51,7 @@
   background: var(--surface-strong);
   color: var(--text-secondary);
   cursor: pointer;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 var(--space-4);
 }
 
@@ -63,7 +63,7 @@
 }
 
 .sortControl { color: var(--text-secondary); display: grid; font-size: var(--font-label); gap: var(--space-1); }
-.sortControl select { background: var(--background-elevated); color: var(--text-primary); min-height: 42px; padding: 0 var(--space-3); }
+.sortControl select { background: var(--background-elevated); color: var(--text-primary); min-height: 44px; padding: 0 var(--space-3); }
 
 .gallery { display: grid; gap: clamp(0.75rem, 1.5vw, 1.25rem); grid-auto-flow: dense; grid-template-columns: repeat(12, minmax(0, 1fr)); }
 
