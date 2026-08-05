@@ -16,14 +16,10 @@ export type FeaturedCarouselProps = {
 const carouselCopy = {
   en: {
     label: "Featured work",
-    selected: "SELECTED PIECES",
-    title: "Featured work",
     view: (title: string) => `View ${title}`,
   },
   th: {
     label: "ผลงานแนะนำ",
-    selected: "ผลงานที่คัดสรร",
-    title: "ผลงานเด่น",
     view: (title: string) => `ดู ${title}`,
   },
 } as const;
@@ -91,14 +87,9 @@ export function FeaturedCarousel({
     <section
       aria-label={copy.label}
       className={styles.carousel}
+      id="featured-work"
       role="region"
     >
-      <div className={styles.sectionHeading}>
-        <div>
-          <p className={styles.eyebrow}>{copy.selected}</p>
-          <h2 id="featured-work">{copy.title}</h2>
-        </div>
-      </div>
       <div className={styles.loopViewport} data-testid="featured-loop-viewport" data-visible-count="4">
         <div
           className={styles.loopTrack}
