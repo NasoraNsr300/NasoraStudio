@@ -2,7 +2,6 @@ import type {
   DocumentSummary,
   FeaturedItem,
   HeroItem,
-  LocalizedText,
   PortfolioItem,
   PublicMedia,
   ServiceCategory,
@@ -14,9 +13,9 @@ const media = {
     id: "fixture-moonlit",
     kind: "image",
     alt: { th: "ตัวละครใต้แสงจันทร์", en: "Character under moonlight" },
-    thumbnailSrc: "/fixtures/moonlit.svg",
-    cardSrc: "/fixtures/moonlit.svg",
-    detailSrc: "/fixtures/moonlit.svg",
+    thumbnailSrc: "/fixtures/derivatives/moonlit-thumbnail.webp",
+    cardSrc: "/fixtures/derivatives/moonlit-card.webp",
+    detailSrc: "/fixtures/derivatives/moonlit-detail.webp",
     width: 1600,
     height: 1000,
   },
@@ -24,9 +23,9 @@ const media = {
     id: "fixture-amber",
     kind: "image",
     alt: { th: "ตัวละครในแสงสีอำพัน", en: "Character in amber light" },
-    thumbnailSrc: "/fixtures/amber.svg",
-    cardSrc: "/fixtures/amber.svg",
-    detailSrc: "/fixtures/amber.svg",
+    thumbnailSrc: "/fixtures/derivatives/amber-thumbnail.webp",
+    cardSrc: "/fixtures/derivatives/amber-card.webp",
+    detailSrc: "/fixtures/derivatives/amber-detail.webp",
     width: 1600,
     height: 1000,
   },
@@ -34,9 +33,9 @@ const media = {
     id: "fixture-violet",
     kind: "image",
     alt: { th: "ภาพประกอบโทนม่วง", en: "Violet illustration" },
-    thumbnailSrc: "/fixtures/violet.svg",
-    cardSrc: "/fixtures/violet.svg",
-    detailSrc: "/fixtures/violet.svg",
+    thumbnailSrc: "/fixtures/derivatives/violet-thumbnail.webp",
+    cardSrc: "/fixtures/derivatives/violet-card.webp",
+    detailSrc: "/fixtures/derivatives/violet-detail.webp",
     width: 1200,
     height: 1500,
   },
@@ -44,9 +43,9 @@ const media = {
     id: "fixture-forest",
     kind: "image",
     alt: { th: "ภาพประกอบในป่า", en: "Forest illustration" },
-    thumbnailSrc: "/fixtures/forest.svg",
-    cardSrc: "/fixtures/forest.svg",
-    detailSrc: "/fixtures/forest.svg",
+    thumbnailSrc: "/fixtures/derivatives/forest-thumbnail.webp",
+    cardSrc: "/fixtures/derivatives/forest-card.webp",
+    detailSrc: "/fixtures/derivatives/forest-detail.webp",
     width: 1400,
     height: 1000,
   },
@@ -54,35 +53,13 @@ const media = {
     id: "fixture-sky",
     kind: "image",
     alt: { th: "ตัวละครบนท้องฟ้ายามค่ำ", en: "Character in a night sky" },
-    thumbnailSrc: "/fixtures/sky.svg",
-    cardSrc: "/fixtures/sky.svg",
-    detailSrc: "/fixtures/sky.svg",
+    thumbnailSrc: "/fixtures/derivatives/sky-thumbnail.webp",
+    cardSrc: "/fixtures/derivatives/sky-card.webp",
+    detailSrc: "/fixtures/derivatives/sky-detail.webp",
     width: 1600,
     height: 1200,
   },
-  reel: {
-    id: "fixture-reel",
-    kind: "video",
-    alt: { th: "ตัวอย่างภาพเคลื่อนไหว", en: "Animated artwork sample" },
-    thumbnailSrc: "/fixtures/amber.svg",
-    cardSrc: "/fixtures/amber.svg",
-    detailSrc: "/fixtures/fixture-reel.mp4",
-    posterSrc: "/fixtures/amber.svg",
-    width: 1600,
-    height: 900,
-  },
 } satisfies Record<string, PublicMedia>;
-
-export const serviceReferenceUsd: Record<number, string> = {
-  650: "≈ $18",
-  900: "≈ $25",
-  1400: "≈ $40",
-  1800: "≈ $50",
-  2500: "≈ $70",
-  4500: "≈ $125",
-  5000: "≈ $140",
-  6000: "≈ $170",
-};
 
 export const heroItems: HeroItem[] = [
   {
@@ -148,11 +125,6 @@ export const portfolioItems: PortfolioItem[] = [
     category: "character", media: media.sky,
     crop: { aspectRatio: "4 / 3", objectPosition: "50% 45%", gridSpan: "standard" }, displayOrder: 3, featured: false,
   },
-  {
-    id: "portfolio-amber-motion", title: { th: "Amber Motion", en: "Amber Motion" },
-    description: { th: "ตัวอย่างงานวิดีโอสั้น", en: "Short motion artwork sample" }, category: "motion", media: media.reel,
-    crop: { aspectRatio: "16 / 9", objectPosition: "50% 50%", gridSpan: "wide" }, displayOrder: 4, featured: false,
-  },
 ];
 
 const publishedServiceCategories: Omit<ServiceCategory, "published">[] = [
@@ -183,24 +155,6 @@ const publishedServiceTypes: Omit<ServiceType, "published">[] = [
 export const serviceTypes: ServiceType[] = [
   ...publishedServiceTypes.map((service) => ({ ...service, published: true })),
   { slug: "draft-private-service", categorySlug: "draft-private", name: { th: "บริการร่าง", en: "Draft service" }, description: { th: "ยังไม่เผยแพร่", en: "Not yet published" }, availability: "closed", displayOrder: 1, timingGuidance: { th: "ยังไม่กำหนด", en: "Not scheduled" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1000 }], modifiers: [], documentSlugs: [], examples: [], published: false },
-];
-
-/** @internal Private-shaped fixture records must cross the repository projection boundary. */
-export const privateQueueFixtureRecords: Array<{
-  position: number;
-  displayName: string;
-  serviceName: LocalizedText;
-  statusLabel: LocalizedText;
-  deadlineLabel: string;
-  quoteId: string;
-  paymentId: string;
-  messageId: string;
-  contact: string;
-  deliveryUrl: string;
-}> = [
-  { position: 1, displayName: "Mali", serviceName: { th: "Illustration Half Body", en: "Illustration Half Body" }, statusLabel: { th: "กำลังร่าง", en: "Sketching" }, deadlineLabel: "18 Aug 2026", quoteId: "quote-mali", paymentId: "payment-mali", messageId: "message-mali", contact: "mali@example.test", deliveryUrl: "https://private.example/delivery/mali" },
-  { position: 2, displayName: "Nox", serviceName: { th: "Chibi Full Body", en: "Chibi Full Body" }, statusLabel: { th: "กำลังลงสี", en: "Coloring" }, deadlineLabel: "23 Aug 2026", quoteId: "quote-nox", paymentId: "payment-nox", messageId: "message-nox", contact: "nox@example.test", deliveryUrl: "https://private.example/delivery/nox" },
-  { position: 3, displayName: "Guest Comet", serviceName: { th: "VTuber Reference", en: "VTuber Reference" }, statusLabel: { th: "รอคิว", en: "Queued" }, deadlineLabel: "2 Sep 2026", quoteId: "quote-comet", paymentId: "payment-comet", messageId: "message-comet", contact: "comet@example.test", deliveryUrl: "https://private.example/delivery/comet" },
 ];
 
 export const documents: DocumentSummary[] = [

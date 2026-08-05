@@ -3,7 +3,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { documents } from "@/data/fixtures/public-content";
-import { DocumentCenterPage } from "@/features/documents/components/document-center-page";
+import { DocumentSearch } from "@/features/documents/components/document-search";
 import { DocumentReader } from "@/features/documents/components/document-reader";
 
 const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
@@ -19,7 +19,7 @@ const publishedDocuments = documents.filter((document) => document.published);
 
 describe("DocumentCenterPage", () => {
   it("places pinned documents first and includes direct document URLs", () => {
-    render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    render(<DocumentSearch documents={publishedDocuments} locale="en" />);
 
     const documentLinks = screen.getAllByRole("link", { name: /Commission Terms|Revision Guide|Privacy Policy/ });
     expect(documentLinks[0]).toHaveAccessibleName("Commission Terms");
@@ -29,7 +29,7 @@ describe("DocumentCenterPage", () => {
   it("filters documents by category and current documents q parameter", () => {
     navigation.params = new URLSearchParams("q=clear");
     navigation.useSearchParams.mockImplementation(() => navigation.params);
-    render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    render(<DocumentSearch documents={publishedDocuments} locale="en" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Guides" }));
     expect(screen.getByText("Revision Guide")).toBeVisible();
@@ -42,16 +42,16 @@ describe("DocumentCenterPage", () => {
   it("updates document q filtering after client navigation", () => {
     navigation.params = new URLSearchParams("q=privacy");
     navigation.useSearchParams.mockImplementation(() => navigation.params);
-    const { rerender } = render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    const { rerender } = render(<DocumentSearch documents={publishedDocuments} locale="en" />);
     expect(screen.getByText("Privacy Policy")).toBeVisible();
 
     navigation.params = new URLSearchParams("q=revision");
-    rerender(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    rerender(<DocumentSearch documents={publishedDocuments} locale="en" />);
     expect(screen.getByText("Revision Guide")).toBeVisible();
   });
 
   it("fully localizes document labels", () => {
-    render(<DocumentCenterPage documents={publishedDocuments} locale="th" />);
+    render(<DocumentSearch documents={publishedDocuments} locale="th" />);
 
     expect(screen.getByRole("heading", { name: "ศูนย์เอกสาร" })).toBeVisible();
     expect(screen.getByRole("searchbox", { name: "ค้นหาเอกสาร" })).toBeVisible();

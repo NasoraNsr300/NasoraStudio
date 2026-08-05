@@ -78,4 +78,33 @@ describe("PortfolioGallery", () => {
     expect(screen.getByRole("dialog", { name: item.title.th })).toBeVisible();
     expect(screen.getByRole("button", { name: "ปิดภาพผลงาน" })).toBeVisible();
   });
+
+  it("opens the work deep link and uses stored WebP derivatives without runtime conversion URLs", () => {
+    const item = {
+      ...portfolioItems[0],
+      media: {
+        ...portfolioItems[0].media,
+        thumbnailSrc: "/media/starlit-thumbnail.webp",
+        cardSrc: "/media/starlit-card.webp",
+        detailSrc: "/media/starlit-detail.webp",
+      },
+    };
+    render(<PortfolioGallery initialWork="starlit-traveler" items={[item]} locale="en" />);
+
+    expect(screen.getByRole("dialog", { name: item.title.en })).toBeVisible();
+    const images = screen.getAllByRole("img", { name: item.media.alt.en });
+    expect(images[0]).toHaveAttribute("src", "/media/starlit-card.webp");
+    expect(images[0]).toHaveAttribute(
+      "srcset",
+      "/media/starlit-thumbnail.webp 480w, /media/starlit-card.webp 960w, /media/starlit-detail.webp 1600w",
+    );
+    expect(images.at(-1)).toHaveAttribute("src", "/media/starlit-detail.webp");
+    expect(document.body.innerHTML).not.toContain("/_next/image");
+  });
+
+  it("announces a localized no-result state", () => {
+    render(<PortfolioGallery initialQuery="missing" items={portfolioItems} locale="en" />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("No portfolio work matches that search.");
+  });
 });

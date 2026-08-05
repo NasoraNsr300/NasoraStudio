@@ -8,7 +8,8 @@
 
 .albumGrid { display: grid; gap: clamp(.75rem, 1.5vw, 1.25rem); grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); display: block; isolation: isolate; overflow: hidden; position: relative; text-decoration: none; }
-.albumTile img { object-fit: cover; transition: transform 220ms ease; }
+.albumMedia { inset: 0; position: absolute; }
+.albumTile img { transition: transform 220ms ease; }
 .albumTile:hover img, .albumTile:focus-visible img { transform: scale(1.035); }
 .albumGradient { background: linear-gradient(180deg, transparent 35%, rgb(6 8 20 / 92%)); inset: 0; position: absolute; }
 .albumTitle { bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1.3rem, 2vw, 2rem); font-weight: 700; left: var(--space-5); position: absolute; right: var(--space-5); }
@@ -25,7 +26,7 @@
 .subtypeFilters button[aria-pressed="true"], .serviceActions button:first-child, .dialogActions button:first-child { background: var(--brand-gold); border-color: var(--brand-gold); color: #2a1a12; font-weight: 700; }
 .serviceGrid { display: grid; gap: var(--space-5); grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .serviceCard { background: var(--surface-strong); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-.serviceImage { aspect-ratio: 16 / 10; position: relative; } .serviceImage img { object-fit: cover; }
+.serviceImage { aspect-ratio: 16 / 10; position: relative; } .serviceMedia { inset: 0; position: absolute; }
 .serviceContent { padding: var(--space-5); } .serviceContent h2 { font-family: var(--font-display); margin: var(--space-2) 0; } .serviceContent > p { color: var(--text-secondary); }
 .status { font-size: var(--font-label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .price { align-items: baseline; display: flex; flex-wrap: wrap; gap: var(--space-2); } .price strong { color: var(--brand-gold); } .price span { font-size: var(--font-label); }
@@ -38,7 +39,13 @@
 .dialogBody { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); overflow-y: auto; padding: var(--space-6); }.samples { display: grid; gap: var(--space-4); align-content: start; }.samples figure { margin: 0; }.samples img { border-radius: var(--radius-md); height: auto; max-width: 100%; width: 100%; }.samples figcaption { color: var(--text-secondary); margin-top: var(--space-2); }
 .guidance { display: grid; align-content: start; gap: var(--space-3); }.guidance section { background: var(--surface); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); padding: var(--space-4); }.guidance h3 { color: var(--brand-gold); font-size: var(--font-label); letter-spacing: .08em; margin: 0 0 var(--space-3); text-transform: uppercase; }.guidance p { color: var(--text-secondary); font-size: .9rem; margin: var(--space-3) 0 0; }.priceTable { margin: 0; }.priceTable div { align-items: baseline; border-top: var(--border-subtle) solid var(--border); display: flex; justify-content: space-between; padding: var(--space-3) 0; }.priceTable dd { display: grid; margin: 0; text-align: right; }.priceTable dd strong { color: var(--brand-gold); }.priceTable dd span { color: var(--text-secondary); font-size: var(--font-label); }.guidance ul { list-style: none; margin: 0; padding: 0; }.guidance li { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; }.guidance li strong { color: var(--brand-gold); }.timingRevisions { display: grid; grid-template-columns: 1fr 1fr; }.documentLinks { display: grid; gap: var(--space-2); }.documentLinks a { color: var(--brand-violet); }
 .dialogActions { align-items: center; border-top: var(--border-subtle) solid var(--border); display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: space-between; padding: var(--space-4) var(--space-6); }.dialogActions > p { color: var(--text-secondary); font-size: var(--font-label); margin: 0; }.dialogActions > div { display: flex; gap: var(--space-2); }.previewNotice { color: var(--brand-gold) !important; flex-basis: 100%; }
-.previewBackdrop { align-items: center; background: rgb(4 6 16 / 72%); display: flex; inset: 0; justify-content: center; padding: var(--space-4); position: fixed; z-index: calc(var(--z-overlay) + 1); }.previewDialog { background: var(--background-elevated); border: var(--border-subtle) solid var(--brand-violet); border-radius: var(--radius-md); box-shadow: var(--elevation-modal); display: grid; gap: var(--space-4); max-width: 30rem; padding: var(--space-6); text-align: center; }.previewDialog p { margin: 0; }.previewDialog button { justify-self: center; min-height: 42px; padding: 0 var(--space-5); }
+.previewBackdrop { align-items: center; background: rgb(4 6 16 / 72%); display: flex; inset: 0; justify-content: center; padding: var(--space-4); position: fixed; z-index: calc(var(--z-overlay) + 1); }.previewDialog { background: var(--background-elevated); border: var(--border-subtle) solid var(--brand-violet); border-radius: var(--radius-md); box-shadow: var(--elevation-modal); display: grid; gap: var(--space-4); max-width: 30rem; padding: var(--space-6); text-align: center; }.previewDialog p { margin: 0; }.previewDialog button { justify-self: center; min-height: 44px; min-width: 44px; padding: 0 var(--space-5); }
+
+.searchResults { display: grid; gap: var(--space-3); }
+.searchResults a { background: var(--surface); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); display: grid; gap: var(--space-2); min-height: 44px; padding: var(--space-5); text-decoration: none; }
+.searchResults span { color: var(--brand-gold); font-size: var(--font-label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.searchResults small { color: var(--text-secondary); font-size: 1rem; }
+.empty { background: var(--surface); border-radius: var(--radius-md); color: var(--text-secondary); padding: var(--space-6); }
 
 @media (max-width: 1180px) { .albumGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .serviceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 780px) { .albumGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dialogBody { grid-template-columns: 1fr; } .detailDialog { max-height: calc(100dvh - 1rem); }.dialogHeader, .dialogBody, .dialogActions { padding: var(--space-4); } }

@@ -24,6 +24,15 @@
     radial-gradient(ellipse at 55% 82%, var(--leaf-rust) 0 3px, transparent 4px);
 }
 
+.navbarFootprint {
+  margin: var(--space-4) auto;
+  min-height: 64px;
+  position: sticky;
+  top: var(--space-4);
+  width: min(100% - var(--space-8), 1440px);
+  z-index: var(--z-navbar);
+}
+
 .navbar {
   align-items: center;
   backdrop-filter: blur(18px);
@@ -34,13 +43,14 @@
   display: grid;
   gap: var(--space-3);
   grid-template-columns: auto auto minmax(12rem, 1fr) auto auto auto auto;
-  margin: var(--space-4) auto;
-  max-width: calc(100% - var(--space-8));
   padding: var(--space-2) var(--space-3);
-  position: sticky;
-  top: var(--space-4);
-  width: min(100% - var(--space-8), 1440px);
-  z-index: var(--z-navbar);
+  transition: padding 180ms ease, transform 180ms ease, background-color 180ms ease;
+  width: 100%;
+}
+
+.navbar[data-compact="true"] {
+  padding-block: 0;
+  transform: translateY(-2px);
 }
 
 .brand {
@@ -165,12 +175,21 @@
   background: var(--surface);
 }
 
+.sidebarNav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--brand-gold) 16%, var(--surface));
+  box-shadow: inset 3px 0 var(--brand-gold);
+  color: var(--brand-gold);
+  font-weight: 700;
+}
+
 .accountControl {
   bottom: max(var(--space-6), env(safe-area-inset-bottom));
   position: fixed;
   right: max(var(--space-6), env(safe-area-inset-right));
   z-index: var(--z-floating);
 }
+
+.accountControl:has(.accountPanel) { z-index: calc(var(--z-overlay) + 1); }
 
 .accountButton {
   background: var(--brand-gold);
@@ -221,6 +240,7 @@
 }
 
 @media (max-width: 720px) {
+  .navbarFootprint { min-height: 116px; }
   .navbar {
     grid-template-columns: auto auto 1fr auto auto;
   }
@@ -235,6 +255,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ambient,
+  .navbar,
   .sidebar { animation: none; }
 }
 

@@ -1,5 +1,8 @@
+import { Suspense } from "react";
+
 import { getPublicContentRepository } from "@/data/fixture-public-content-repository";
 import { CommissionAlbumsPage } from "@/features/commission/components/commission-albums-page";
+import { CommissionSearch } from "@/features/commission/components/commission-search";
 import { isLocale, locales } from "@/shared/i18n/locales";
 
 export function generateStaticParams() {
@@ -9,6 +12,10 @@ export function generateStaticParams() {
 export default async function CommissionRoute({ params }: Readonly<{ params: Promise<{ locale: string }> }>) {
   const { locale } = await params;
   if (!isLocale(locale)) return null;
-  const categories = await getPublicContentRepository().getServiceCategories(locale);
-  return <CommissionAlbumsPage categories={categories} locale={locale} />;
+  const catalog = await getPublicContentRepository().getCommissionCatalog(locale);
+  return (
+    <Suspense fallback={<CommissionAlbumsPage categories={catalog.categories} locale={locale} />}>
+      <CommissionSearch categories={catalog.categories} locale={locale} services={catalog.types} />
+    </Suspense>
+  );
 }

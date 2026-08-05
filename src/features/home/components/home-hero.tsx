@@ -18,6 +18,11 @@ export type HomeHeroProps = {
 
 const HERO_IMAGE_SIZES = "(min-width: 900px) 52vw, 100vw";
 
+const copy = {
+  en: { commission: "View commissions", explore: "Explore featured work", services: "Commission · Illustration · Minecraft", studio: "NASORA STUDIO" },
+  th: { commission: "ดูบริการคอมมิชชัน", explore: "สำรวจผลงานแนะนำ", services: "คอมมิชชัน · ภาพประกอบ · Minecraft", studio: "NASORA STUDIO" },
+} as const;
+
 function getResponsiveSourceSet(hero: HeroItem) {
   return `${hero.media.thumbnailSrc} 480w, ${hero.media.cardSrc} 960w, ${hero.media.detailSrc} 1600w`;
 }
@@ -52,6 +57,7 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
     "--hero-aspect-ratio": fallbackHero.crop.aspectRatio,
     objectPosition: mediaHero.crop.objectPosition,
   } as CSSProperties;
+  const labels = copy[locale];
 
   return (
     <section aria-labelledby="home-hero-title" className={styles.hero}>
@@ -63,13 +69,13 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
         rel="preload"
       />
       <div className={styles.heroCopy}>
-        <p className={styles.eyebrow}>NASORA STUDIO</p>
+        <p className={styles.eyebrow}>{labels.studio}</p>
         <h1 id="home-hero-title">{fallbackHero.title[locale]}</h1>
         <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>
-        <p className={styles.heroServices}>Commission · Illustration · Minecraft</p>
+        <p className={styles.heroServices}>{labels.services}</p>
         <div className={styles.heroActions}>
-          <a className={styles.primaryAction} href={`/${locale}/commission`}>View commissions</a>
-          <a className={styles.secondaryAction} href="#featured-work">Explore featured work</a>
+          <a className={styles.primaryAction} href={`/${locale}/commission`}>{labels.commission}</a>
+          <a className={styles.secondaryAction} href="#featured-work">{labels.explore}</a>
         </div>
       </div>
       <div className={styles.heroArtwork} style={mediaStyle}>

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import type { PortfolioItem } from "@/shared/types/public-content";
+import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
 
 import { ImageLightbox } from "./image-lightbox";
 import styles from "./portfolio.module.css";
@@ -12,6 +12,7 @@ import styles from "./portfolio.module.css";
 export type PortfolioGalleryProps = {
   initialCategory?: string | null;
   initialQuery?: string | null;
+  initialWork?: string | null;
   items: PortfolioItem[];
   locale: Locale;
 };
@@ -25,11 +26,12 @@ type GalleryCopy = {
   newest: string;
   sort: string;
   view: string;
+  empty: string;
 };
 
 const galleryCopy: Record<Locale, GalleryCopy> = {
-  en: { all: "All work", categories: "Portfolio categories", featured: "Featured", newest: "Newest", sort: "Sort artwork", view: "View" },
-  th: { all: "ทั้งหมด", categories: "หมวดหมู่ผลงาน", featured: "ผลงานแนะนำ", newest: "ล่าสุด", sort: "เรียงผลงาน", view: "ดู" },
+  en: { all: "All work", categories: "Portfolio categories", empty: "No portfolio work matches that search.", featured: "Featured", newest: "Newest", sort: "Sort artwork", view: "View" },
+  th: { all: "ทั้งหมด", categories: "หมวดหมู่ผลงาน", empty: "ไม่พบผลงานที่ตรงกับคำค้น", featured: "ผลงานแนะนำ", newest: "ล่าสุด", sort: "เรียงผลงาน", view: "ดู" },
 };
 
 const thaiCategoryLabels: Record<string, string> = {
@@ -46,7 +48,7 @@ function categoryLabel(category: string, locale: Locale) {
   return locale === "th" ? (thaiCategoryLabels[category] ?? category) : `${category.slice(0, 1).toUpperCase()}${category.slice(1)}`;
 }
 
-export function PortfolioGallery({ initialCategory, initialQuery, items, locale }: PortfolioGalleryProps) {
+export function PortfolioGallery({ initialCategory, initialQuery, initialWork, items, locale }: PortfolioGalleryProps) {
   const categories = useMemo(
     () => Array.from(new Set(items.map((item) => item.category))).sort(),
     [items],
@@ -61,8 +63,9 @@ export function PortfolioGallery({ initialCategory, initialQuery, items, locale 
       categories={categories}
       initialCategory={requestedCategory}
       initialQuery={initialQuery}
+      initialWork={initialWork}
       items={items}
-      key={requestedCategory}
+      key={`${requestedCategory}-${initialQuery ?? ""}-${initialWork ?? ""}`}
       locale={locale}
     />
   );
@@ -73,11 +76,13 @@ type PortfolioGalleryContentProps = Omit<PortfolioGalleryProps, "initialCategory
   initialCategory: string;
 };
 
-function PortfolioGalleryContent({ categories, initialCategory, initialQuery, items, locale }: PortfolioGalleryContentProps) {
+function PortfolioGalleryContent({ categories, initialCategory, initialQuery, initialWork, items, locale }: PortfolioGalleryContentProps) {
   const copy = galleryCopy[locale];
   const [category, setCategory] = useState(initialCategory);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
-  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(() => (
+    items.find((item) => item.id === `portfolio-${initialWork}` || item.id === initialWork) ?? null
+  ));
 
   const visibleItems = useMemo(() => items
     .filter((item) => category === "all" || item.category === category)
@@ -121,12 +126,12 @@ function PortfolioGalleryContent({ categories, initialCategory, initialQuery, it
             onClick={() => setSelectedItem(item)}
             type="button"
           >
-            <Image
-              alt={item.media.alt[locale]}
-              fill
+            <ResponsiveMedia
+              className={styles.cardMedia}
+              crop={item.crop}
+              locale={locale}
+              media={item.media}
               sizes="(max-width: 520px) 100vw, (max-width: 780px) 50vw, 33vw"
-              src={item.media.cardSrc}
-              style={{ objectPosition: item.crop.objectPosition }}
             />
             <span className={styles.cardOverlay}>
               <span>{categoryLabel(item.category, locale)}</span>
@@ -135,6 +140,7 @@ function PortfolioGalleryContent({ categories, initialCategory, initialQuery, it
           </button>
         ))}
       </div>
+      {!visibleItems.length ? <p className={styles.empty} role="status">{copy.empty}</p> : null}
 
       <ImageLightbox item={selectedItem} locale={locale} onClose={() => setSelectedItem(null)} />
     </>

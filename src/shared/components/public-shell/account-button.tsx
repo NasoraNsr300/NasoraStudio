@@ -17,7 +17,7 @@ export function AccountButton({ locale }: { locale: Locale }) {
         aria-expanded={open}
         aria-label={dictionary.account}
         className={styles.accountButton}
-        onClick={toggle}
+        onClick={(event) => toggle(event.currentTarget)}
       >
         ◉
       </IconButton>

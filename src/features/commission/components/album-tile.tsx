@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceCategory } from "@/shared/types/public-content";
+import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
 
 import styles from "./commission.module.css";
 
@@ -29,14 +29,13 @@ export function AlbumTile({ category, eager = false, locale = "en" }: AlbumTileP
 
   return (
     <Link aria-label={viewLabel} className={styles.albumTile} href={`/${locale}/commission/${category.slug}`}>
-      <Image
-        alt={category.coverMedia.alt[locale]}
-        fetchPriority={eager ? "high" : undefined}
-        fill
-        loading={eager ? "eager" : undefined}
+      <ResponsiveMedia
+        className={styles.albumMedia}
+        crop={category.coverCrop}
+        locale={locale}
+        media={category.coverMedia}
+        priority={eager}
         sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
-        src={category.coverMedia.cardSrc}
-        style={{ objectPosition: category.coverCrop.objectPosition }}
       />
       <span className={styles.albumGradient} />
       {category.recommended ? <span className={styles.recommendedBadge}>{copy.recommended}</span> : null}

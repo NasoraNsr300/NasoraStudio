@@ -1,38 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+
+import type { Locale } from "@/shared/i18n/locales";
+import type { DocumentSummary } from "@/shared/types/public-content";
 
 import { getDocumentCategoryLabel } from "./document-category";
 import { DocumentReader } from "./document-reader";
 import styles from "./documents.module.css";
-import type { Locale } from "@/shared/i18n/locales";
-import type { DocumentSummary } from "@/shared/types/public-content";
 
-export type DocumentCenterPageProps = { documents: DocumentSummary[]; locale: Locale };
+export type DocumentCenterPageProps = { documents: DocumentSummary[]; initialQuery?: string; locale: Locale };
 
 const copy = {
   en: { all: "All", announcement: "Terms, process notes, and public policies in one place.", empty: "No documents match that selection.", eyebrow: "Public information", pinned: "Pinned", read: "Read document", search: "Search documents", title: "Document center" },
   th: { all: "ทั้งหมด", announcement: "เงื่อนไข ขั้นตอน และนโยบายสาธารณะรวมอยู่ที่นี่", empty: "ไม่พบเอกสารที่ตรงกับการเลือก", eyebrow: "ข้อมูลสาธารณะ", pinned: "ปักหมุด", read: "อ่านเอกสาร", search: "ค้นหาเอกสาร", title: "ศูนย์เอกสาร" },
 } as const;
 
-export function DocumentCenterPage({ documents, locale }: DocumentCenterPageProps) {
-  const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
-  return <DocumentCenterContent documents={documents} initialQuery={urlQuery} key={urlQuery} locale={locale} />;
-}
-
-function DocumentCenterContent({ documents, initialQuery, locale }: DocumentCenterPageProps & { initialQuery: string }) {
+export function DocumentCenterPage({ documents, initialQuery = "", locale }: DocumentCenterPageProps) {
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState(initialQuery);
   const [activeDocument, setActiveDocument] = useState<DocumentSummary | null>(null);
   const labels = copy[locale];
   const categories = Array.from(new Set(documents.map((document) => document.category))).sort();
   const visibleDocuments = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase();
+    const term = query.trim().toLocaleLowerCase(locale);
     return [...documents].sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.displayOrder - b.displayOrder).filter((document) =>
-      (category === "all" || document.category === category) && (!term || [document.title[locale], document.summary[locale], document.content[locale]].some((value) => value.toLocaleLowerCase().includes(term))));
+      (category === "all" || document.category === category) && (!term || [document.title[locale], document.summary[locale], document.content[locale]].some((value) => value.toLocaleLowerCase(locale).includes(term))));
   }, [category, documents, locale, query]);
 
   return <main className={styles.documents}>

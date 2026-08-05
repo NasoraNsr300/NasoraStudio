@@ -49,6 +49,67 @@ test("public queue exposes useful public progress without private fields", async
   await expect(page.getByText(/quote-mali|payment-mali|mali@example\.test/)).toHaveCount(0);
 });
 
+test("Queue and Documents responses contain meaningful static HTML before hydration", async ({ request }) => {
+  const queueHtml = await (await request.get("/en/queue")).text();
+  expect(queueHtml).toContain(">Queue<");
+  expect(queueHtml).toContain("Mali");
+  expect(queueHtml).toContain("Illustration Half Body");
+
+  const documentsHtml = await (await request.get("/en/documents")).text();
+  expect(documentsHtml).toContain("Document center");
+  expect(documentsHtml).toContain("Commission Terms");
+  expect(documentsHtml).toContain("Revision Guide");
+});
+
+test("commission contextual search finds categories and subtypes from both commission route shapes", async ({ page }) => {
+  await page.goto("/en/commission");
+  await page.getByRole("searchbox", { name: "Search commissions" }).fill("VTuber");
+  await page.getByRole("searchbox", { name: "Search commissions" }).press("Enter");
+  await expect(page).toHaveURL(/\/en\/commission\?q=VTuber$/);
+  await expect(page.getByRole("heading", { name: "Commission search results" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /VTuber Reference/ })).toBeVisible();
+
+  await page.goto("/en/commission/illustration");
+  await page.getByRole("searchbox", { name: "Search commissions" }).fill("Chibi Full Body");
+  await page.getByRole("searchbox", { name: "Search commissions" }).press("Enter");
+  await expect(page).toHaveURL(/\/en\/commission\?q=Chibi(?:\+|%20)Full(?:\+|%20)Body$/);
+  await expect(page.getByRole("link", { name: /Chibi Full Body/ })).toBeVisible();
+});
+
+test("Home featured links open their locale-prefixed Portfolio work", async ({ page }) => {
+  await page.goto("/th");
+  await page.getByRole("link", { name: "ดูผลงานนี้" }).click();
+
+  await expect(page).toHaveURL(/\/th\/portfolio\?work=starlit-traveler$/);
+  await expect(page.getByRole("dialog", { name: "Starlit Traveler" })).toBeVisible();
+});
+
+test("published Portfolio media has no broken video fixture", async ({ page }) => {
+  const failedMedia: string[] = [];
+  page.on("response", (response) => {
+    if (/\.(?:mp4|webp)(?:\?|$)/.test(response.url()) && !response.ok()) failedMedia.push(response.url());
+  });
+  await page.goto("/en/portfolio");
+  await expect(page.locator('video source[src*="fixture-reel.mp4"], video[src*="fixture-reel.mp4"]')).toHaveCount(0);
+  expect(failedMedia).toEqual([]);
+});
+
+test("public client bundles contain no private queue fixture fields", async ({ page, request }) => {
+  await page.goto("/en/queue");
+  const scripts = await page.locator('script[src]').evaluateAll((elements) => elements.map((element) => (element as HTMLScriptElement).src));
+  const bundleText = (await Promise.all(scripts.map(async (url) => (await request.get(url)).text()))).join("\n");
+
+  expect(bundleText).not.toMatch(/quote-mali|payment-mali|mali@example\.test|private\.example\/delivery/);
+});
+
+test("Thai commission output contains no common mojibake or C1 controls", async ({ page }) => {
+  for (const route of ["/th/commission", "/th/commission/illustration"]) {
+    await page.goto(route);
+    const content = await page.locator("main").innerText();
+    expect(content).not.toMatch(/[\u0080-\u009f]|(?:Ã.|Â.|à[¸¹])|�/u);
+  }
+});
+
 test("published document direct route renders route content", async ({ page }) => {
   await page.goto("/en/documents/commission-terms");
 
@@ -122,6 +183,8 @@ test("all mobile public and overlay targets provide at least 44px touch targets"
   await page.goto("/en/commission/illustration");
   await page.getByRole("button", { name: /View details for Illustration Half Body/ }).click();
   await expectMinimumTouchTargets(page, "open service dialog");
+  await page.getByRole("button", { name: "Request estimate", exact: true }).click();
+  await expectMinimumTouchTargets(page, "open nested request preview");
 
   await page.goto("/en/documents");
   await page.getByRole("button", { name: "Read document" }).first().click();

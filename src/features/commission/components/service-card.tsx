@@ -1,8 +1,7 @@
-import Image from "next/image";
-
-import { serviceReferenceUsd } from "@/data/fixtures/public-content";
+import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceType } from "@/shared/types/public-content";
+import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
 
 import styles from "./commission.module.css";
 
@@ -51,11 +50,12 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
   const copy = serviceCopy[locale];
   const requestLabel = copy.request(service.name[locale]);
   const detailsLabel = copy.details(service.name[locale]);
+  const example = service.examples[0];
 
   return (
-    <article className={styles.serviceCard}>
+    <article className={styles.serviceCard} id={service.slug}>
       <div className={styles.serviceImage}>
-        <Image alt={service.examples[0]?.media.alt[locale] ?? service.name[locale]} fetchPriority={eager ? "high" : undefined} fill loading={eager ? "eager" : undefined} sizes="(max-width: 720px) 100vw, 33vw" src={service.examples[0]?.media.cardSrc ?? "/fixtures/moonlit.svg"} style={{ objectPosition: service.examples[0]?.crop.objectPosition }} />
+        {example ? <ResponsiveMedia className={styles.serviceMedia} crop={example.crop} locale={locale} media={example.media} priority={eager} sizes="(max-width: 720px) 100vw, 33vw" /> : null}
       </div>
       <div className={styles.serviceContent}>
         <span className={`${styles.status} ${styles[service.availability]}`}>{copy.availability[service.availability]}</span>

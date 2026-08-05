@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { portfolioItems } from "@/data/fixtures/public-content";
 import { ImageLightbox } from "@/features/portfolio/components/image-lightbox";
+import type { PortfolioItem } from "@/shared/types/public-content";
 
 afterEach(cleanup);
 
@@ -52,8 +53,18 @@ describe("ImageLightbox", () => {
   });
 
   it("renders a single controlled video asset when the selected media is video", () => {
-    const item = portfolioItems.find((candidate) => candidate.media.kind === "video");
-    if (!item) throw new Error("Expected a video fixture");
+    const item: PortfolioItem = {
+      ...portfolioItems[0],
+      id: "synthetic-video",
+      title: { en: "Video sample", th: "ตัวอย่างวิดีโอ" },
+      media: {
+        ...portfolioItems[0].media,
+        id: "synthetic-video-media",
+        kind: "video",
+        detailSrc: "/fixtures/test-reel.mp4",
+        posterSrc: portfolioItems[0].media.cardSrc,
+      },
+    };
 
     render(<ImageLightbox item={item} locale="en" onClose={() => undefined} />);
 

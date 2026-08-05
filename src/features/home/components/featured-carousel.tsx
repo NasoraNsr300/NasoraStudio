@@ -18,6 +18,11 @@ type PauseReason = "focus" | "hover" | "manual" | "motion" | "visibility";
 
 const DEFAULT_INTERVAL_MS = 7000;
 
+const carouselCopy = {
+  en: { controls: "Featured work controls", featured: "FEATURED", label: "Featured work", next: "Next", nextLabel: "Next featured work", positions: "Featured work positions", previous: "Previous", previousLabel: "Previous featured work", selected: "SELECTED PIECES", show: (index: number) => `Show featured work ${index}`, title: "Featured work", view: "View this work" },
+  th: { controls: "ตัวควบคุมผลงานแนะนำ", featured: "แนะนำ", label: "ผลงานแนะนำ", next: "ถัดไป", nextLabel: "ผลงานถัดไป", positions: "ตำแหน่งผลงานแนะนำ", previous: "ก่อนหน้า", previousLabel: "ผลงานก่อนหน้า", selected: "ผลงานที่คัดสรร", show: (index: number) => `แสดงผลงานแนะนำชิ้นที่ ${index}`, title: "ผลงานแนะนำ", view: "ดูผลงานนี้" },
+} as const;
+
 export function FeaturedCarousel({
   items,
   intervalMs = DEFAULT_INTERVAL_MS,
@@ -28,6 +33,7 @@ export function FeaturedCarousel({
   const [announcePosition, setAnnouncePosition] = useState(false);
   const isPaused = pauseReasons.size > 0;
   const activeItem = items[activeIndex];
+  const copy = carouselCopy[locale];
 
   const setPaused = (reason: PauseReason, paused: boolean) => {
     setPauseReasons((current) => {
@@ -83,7 +89,7 @@ export function FeaturedCarousel({
 
   return (
     <section
-      aria-label="Featured work"
+      aria-label={copy.label}
       className={styles.carousel}
       onFocus={(event) => {
         if (event.currentTarget.contains(event.target)) setPaused("focus", true);
@@ -97,8 +103,8 @@ export function FeaturedCarousel({
     >
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>SELECTED PIECES</p>
-          <h2 id="featured-work">Featured work</h2>
+          <p className={styles.eyebrow}>{copy.selected}</p>
+          <h2 id="featured-work">{copy.title}</h2>
         </div>
         <span aria-atomic="true" aria-live={announcePosition ? "polite" : "off"} aria-label={`${activeIndex + 1} / ${items.length}`} className={styles.position}>
           {activeIndex + 1} / {items.length}
@@ -117,19 +123,19 @@ export function FeaturedCarousel({
           />
         </div>
         <div className={styles.featuredCopy}>
-          <p className={styles.eyebrow}>FEATURED {String(activeIndex + 1).padStart(2, "0")}</p>
+          <p className={styles.eyebrow}>{copy.featured} {String(activeIndex + 1).padStart(2, "0")}</p>
           <h3>{activeItem.title[locale]}</h3>
           <p>{activeItem.description[locale]}</p>
-          <a href={activeItem.destination}>View this work</a>
+          <a href={`/${locale}${activeItem.destination}`}>{copy.view}</a>
         </div>
       </article>
-      <div aria-label="Featured work controls" className={styles.carouselControls}>
-        <button aria-label="Previous featured work" onClick={() => move(-1, true)} type="button">Previous</button>
-        <div aria-label="Featured work positions" className={styles.positionControls}>
+      <div aria-label={copy.controls} className={styles.carouselControls}>
+        <button aria-label={copy.previousLabel} onClick={() => move(-1, true)} type="button">{copy.previous}</button>
+        <div aria-label={copy.positions} className={styles.positionControls}>
           {items.map((item, index) => (
             <button
               aria-current={activeIndex === index ? "true" : undefined}
-              aria-label={`Show featured work ${index + 1}`}
+              aria-label={copy.show(index + 1)}
               className={styles.positionControl}
               key={item.id}
               onClick={() => moveTo(index)}
@@ -137,7 +143,7 @@ export function FeaturedCarousel({
             />
           ))}
         </div>
-        <button aria-label="Next featured work" onClick={() => move(1, true)} type="button">Next</button>
+        <button aria-label={copy.nextLabel} onClick={() => move(1, true)} type="button">{copy.next}</button>
       </div>
     </section>
   );

@@ -79,4 +79,23 @@ describe("HomePage", () => {
     expect(screen.getByRole("tab", { name: "Terms" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Contact" })).toBeVisible();
   });
+
+  it("prefixes every featured work destination with the active locale", () => {
+    render(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="th" randomValue={0} />);
+
+    expect(screen.getByRole("link", { name: "ดูผลงานนี้" })).toHaveAttribute(
+      "href",
+      "/th/portfolio?work=starlit-traveler",
+    );
+  });
+
+  it("localizes Thai-visible hero and carousel controls including accessible labels", () => {
+    render(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="th" randomValue={0} />);
+
+    expect(screen.getByRole("link", { name: "ดูบริการคอมมิชชัน" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "ผลงานแนะนำ" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "ผลงานก่อนหน้า" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "ผลงานถัดไป" })).toBeVisible();
+    expect(screen.getByRole("tablist", { name: "ข้อมูลฉบับย่อ" })).toBeVisible();
+  });
 });

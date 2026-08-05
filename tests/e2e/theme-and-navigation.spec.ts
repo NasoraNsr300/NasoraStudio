@@ -9,6 +9,13 @@ test("static HTML emits the requested locale before hydration", async ({ request
   }
 });
 
+test("public responses include the Stage 1 security headers", async ({ request }) => {
+  const response = await request.get("/en");
+  expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+});
+
 test("sidebar traps focus, closes with Escape, and restores focus", async ({ page }) => {
   await page.goto("/en");
   const menuButton = page.getByRole("button", { name: "Open menu" });
@@ -34,6 +41,38 @@ test("sidebar closes through its backdrop", async ({ page }) => {
   await page.getByRole("button", { name: "Open menu" }).click();
   await page.getByRole("button", { name: "Close menu backdrop" }).click({ position: { x: 380, y: 400 } });
   await expect(page.getByRole("complementary", { name: "Site navigation" })).toBeHidden();
+});
+
+test("Sidebar marks nested Commission and document routes as the current page", async ({ page }) => {
+  for (const [route, label] of [["/en/commission/illustration", "Commission"], ["/en/documents/commission-terms", "Documents"]] as const) {
+    await page.goto(route);
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await expect(page.getByRole("link", { name: label, exact: true })).toHaveAttribute("aria-current", "page");
+  }
+});
+
+test("Sidebar authentication preview receives focus, closes with Escape, and restores its initiating control", async ({ page }) => {
+  await page.goto("/en");
+  await page.getByRole("button", { name: "Open menu" }).click();
+  const login = page.getByRole("button", { name: "Log in" });
+  await login.click();
+
+  await expect(page.getByRole("button", { name: "Close authentication preview" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Authentication preview" })).toHaveCount(0);
+  await expect(login).toBeFocused();
+});
+
+test("floating Navbar compacts on scroll while its reserved footprint stays stable", async ({ page }) => {
+  await page.goto("/en");
+  const navbar = page.getByRole("banner");
+  const footprint = page.locator('[data-navbar-footprint="true"]');
+  const before = await footprint.boundingBox();
+
+  await page.evaluate(() => window.scrollTo(0, 320));
+  await expect(navbar).toHaveAttribute("data-compact", "true");
+  const after = await footprint.boundingBox();
+  expect(after?.height).toBe(before?.height);
 });
 
 test("locale switch opens the alternate localized home", async ({ page }) => {

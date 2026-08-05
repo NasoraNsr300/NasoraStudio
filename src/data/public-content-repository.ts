@@ -13,6 +13,7 @@ export interface PublicContentRepository {
   getHome(locale: Locale): Promise<{ hero: HeroItem[]; featured: FeaturedItem[] }>;
   getPortfolio(locale: Locale, query?: string, category?: string): Promise<PortfolioItem[]>;
   getServiceCategories(locale: Locale): Promise<ServiceCategory[]>;
+  getCommissionCatalog(locale: Locale): Promise<{ categories: ServiceCategory[]; types: ServiceType[] }>;
   getServiceCategory(
     locale: Locale,
     slug: string,

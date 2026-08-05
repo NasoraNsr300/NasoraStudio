@@ -19,6 +19,7 @@ export function PortfolioSearch({ items, locale }: PortfolioSearchProps) {
     <PortfolioPage
       initialCategory={searchParams.get("category")}
       initialQuery={searchParams.get("q")}
+      initialWork={searchParams.get("work")}
       items={items}
       locale={locale}
     />

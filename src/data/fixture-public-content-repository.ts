@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { Locale } from "@/shared/i18n/locales";
 import type { PublicContentRepository } from "@/data/public-content-repository";
 import type { LocalizedText, PublicQueueItem } from "@/shared/types/public-content";
@@ -6,10 +8,10 @@ import {
   featuredItems,
   heroItems,
   portfolioItems,
-  privateQueueFixtureRecords,
   serviceCategories,
   serviceTypes,
 } from "@/data/fixtures/public-content";
+import { privateQueueFixtureRecords } from "@/data/fixtures/private-queue-fixtures.server";
 
 type QueueProjectionSource = {
   position: number;
@@ -59,6 +61,13 @@ export const fixturePublicContentRepository: PublicContentRepository = {
 
   async getServiceCategories(_locale: Locale) {
     return serviceCategories.filter((item) => item.published).sort((a, b) => a.displayOrder - b.displayOrder);
+  },
+
+  async getCommissionCatalog(_locale: Locale) {
+    return {
+      categories: serviceCategories.filter((item) => item.published).sort((a, b) => a.displayOrder - b.displayOrder),
+      types: serviceTypes.filter((item) => item.published).sort((a, b) => a.displayOrder - b.displayOrder),
+    };
   },
 
   async getServiceCategory(_locale: Locale, slug: string) {

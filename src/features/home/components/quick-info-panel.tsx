@@ -26,6 +26,10 @@ const copy: Record<Locale, Record<TabKey, { label: string; title: string; body: 
 };
 
 const tabs: TabKey[] = ["about", "queue", "terms", "contact"];
+const panelCopy = {
+  en: { label: "Quick information", eyebrow: "QUICK INFO" },
+  th: { label: "ข้อมูลฉบับย่อ", eyebrow: "ข้อมูลฉบับย่อ" },
+} as const;
 
 export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("about");
@@ -34,7 +38,7 @@ export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
 
   return (
     <section aria-labelledby={`${baseId}-title`} className={styles.quickInfo} id="quick-info">
-      <div aria-label="Quick information" className={styles.tabList} role="tablist">
+      <div aria-label={panelCopy[locale].label} className={styles.tabList} role="tablist">
         {tabs.map((tab) => (
           <button
             aria-controls={`${baseId}-panel`}
@@ -50,7 +54,7 @@ export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
         ))}
       </div>
       <div aria-labelledby={`${baseId}-${activeTab}`} className={styles.infoContent} id={`${baseId}-panel`} role="tabpanel">
-        <p className={styles.eyebrow}>QUICK INFO</p>
+        <p className={styles.eyebrow}>{panelCopy[locale].eyebrow}</p>
         <h2 id={`${baseId}-title`}>{activeCopy.title}</h2>
         <p>{activeCopy.body}</p>
       </div>

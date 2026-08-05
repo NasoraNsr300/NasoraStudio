@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -20,7 +21,24 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const panelRef = useRef<HTMLElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const dictionary = getDictionary(locale);
-  const { show } = useAuthPreview();
+  const { open: authOpen, show } = useAuthPreview();
+  const authOpenRef = useRef(authOpen);
+  const pathname = usePathname();
+  const links = [
+    { href: `/${locale}`, label: dictionary.home },
+    { href: `/${locale}/portfolio`, label: dictionary.portfolio },
+    { href: `/${locale}/commission`, label: dictionary.commission },
+    { href: `/${locale}/queue`, label: dictionary.queue },
+    { href: `/${locale}/documents`, label: dictionary.documents },
+    { href: `/${locale}/about`, label: dictionary.about },
+  ];
+  const activeHref = links
+    .filter(({ href }) => pathname === href || (href !== `/${locale}` && pathname.startsWith(`${href}/`)))
+    .sort((left, right) => right.href.length - left.href.length)[0]?.href ?? `/${locale}`;
+
+  useEffect(() => {
+    authOpenRef.current = authOpen;
+  }, [authOpen]);
 
   useEffect(() => {
     if (!open) {
@@ -33,6 +51,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
       'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
     const onKeyDown = (event: KeyboardEvent) => {
+      if (authOpenRef.current) return;
       if (event.key === "Escape") {
         onClose();
         return;
@@ -69,19 +88,14 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
   return (
     <div aria-hidden={!open} className={styles.sidebarLayer} hidden={!open}>
       <button aria-label="Close menu backdrop" className={styles.sidebarBackdrop} onClick={onClose} type="button" />
-      <aside aria-label="Site navigation" className={styles.sidebar} ref={panelRef}>
+      <aside aria-hidden={authOpen || undefined} aria-label="Site navigation" className={styles.sidebar} inert={authOpen || undefined} ref={panelRef}>
         <IconButton aria-label={dictionary.closeMenu} className={styles.iconButton} onClick={onClose}>
           ×
         </IconButton>
         <nav className={styles.sidebarNav}>
-          <Link href={`/${locale}`} onClick={onClose}>{dictionary.home}</Link>
-          <Link href={`/${locale}/portfolio`} onClick={onClose}>{dictionary.portfolio}</Link>
-          <Link href={`/${locale}/commission`} onClick={onClose}>{dictionary.commission}</Link>
-          <Link href={`/${locale}/queue`} onClick={onClose}>{dictionary.queue}</Link>
-          <Link href={`/${locale}/documents`} onClick={onClose}>{dictionary.documents}</Link>
-          <Link href={`/${locale}/about`} onClick={onClose}>{dictionary.about}</Link>
+          {links.map(({ href, label }) => <Link aria-current={href === activeHref ? "page" : undefined} href={href} key={href} onClick={onClose}>{label}</Link>)}
         </nav>
-        <button className={styles.sidebarLogin} onClick={() => { show(); onClose(); }} type="button">
+        <button className={styles.sidebarLogin} onClick={(event) => show(event.currentTarget)} type="button">
           {dictionary.login}
         </button>
       </aside>

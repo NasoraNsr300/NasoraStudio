@@ -80,7 +80,8 @@
   text-align: left;
 }
 
-.card img { display: block; height: 100%; inset: 0; object-fit: cover; position: absolute; transition: transform 220ms ease; width: 100%; }
+.cardMedia { inset: 0; position: absolute; }
+.card img { transition: transform 220ms ease; }
 .card:hover img, .card:focus-visible img { transform: scale(1.035); }
 .card:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 3px; }
 .standard { aspect-ratio: 4 / 3; grid-column: span 4; }
@@ -112,6 +113,7 @@
 .lightboxVideo { display: block; height: auto; max-height: calc(100dvh - 8rem); max-width: 100%; object-fit: contain; width: auto; }
 .lightboxFigure figcaption { color: var(--text-primary); margin-top: var(--space-3); text-align: center; }
 .closeButton { background: var(--surface-strong); color: var(--text-primary); cursor: pointer; font-size: 2rem; height: 44px; line-height: 1; position: absolute; right: var(--space-2); top: var(--space-2); width: 44px; z-index: 1; }
+.empty { background: var(--surface); border-radius: var(--radius-md); color: var(--text-secondary); padding: var(--space-6); }
 
 @media (max-width: 780px) {
   .standard, .tall { grid-column: span 6; grid-row: span 1; }

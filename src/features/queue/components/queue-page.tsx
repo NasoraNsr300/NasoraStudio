@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -9,28 +8,22 @@ import type { PublicQueueItem } from "@/shared/types/public-content";
 import { QueueTable } from "./queue-table";
 import styles from "./queue.module.css";
 
-export type QueuePageProps = { items: PublicQueueItem[]; locale: Locale };
+export type QueuePageProps = { initialQuery?: string; items: PublicQueueItem[]; locale: Locale };
 
 const copy = {
   en: { announcement: "Live public progress overview", empty: "No public queue records match that search.", eyebrow: "Commission status", search: "Search queue", title: "Queue" },
   th: { announcement: "ภาพรวมความคืบหน้าสาธารณะ", empty: "ไม่พบรายการคิวที่ตรงกับคำค้น", eyebrow: "สถานะคอมมิชชัน", search: "ค้นหาคิว", title: "คิว" },
 } as const;
 
-export function QueuePage({ items, locale }: QueuePageProps) {
-  const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
-  return <QueueContent initialQuery={urlQuery} items={items} key={urlQuery} locale={locale} />;
-}
-
-function QueueContent({ initialQuery, items, locale }: QueuePageProps & { initialQuery: string }) {
+export function QueuePage({ initialQuery = "", items, locale }: QueuePageProps) {
   const [query, setQuery] = useState(initialQuery);
   const labels = copy[locale];
   const visibleItems = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase();
+    const term = query.trim().toLocaleLowerCase(locale);
     if (!term) return items;
     return items.filter((item) => [item.displayName, item.serviceName, item.statusLabel, item.deadlineLabel]
-      .some((value) => value.toLocaleLowerCase().includes(term)));
-  }, [items, query]);
+      .some((value) => value.toLocaleLowerCase(locale).includes(term)));
+  }, [items, locale, query]);
 
   return <main className={styles.queue}>
     <header className={styles.heading}>

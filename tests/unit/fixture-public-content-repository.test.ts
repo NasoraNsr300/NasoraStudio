@@ -4,7 +4,7 @@ import {
   fixturePublicContentRepository,
   projectPublicQueueItem,
 } from "@/data/fixture-public-content-repository";
-import { privateQueueFixtureRecords } from "@/data/fixtures/public-content";
+import { privateQueueFixtureRecords } from "@/data/fixtures/private-queue-fixtures.server";
 import type { PublicQueueItem } from "@/shared/types/public-content";
 import { serviceCategories } from "@/data/fixtures/public-content";
 
@@ -82,5 +82,17 @@ describe("fixture public content repository", () => {
 
     expect(documents).not.toHaveLength(0);
     expect(documents.every((document) => document.published)).toBe(true);
+  });
+
+  it("serves stored WebP derivatives and omits unavailable published video assets", async () => {
+    const portfolio = await fixturePublicContentRepository.getPortfolio("en");
+
+    expect(portfolio).not.toHaveLength(0);
+    expect(portfolio.every((item) => item.media.kind === "image")).toBe(true);
+    for (const item of portfolio) {
+      expect(item.media.thumbnailSrc).toMatch(/-thumbnail\.webp$/);
+      expect(item.media.cardSrc).toMatch(/-card\.webp$/);
+      expect(item.media.detailSrc).toMatch(/-detail\.webp$/);
+    }
   });
 });

@@ -1,6 +1,6 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- public pages serve stored derivatives directly */
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -97,11 +97,13 @@ export function ImageLightbox({ item, locale, onClose }: ImageLightboxProps) {
             src={item.media.detailSrc}
           />
         ) : (
-          <Image
+          <img
             alt={item.media.alt[locale]}
             className={styles.lightboxImage}
             height={item.media.height}
+            sizes="(max-width: 780px) 100vw, 90vw"
             src={item.media.detailSrc}
+            srcSet={`${item.media.cardSrc} 960w, ${item.media.detailSrc} 1600w`}
             width={item.media.width}
           />
         )}

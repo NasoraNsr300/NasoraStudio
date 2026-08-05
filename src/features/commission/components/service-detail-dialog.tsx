@@ -1,10 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { serviceReferenceUsd } from "@/data/fixtures/public-content";
+import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceAvailability, ServiceType } from "@/shared/types/public-content";
 
@@ -190,7 +189,11 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
         </header>
         <div className={styles.dialogBody}>
           <div className={styles.samples}>
-            {service.examples.map((example) => <figure key={example.id}><Image alt={example.media.alt[locale]} height={example.media.height} src={example.media.detailSrc} width={example.media.width} /><figcaption>{example.title[locale]}</figcaption></figure>)}
+            {service.examples.map((example) => <figure key={example.id}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- stored detail derivative */}
+              <img alt={example.media.alt[locale]} height={example.media.height} sizes="(max-width: 780px) 100vw, 50vw" src={example.media.detailSrc} srcSet={`${example.media.cardSrc} 960w, ${example.media.detailSrc} 1600w`} width={example.media.width} />
+              <figcaption>{example.title[locale]}</figcaption>
+            </figure>)}
           </div>
           <div className={styles.guidance}>
             <section>

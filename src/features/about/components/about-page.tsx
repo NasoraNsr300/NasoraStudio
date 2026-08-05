@@ -1,6 +1,6 @@
 import type { Locale } from "@/shared/i18n/locales";
 
-import styles from "@/features/documents/components/documents.module.css";
+import styles from "./about.module.css";
 
 export type AboutPageProps = { locale: Locale };
 
@@ -27,7 +27,7 @@ const channels = [
 
 export function AboutPage({ locale }: AboutPageProps) {
   const content = aboutFixture[locale];
-  return <main className={styles.documents}>
+  return <main className={styles.about}>
     <header className={styles.heading}><p>{content.eyebrow}</p><h1>{content.title}</h1><span>{content.biography}</span></header>
     <section aria-labelledby="contact-heading" className={styles.card}>
       <div><p>{locale === "th" ? "ติดต่อ" : "Contact"}</p><h2 id="contact-heading">{locale === "th" ? "มาคุยกัน" : "Let’s talk"}</h2><span>{content.contact}</span></div>

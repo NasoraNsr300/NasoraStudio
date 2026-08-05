@@ -1,14 +1,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { privateQueueFixtureRecords } from "@/data/fixtures/public-content";
+import { privateQueueFixtureRecords } from "@/data/fixtures/private-queue-fixtures.server";
 import { projectPublicQueueItem } from "@/data/fixture-public-content-repository";
 import type { PublicQueueItem } from "@/shared/types/public-content";
 
 const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
 vi.mock("next/navigation", () => ({ useSearchParams: navigation.useSearchParams }));
 
-import { QueuePage } from "@/features/queue/components/queue-page";
+import { QueueSearch } from "@/features/queue/components/queue-search";
 
 afterEach(() => {
   cleanup();
@@ -20,7 +20,7 @@ const queue: PublicQueueItem[] = privateQueueFixtureRecords.map((item) => projec
 
 describe("QueuePage", () => {
   it("renders the public queue fields, including member nicknames and Guest aliases", () => {
-    render(<QueuePage items={queue} locale="en" />);
+    render(<QueueSearch items={queue} locale="en" />);
 
     expect(screen.getByRole("columnheader", { name: "Position" })).toBeVisible();
     expect(screen.getByRole("columnheader", { name: "Name" })).toBeVisible();
@@ -34,7 +34,7 @@ describe("QueuePage", () => {
   });
 
   it("keeps queue rows as public records rather than private-detail links or buttons", () => {
-    render(<QueuePage items={queue} locale="en" />);
+    render(<QueueSearch items={queue} locale="en" />);
 
     expect(screen.queryByRole("link", { name: /Mali|Nox|Guest Comet/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Mali|Nox|Guest Comet/ })).not.toBeInTheDocument();
@@ -44,7 +44,7 @@ describe("QueuePage", () => {
   it("filters supplied public queue records from the current queue q parameter", () => {
     navigation.params = new URLSearchParams("q=Coloring");
     navigation.useSearchParams.mockImplementation(() => navigation.params);
-    render(<QueuePage items={queue} locale="en" />);
+    render(<QueueSearch items={queue} locale="en" />);
 
     expect(screen.getByText("Nox")).toBeVisible();
     expect(screen.queryByText("Mali")).not.toBeInTheDocument();
@@ -54,18 +54,18 @@ describe("QueuePage", () => {
   it("updates its filter when client navigation supplies a new q parameter and still accepts local input", () => {
     navigation.params = new URLSearchParams("q=Coloring");
     navigation.useSearchParams.mockImplementation(() => navigation.params);
-    const { rerender } = render(<QueuePage items={queue} locale="en" />);
+    const { rerender } = render(<QueueSearch items={queue} locale="en" />);
     expect(screen.getByText("Nox")).toBeVisible();
 
     navigation.params = new URLSearchParams("q=Sketching");
-    rerender(<QueuePage items={queue} locale="en" />);
+    rerender(<QueueSearch items={queue} locale="en" />);
     expect(screen.getByText("Mali")).toBeVisible();
     fireEvent.change(screen.getByRole("searchbox", { name: "Search queue" }), { target: { value: "Queued" } });
     expect(screen.getByText("Guest Comet")).toBeVisible();
   });
 
   it("uses Thai labels when requested", () => {
-    render(<QueuePage items={privateQueueFixtureRecords.map((item) => projectPublicQueueItem(item, "th"))} locale="th" />);
+    render(<QueueSearch items={privateQueueFixtureRecords.map((item) => projectPublicQueueItem(item, "th"))} locale="th" />);
 
     expect(screen.getByRole("columnheader", { name: "ลำดับ" })).toBeVisible();
     expect(screen.getByRole("searchbox", { name: "ค้นหาคิว" })).toBeVisible();
