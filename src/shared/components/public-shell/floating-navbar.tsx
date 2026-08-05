@@ -45,8 +45,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
   const search = getSearchConfig(locale, usePathname());
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
-  const toggleTheme = () => {
-    const nextTheme = currentTheme() === "night" ? "autumn" : "night";
+  const setTheme = (nextTheme: ThemeName) => {
     document.documentElement.dataset.theme = nextTheme;
     window.localStorage.setItem("nasora-theme", nextTheme);
   };
@@ -63,12 +62,29 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
           <label className={styles.visuallyHidden} htmlFor="nasora-search">{search.label}</label>
           <input id="nasora-search" name="q" placeholder={search.label} type="search" />
         </form>
-        <span className={styles.availability} data-state={availability}>{availability.toUpperCase()}</span>
-        <Link className={styles.queueLink} href={`/${locale}/queue`}>{dictionary.queue}</Link>
-        <a className={styles.languageLink} href={`/${alternateLocale}`}>{alternateLocale.toUpperCase()}</a>
-        <IconButton aria-label={`${dictionary.theme}: ${theme}`} className={styles.iconButton} onClick={toggleTheme}>
-          {theme === "night" ? "☾" : "☀"}
-        </IconButton>
+        <div className={styles.navActions}>
+          <span className={styles.availability} data-state={availability}>
+            <span aria-hidden="true" className={styles.statusDot} />
+            {availability.toUpperCase()}
+          </span>
+          <Link className={styles.queueLink} href={`/${locale}/queue`}>
+            <span aria-hidden="true">▣</span>
+            {locale === "th" ? "ดูคิวงาน" : "Queue"}
+          </Link>
+          <span className={styles.localeControl}>
+            <strong>{locale.toUpperCase()}</strong>
+            <span aria-hidden="true">/</span>
+            <a className={styles.languageLink} href={`/${alternateLocale}`}>{alternateLocale.toUpperCase()}</a>
+          </span>
+          <span className={styles.themeControls}>
+            <button aria-pressed={theme === "night"} data-active={theme === "night"} onClick={() => setTheme("night")} type="button">
+              <span aria-hidden="true">☾</span> Night
+            </button>
+            <button aria-pressed={theme === "autumn"} data-active={theme === "autumn"} onClick={() => setTheme("autumn")} type="button">
+              <span aria-hidden="true">🍂</span> Autumn
+            </button>
+          </span>
+        </div>
       </header>
       </div>
       <Sidebar locale={locale} onClose={closeSidebar} open={sidebarOpen} />

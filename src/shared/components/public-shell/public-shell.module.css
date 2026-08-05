@@ -42,7 +42,7 @@
   box-shadow: var(--elevation-floating);
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: auto auto minmax(12rem, 1fr) auto auto auto auto;
+  grid-template-columns: auto auto minmax(16rem, 34rem) 1fr;
   padding: var(--space-2) var(--space-3);
   width: 100%;
 }
@@ -91,22 +91,70 @@
 }
 
 .availability {
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--success) 55%, transparent);
+  border-radius: 999px;
   color: var(--success);
+  display: inline-flex;
   font-size: var(--font-label);
   font-weight: 700;
+  gap: 0.45rem;
+  min-height: 38px;
+  padding-inline: var(--space-3);
 }
 
-.queueLink,
-.languageLink {
+.statusDot {
+  background: var(--success);
+  border-radius: 50%;
+  height: 0.45rem;
+  width: 0.45rem;
+}
+
+.navActions {
   align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.queueLink {
+  align-items: center;
+  background: color-mix(in srgb, var(--brand-violet) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand-violet) 60%, var(--border));
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   display: inline-flex;
   font-size: var(--font-label);
   font-weight: 600;
+  gap: var(--space-2);
   min-height: 44px;
-  min-width: 44px;
+  padding-inline: var(--space-4);
   text-decoration: none;
 }
+
+.localeControl,
+.themeControls { align-items: center; display: inline-flex; gap: var(--space-2); }
+.localeControl { border-left: 1px solid var(--border); padding-left: var(--space-3); }
+.localeControl strong { color: var(--text-primary); font-size: var(--font-label); }
+.localeControl > span { color: var(--text-secondary); }
+.languageLink { color: var(--text-secondary); font-size: var(--font-label); text-decoration: none; }
+
+.themeControls { border-left: 1px solid var(--border); padding-left: var(--space-3); }
+.themeControls button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-label);
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+}
+.themeControls button[data-active="true"] { color: var(--brand-gold); }
 
 .pageContent {
   position: relative;
