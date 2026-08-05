@@ -54,10 +54,12 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
     <>
       <div className={styles.navbarFootprint} data-navbar-footprint="true">
       <header className={styles.navbar}>
-        <IconButton aria-label={dictionary.menu} className={styles.iconButton} onClick={() => setSidebarOpen(true)}>
-          ☰
-        </IconButton>
-        <Link aria-label="Nasora home" className={styles.brand} href={`/${locale}`}>NASORA</Link>
+        <div className={styles.navIdentity}>
+          <IconButton aria-label={dictionary.menu} className={styles.iconButton} onClick={() => setSidebarOpen(true)}>
+            ☰
+          </IconButton>
+          <Link aria-label="Nasora home" className={styles.brand} href={`/${locale}`}>NASORA</Link>
+        </div>
         <form action={search.action} aria-label={search.label} className={styles.search} role="search">
           <label className={styles.visuallyHidden} htmlFor="nasora-search">{search.label}</label>
           <input id="nasora-search" name="q" placeholder={search.label} type="search" />

@@ -42,10 +42,19 @@
   box-shadow: var(--elevation-floating);
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: auto auto minmax(16rem, 34rem) 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 34rem) minmax(0, 1fr);
   padding: var(--space-2) var(--space-3);
   width: 100%;
 }
+
+.navIdentity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-self: start;
+}
+
+.search { justify-self: center; width: 100%; }
 
 .brand {
   align-items: center;
