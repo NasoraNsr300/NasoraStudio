@@ -248,32 +248,43 @@
 .accountControl:has(.accountPanel) { z-index: calc(var(--z-overlay) + 1); }
 
 .accountButton {
+  align-items: center;
   background: var(--brand-gold);
   box-shadow: var(--elevation-floating);
   color: #2a1a12;
+  display: flex;
+  justify-content: center;
 }
 
 .accountPanel {
-  background: var(--background-elevated);
+  background: linear-gradient(145deg, rgb(14 26 52 / 98%), rgb(8 17 36 / 98%));
   border: var(--border-subtle) solid var(--border);
   border-radius: var(--radius-md);
   bottom: calc(100% + var(--space-3));
   box-shadow: var(--elevation-modal);
   color: var(--text-primary);
-  padding: var(--space-4);
+  overflow: hidden;
   position: absolute;
   right: 0;
-  width: min(20rem, calc(100vw - var(--space-8)));
+  width: min(18rem, calc(100vw - var(--space-8)));
 }
 
-.accountPanel button {
-  background: var(--brand-gold);
-  border: 0;
-  border-radius: var(--radius-sm);
-  color: #2a1a12;
-  font: inherit;
-  min-height: 44px;
-  padding: 0 var(--space-3);
+.accountSummary { align-items: center; border-bottom: 1px solid var(--border); display: flex; gap: .7rem; padding: .85rem; }
+.accountSummary img { border: 1px solid var(--brand-gold); border-radius: 50%; height: 2.6rem; object-fit: cover; width: 2.6rem; }
+.accountSummary span { display: grid; }.accountSummary strong { font-size: .82rem; }.accountSummary small { color: var(--brand-violet); font-size: .65rem; }
+.accountMenuList { display: grid; gap: .35rem; padding: .55rem; }
+.accountMenuItem { align-items: center; background: transparent; border: 1px solid transparent; border-radius: .5rem; color: var(--text-primary); display: grid; font: inherit; gap: .65rem; grid-template-columns: auto 1fr auto; min-height: 2.9rem; padding: 0 .7rem; text-align: left; text-decoration: none; }
+.accountMenuItem:hover { background: rgb(99 71 170 / 20%); border-color: var(--border); }
+.accountMenuItem span { font-size: .78rem; }.accountMenuItem svg { color: var(--brand-violet); }
+.accountMenuItem b { align-items: center; background: var(--brand-violet); border-radius: 999px; color: #281f49; display: flex; font-size: .62rem; height: 1.35rem; justify-content: center; min-width: 1.35rem; padding: 0 .25rem; }
+.notificationPanel { width: min(21rem, calc(100vw - var(--space-8))); }
+.notificationHeader { align-items: center; border-bottom: 1px solid var(--border); display: grid; gap: .55rem; grid-template-columns: auto 1fr auto; padding: .65rem; }
+.notificationHeader button { align-items: center; background: transparent; border: 1px solid var(--border); border-radius: .45rem; color: var(--text-primary); display: flex; height: 2.25rem; justify-content: center; width: 2.25rem; }
+.notificationHeader h2 { font-size: .88rem; margin: 0; }.notificationHeader > span { background: rgb(92 64 166 / 30%); border-radius: 999px; color: var(--brand-violet); font-size: .65rem; padding: .2rem .5rem; }
+.notificationList { display: grid; }
+.notificationList article { border-top: 1px solid var(--border); display: grid; gap: .65rem; grid-template-columns: auto 1fr; padding: .75rem; }.notificationList article:first-child { border-top: 0; }
+.notificationList article > span { align-items: center; background: rgb(92 64 166 / 24%); border-radius: 50%; color: var(--brand-violet); display: flex; height: 2rem; justify-content: center; width: 2rem; }
+.notificationList strong { font-size: .72rem; }.notificationList p { color: var(--text-secondary); font-size: .65rem; line-height: 1.45; margin: .2rem 0; }.notificationList time { color: var(--brand-gold); font-size: .6rem; }
 }
 
 .visuallyHidden {

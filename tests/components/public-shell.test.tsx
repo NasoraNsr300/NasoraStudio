@@ -23,10 +23,23 @@ describe("PublicShell", () => {
     expect(screen.getByText("OPEN")).toBeVisible();
     expect(within(screen.getByRole("banner")).getByText("Queue")).toBeVisible();
     expect(screen.getByRole("link", { name: "TH" })).toBeVisible();
-    expect(screen.getByRole("button", { name: /theme/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Night" })).toBeVisible();
     expect(screen.getByRole("button", { name: /account/i })).toBeVisible();
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /log in/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the signed-in account menu and notification panel", async () => {
+    const user = userEvent.setup();
+    navigation.pathname = "/en";
+    navigation.usePathname.mockImplementation(() => navigation.pathname);
+    render(<PublicShell locale="en"><main>Page content</main></PublicShell>);
+
+    await user.click(screen.getByRole("button", { name: "Account" }));
+    expect(screen.getByRole("link", { name: "Member area" })).toHaveAttribute("href", "/en/member/requests");
+    await user.click(screen.getByRole("button", { name: /Notifications/ }));
+    expect(screen.getByRole("heading", { name: "Notifications" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back to account menu" })).toBeVisible();
   });
 });
 
