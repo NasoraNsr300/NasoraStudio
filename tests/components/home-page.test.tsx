@@ -17,7 +17,7 @@ describe("HomePage", () => {
     container.innerHTML = markup;
     const preload = container.querySelector('link[rel="preload"][as="image"]');
 
-    expect(container).toHaveTextContent("Artwork that tells your story");
+    expect(container).toHaveTextContent("Artwork in your world");
     expect(preload).toHaveAttribute(
       "imagesrcset",
       `${heroItems[0].media.thumbnailSrc} 480w, ${heroItems[0].media.cardSrc} 960w, ${heroItems[0].media.detailSrc} 1600w`,
@@ -31,12 +31,12 @@ describe("HomePage", () => {
     );
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
 
     rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
   });
 
   it("changes only Hero media after client selection while fallback copy stays stable", () => {
@@ -50,12 +50,12 @@ describe("HomePage", () => {
     );
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
 
     rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork that tells your story" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
   });
 
   it("keeps the static Hero frame dimensions after client selection", () => {
@@ -78,6 +78,14 @@ describe("HomePage", () => {
     expect(screen.getByRole("tab", { name: "Queue" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Terms" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Contact" })).toBeVisible();
+  });
+
+  it("shows the approved compact studio facts in the About panel", () => {
+    render(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="th" randomValue={0} />);
+
+    expect(screen.getByText("11:00 – 22:00")).toBeVisible();
+    expect(screen.getByText("ใส่ใจทุกรายละเอียด")).toBeVisible();
+    expect(screen.getByText("สื่อสารชัดเจน ส่งงานตรงเวลา")).toBeVisible();
   });
 
   it("prefixes every featured work destination with the active locale", () => {

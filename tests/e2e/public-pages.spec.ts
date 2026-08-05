@@ -77,8 +77,9 @@ test("commission contextual search finds categories and subtypes from both commi
 });
 
 test("Home featured links open their locale-prefixed Portfolio work", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/th");
-  await page.getByRole("link", { name: "ดูผลงานนี้" }).click();
+  await page.getByRole("link", { name: /Starlit Traveler/ }).first().click();
 
   await expect(page).toHaveURL(/\/th\/portfolio\?work=starlit-traveler$/);
   await expect(page.getByRole("dialog", { name: "Starlit Traveler" })).toBeVisible();

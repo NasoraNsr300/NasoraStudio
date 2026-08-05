@@ -47,6 +47,17 @@ async function prepareVisualPage(page: Page, pathname: string, width: number, he
   await expect(page.locator("html")).toHaveAttribute("data-theme", "night");
 }
 
+test("Home matches the approved 1920 desktop composition", async ({ page }) => {
+  await prepareVisualPage(page, "/th", 1920, 1080);
+  await expect(page).toHaveScreenshot("home-mockup-1920x1080.png", {
+    animations: "disabled",
+    caret: "initial",
+    fullPage: false,
+    maxDiffPixelRatio: crossPlatformMaxDiffPixelRatio,
+    stylePath: screenshotStylePath,
+  });
+});
+
 for (const viewport of viewports) {
   for (const route of routes) {
     test(`${route.name} matches ${viewport.name} baseline`, async ({ page }) => {

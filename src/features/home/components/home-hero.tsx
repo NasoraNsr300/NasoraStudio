@@ -19,8 +19,22 @@ export type HomeHeroProps = {
 const HERO_IMAGE_SIZES = "(min-width: 900px) 52vw, 100vw";
 
 const copy = {
-  en: { commission: "View commissions", explore: "Explore featured work", services: "Commission · Illustration · Minecraft", studio: "NASORA STUDIO" },
-  th: { commission: "ดูบริการคอมมิชชัน", explore: "สำรวจผลงานแนะนำ", services: "คอมมิชชัน · ภาพประกอบ · Minecraft", studio: "NASORA STUDIO" },
+  en: {
+    commission: "View commissions",
+    explore: "Explore featured work",
+    headlineAccent: "your world",
+    headlineLead: "Artwork in",
+    services: "Commission · Illustration · Minecraft",
+    studio: "NASORA STUDIO",
+  },
+  th: {
+    commission: "ดูบริการคอมมิชชัน",
+    explore: "สำรวจผลงานแนะนำ",
+    headlineAccent: "ในโลกของคุณ",
+    headlineLead: "รับวาดภาพ",
+    services: "คอมมิชชัน · ภาพประกอบ · Minecraft",
+    studio: "NASORA STUDIO",
+  },
 } as const;
 
 function getResponsiveSourceSet(hero: HeroItem) {
@@ -60,7 +74,7 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
   const labels = copy[locale];
 
   return (
-    <section aria-labelledby="home-hero-title" className={styles.hero}>
+    <section aria-labelledby="home-hero-title" className={styles.hero} data-home-hero="true">
       <link
         as="image"
         href={fallbackHero.media.cardSrc}
@@ -70,9 +84,12 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
       />
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{labels.studio}</p>
-        <h1 id="home-hero-title">{fallbackHero.title[locale]}</h1>
-        <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>
+        <h1 id="home-hero-title">
+          {labels.headlineLead}{" "}
+          <span className={styles.heroAccent}>{labels.headlineAccent}</span>
+        </h1>
         <p className={styles.heroServices}>{labels.services}</p>
+        <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>
         <div className={styles.heroActions}>
           <a className={styles.primaryAction} href={`/${locale}/commission`}>{labels.commission}</a>
           <a className={styles.secondaryAction} href="#featured-work">{labels.explore}</a>

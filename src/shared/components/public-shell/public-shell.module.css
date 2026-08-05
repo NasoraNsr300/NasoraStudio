@@ -113,6 +113,11 @@
   z-index: var(--z-content);
 }
 
+@media (min-width: 1024px) {
+  .navbarFootprint { min-height: 96px; }
+  .navbar { padding-block: var(--space-6); }
+}
+
 .pageContent:has([role="dialog"]) {
   z-index: var(--z-overlay);
 }

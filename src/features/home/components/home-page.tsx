@@ -17,9 +17,9 @@ export type HomePageProps = {
 
 export function HomePage({ heroItems, featuredItems, locale, randomValue }: HomePageProps) {
   return (
-    <main className={styles.home}>
+    <main className={styles.home} data-home-shell="true">
       <HomeHero heroItems={heroItems} locale={locale} randomValue={randomValue} />
-      <div className={styles.lowerGrid}>
+      <div className={styles.lowerGrid} data-home-lower-grid="true">
         <FeaturedCarousel items={featuredItems} locale={locale} />
         <QuickInfoPanel locale={locale} />
       </div>

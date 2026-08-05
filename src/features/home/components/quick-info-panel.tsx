@@ -31,6 +31,19 @@ const panelCopy = {
   th: { label: "ข้อมูลฉบับย่อ", eyebrow: "ข้อมูลฉบับย่อ" },
 } as const;
 
+const studioFacts = {
+  en: [
+    { icon: "◷", label: "Studio hours", value: "11:00 – 22:00" },
+    { icon: "✦", label: "Careful craft", value: "Attention to every detail" },
+    { icon: "◇", label: "Reliable", value: "Clear updates, on-time delivery" },
+  ],
+  th: [
+    { icon: "◷", label: "เวลาทำการ", value: "11:00 – 22:00" },
+    { icon: "✦", label: "งานคุณภาพ", value: "ใส่ใจทุกรายละเอียด" },
+    { icon: "◇", label: "เชื่อถือได้", value: "สื่อสารชัดเจน ส่งงานตรงเวลา" },
+  ],
+} as const;
+
 export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("about");
   const baseId = useId();
@@ -57,6 +70,16 @@ export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
         <p className={styles.eyebrow}>{panelCopy[locale].eyebrow}</p>
         <h2 id={`${baseId}-title`}>{activeCopy.title}</h2>
         <p>{activeCopy.body}</p>
+        {activeTab === "about" ? (
+          <div className={styles.studioFacts}>
+            {studioFacts[locale].map((fact) => (
+              <div className={styles.studioFact} key={fact.label}>
+                <span aria-hidden="true" className={styles.factIcon}>{fact.icon}</span>
+                <span><strong>{fact.label}</strong><small>{fact.value}</small></span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
