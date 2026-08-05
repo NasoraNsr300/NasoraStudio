@@ -15,8 +15,10 @@ const copy = {
 function statusTone(status: string) {
   const value = status.toLocaleLowerCase();
   if (value.includes("queue") || value.includes("รอ")) return "waiting";
-  if (value.includes("color") || value.includes("สี")) return "progress";
-  return "active";
+  if (value.includes("color") || value.includes("สี")) return "color";
+  if (value.includes("review") || value.includes("ตรวจ")) return "review";
+  if (value.includes("complete") || value.includes("เสร็จ")) return "complete";
+  return "sketch";
 }
 
 export function QueueTable({ items, locale }: QueueTableProps) {
@@ -36,7 +38,7 @@ export function QueueTable({ items, locale }: QueueTableProps) {
         </thead>
         <tbody>
           {items.map((item) => <tr key={`${item.position}-${item.displayName}`}>
-            <td data-label={labels.position}>{item.position}</td>
+            <td data-label={labels.position}><span className={styles.positionMark}>✦</span>{item.position}</td>
             <td data-label={labels.name}><strong>{item.displayName}</strong></td>
             <td data-label={labels.service}>{item.serviceName}</td>
             <td data-label={labels.status}><span className={styles.status} data-tone={statusTone(item.statusLabel)}><i aria-hidden="true" />{item.statusLabel}</span></td>
