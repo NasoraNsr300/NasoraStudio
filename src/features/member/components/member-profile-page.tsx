@@ -2,12 +2,12 @@ import { AtSign, KeyRound, Languages, LockKeyhole, Plus, ShieldCheck, UserRound 
 
 import type { Locale } from "@/shared/i18n/locales";
 
-import { MemberTabs } from "./member-tabs";
+import { MemberSidebar } from "./member-sidebar";
 import styles from "./member-pages.module.css";
 
 export function MemberProfilePage({ locale }: { locale: Locale }) {
   const th = locale === "th";
-  return <main className={styles.memberArea}><MemberTabs active="profile" locale={locale} /><section className={styles.pagePanel}>
+  return <main className={styles.memberArea}><MemberSidebar active="profile" locale={locale} /><section className={styles.pagePanel}>
     <header className={styles.pageHeader}><div><h1>{th ? "โปรไฟล์" : "Profile"}</h1><p>{th ? "จัดการชื่อ ช่องทางติดต่อ ภาษา และความปลอดภัยของบัญชี" : "Manage your nickname, contacts, language, and account security."}</p></div></header>
     <div className={styles.profileGrid}><section className={`${styles.surface} ${styles.profileCard}`}><h2><UserRound size={18} />{th ? "ข้อมูลส่วนตัว" : "Personal information"}</h2><div className={styles.avatarEditor}><img alt="Stardust" src="/fixtures/derivatives/moonlit-thumbnail.webp" /><div><strong>Stardust</strong><p><button type="button">{th ? "เปลี่ยนรูปโปรไฟล์" : "Change avatar"}</button></p></div></div><label className={styles.field}>{th ? "ชื่อที่ใช้แสดง (Nickname)" : "Display name (Nickname)"}<input defaultValue="Stardust" /></label><label className={styles.field}><Languages size={14} />{th ? "ภาษาที่ต้องการ" : "Preferred language"}<select defaultValue={locale}><option value="th">ไทย</option><option value="en">English</option></select></label><div className={styles.profileActions}><button className={styles.goldButton} type="button">{th ? "บันทึกข้อมูล" : "Save profile"}</button></div></section>
       <section className={`${styles.surface} ${styles.profileCard}`}><h2><AtSign size={18} />{th ? "ช่องทางติดต่อ" : "Contact channels"}</h2><div className={styles.contactItem}><span>◉</span><div><small>Discord</small><strong>@stardust</strong></div><em>{th ? "ค่าเริ่มต้น" : "Default"}</em></div><div className={styles.contactItem}><span><AtSign size={15} /></span><div><small>Email</small><strong>star@example.com</strong></div><button className={styles.outlineButton} type="button">{th ? "ตั้งเป็นหลัก" : "Make default"}</button></div><div className={styles.profileActions}><button className={styles.outlineButton} type="button"><Plus size={15} /> {th ? "เพิ่มช่องทาง" : "Add contact"}</button></div></section>

@@ -2,12 +2,12 @@ import { Clock3, FileCheck2, FileText, Plus } from "lucide-react";
 
 import type { Locale } from "@/shared/i18n/locales";
 
-import { MemberTabs } from "./member-tabs";
+import { MemberSidebar } from "./member-sidebar";
 import styles from "./member-pages.module.css";
 
 export function MemberRequestsPage({ locale }: { locale: Locale }) {
   const th = locale === "th";
-  return <main className={styles.memberArea}><MemberTabs active="requests" locale={locale} /><section className={styles.pagePanel}>
+  return <main className={styles.memberArea}><MemberSidebar active="requests" locale={locale} /><section className={styles.pagePanel}>
     <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
     <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>1</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>1</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>2</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
     <section className={styles.surface}><div className={styles.surfaceTitle}><h2>{th ? "รายการล่าสุด" : "Recent requests"}</h2><span>4 {th ? "รายการ" : "items"}</span></div><div className={styles.requestList}>
