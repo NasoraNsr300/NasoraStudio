@@ -2,6 +2,7 @@ import type { Locale } from "@/shared/i18n/locales";
 
 export const dictionaries = {
   th: {
+    about: "เกี่ยวกับ",
     account: "บัญชี",
     closeMenu: "ปิดเมนู",
     commission: "คอมมิชชัน",
@@ -15,6 +16,7 @@ export const dictionaries = {
     theme: "เปลี่ยนธีม",
   },
   en: {
+    about: "About",
     account: "Account",
     closeMenu: "Close menu",
     commission: "Commission",

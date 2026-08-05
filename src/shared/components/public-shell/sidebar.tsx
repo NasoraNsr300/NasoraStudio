@@ -74,6 +74,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
           <Link href={`/${locale}/commission`}>{dictionary.commission}</Link>
           <Link href={`/${locale}/queue`}>{dictionary.queue}</Link>
           <Link href={`/${locale}/documents`}>{dictionary.documents}</Link>
+          <Link href={`/${locale}/about`}>{dictionary.about}</Link>
         </nav>
         <button className={styles.sidebarLogin} onClick={() => { show(); onClose(); }} type="button">
           {dictionary.login}
