@@ -8,6 +8,7 @@ import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceAvailability, ServiceType } from "@/shared/types/public-content";
 
 import styles from "./commission.module.css";
+import { EstimateRequestDialog } from "./estimate-request-dialog";
 
 export type ServiceDetailDialogProps = {
   initialPreview?: boolean;
@@ -150,22 +151,6 @@ function useDialogFocus(
   return close;
 }
 
-function RequestPreviewDialog({ locale, onClose }: { locale: Locale; onClose: () => void }) {
-  const copy = dialogCopy[locale];
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const close = useDialogFocus(true, onClose, dialogRef, closeRef);
-
-  return (
-    <div aria-label={copy.previewLabel} aria-modal="true" className={styles.previewBackdrop} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
-      <section className={styles.previewDialog}>
-        <p role="status">{copy.preview}</p>
-        <button aria-label={copy.closePreview} className={styles.secondaryButton} onClick={close} ref={closeRef} type="button">{copy.close}</button>
-      </section>
-    </div>
-  );
-}
-
 export function ServiceDetailDialog({ initialPreview = false, locale = "en", onClose, open, service }: ServiceDetailDialogProps) {
   const copy = dialogCopy[locale];
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -226,7 +211,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
         </footer>
       </section>
     </div>
-    {previewOpen ? <RequestPreviewDialog locale={locale} onClose={() => setPreviewOpen(false)} /> : null}
+    {previewOpen ? <EstimateRequestDialog locale={locale} onClose={() => setPreviewOpen(false)} service={service} /> : null}
     </>
   );
 }

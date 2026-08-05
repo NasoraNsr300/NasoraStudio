@@ -28,10 +28,13 @@ export function ServiceCategoryPage({ category, locale, services }: ServiceCateg
   const labels = copy[locale];
 
   return (
-    <main className={styles.commissionPage}>
+    <main className={`${styles.commissionPage} ${styles.serviceCategoryPage}`}>
       <header className={styles.heading}>
-        <p>{labels.eyebrow}</p>
-        <h1>{category.name[locale]}</h1>
+        <p>{locale === "th" ? "อัลบั้ม" : "Album"}　/　{category.name[locale]}</p>
+        <div className={styles.categoryTitleRow}>
+          <h1>{category.name[locale]}</h1>
+          <span className={`${styles.categoryAvailability} ${styles[category.availability]}`}>● {category.availability.toUpperCase()}</span>
+        </div>
         <span>{category.description[locale]}</span>
       </header>
       <div aria-label={labels.filters} className={styles.subtypeFilters}>
