@@ -33,6 +33,7 @@
   --z-navbar: 20;
   --z-floating: 30;
   --z-overlay: 40;
+  --page-shell-width: min(76vw, 1440px);
 }
 
 :root,
@@ -78,6 +79,10 @@ body {
 button,
 a,
 input { -webkit-tap-highlight-color: transparent; }
+
+@media (max-width: 1180px) {
+  :root { --page-shell-width: calc(100% - 2rem); }
+}
 
 button:focus-visible,
 a:focus-visible,

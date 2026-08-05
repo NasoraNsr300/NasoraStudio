@@ -29,7 +29,7 @@
   min-height: 64px;
   position: sticky;
   top: var(--space-4);
-  width: min(76vw, 1440px);
+  width: var(--page-shell-width);
   z-index: var(--z-navbar);
 }
 

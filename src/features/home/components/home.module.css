@@ -1,7 +1,7 @@
 .home {
   margin: 0 auto;
-  max-width: 1440px;
-  padding: 1.5rem clamp(1rem, 3vw, 2rem) 7rem;
+  padding: 1.5rem 0 7rem;
+  width: var(--page-shell-width);
 }
 
 .hero {
@@ -155,9 +155,8 @@
 
 @media (min-width: 1024px) {
   .home {
-    max-width: 1440px;
     padding: 0 0 5rem;
-    width: 76vw;
+    width: var(--page-shell-width);
   }
 
   .hero {

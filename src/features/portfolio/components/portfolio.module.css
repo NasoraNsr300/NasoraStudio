@@ -1,4 +1,4 @@
-.portfolio { margin: 0 auto; padding: 2.25rem 0 7rem; width: 76vw; }
+.portfolio { margin: 0 auto; padding: 2.25rem 0 7rem; width: var(--page-shell-width); }
 .heading { margin-bottom: 1.4rem; max-width: 39rem; }
 .heading h1 { font-family: Georgia, var(--font-display); font-size: 2.8rem; font-weight: 400; letter-spacing: .04em; line-height: 1; margin: 0; }
 .heading h1 span { color: var(--brand-gold); }.heading h1 strong { color: var(--brand-gold); font-family: var(--font-sans); font-size: 1.45rem; letter-spacing: 0; }
@@ -26,7 +26,7 @@
 .lightboxFigure { display: grid; margin: 0; max-height: 100%; max-width: min(100%, 80rem); position: relative; }.lightboxImage, .lightboxVideo { display: block; height: auto; max-height: calc(100dvh - 8rem); max-width: 100%; object-fit: contain; width: auto; }.lightboxFigure figcaption { color: var(--text-primary); margin-top: var(--space-3); text-align: center; }
 .closeButton { background: var(--surface-strong); color: var(--text-primary); cursor: pointer; font-size: 2rem; height: 44px; line-height: 1; position: absolute; right: var(--space-2); top: var(--space-2); width: 44px; z-index: 1; }.empty { background: var(--surface); border-radius: var(--radius-md); color: var(--text-secondary); padding: var(--space-6); }
 
-@media (max-width: 1180px) { .portfolio { padding-left: 1rem; padding-right: 1rem; width: 100%; } }
+@media (max-width: 1180px) { .portfolio { padding-left: 0; padding-right: 0; } }
 @media (max-width: 780px) { .standard, .tall { grid-column: span 6; grid-row: span 1; }.wide { grid-column: span 12; } }
 @media (max-width: 520px) { .gallery { grid-template-columns: 1fr; }.standard, .wide, .tall { aspect-ratio: 4 / 3; grid-column: auto; }.controls { align-items: stretch; }.galleryTools, .sortControl { width: 100%; }.sortControl select { flex: 1; } }
 @media (prefers-reduced-motion: reduce) { .card img, .cardOverlay { transition: none; } }

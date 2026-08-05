@@ -1,5 +1,5 @@
-.documents { margin: 0 auto; max-width: 1440px; padding: 2rem 0 7rem; width: 76vw; }
-.routeReader { margin: 0 auto; max-width: 1100px; padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 3vw, 2rem) 7rem; }
+.documents { margin: 0 auto; padding: 2rem 0 7rem; width: var(--page-shell-width); }
+.routeReader { margin: 0 auto; padding: 2rem 0 7rem; width: var(--page-shell-width); }
 .card h2 a, .backLink { align-items: center; display: inline-flex; min-height: 44px; }
 .documentHero { align-items: stretch; display: grid; gap: var(--space-6); grid-template-columns: .72fr 1.28fr; }
 .heading { align-self: center; max-width: 32rem; }.heading h1, .readerBody h1 { font-family: var(--font-display); font-size: clamp(3rem, 4vw, 4rem); letter-spacing: -.05em; line-height: .94; margin: 0; }.heading h1::after { color: var(--brand-gold); content: " ─ ✦ ─"; display: block; font-size: 1.1rem; letter-spacing: 0; margin-top: var(--space-2); }.heading span { color: var(--text-secondary); display: block; line-height: 1.5; margin-top: var(--space-3); }
