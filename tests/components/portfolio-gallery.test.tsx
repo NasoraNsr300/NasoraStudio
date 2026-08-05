@@ -51,6 +51,20 @@ describe("PortfolioGallery", () => {
     expect(screen.queryByRole("button", { name: "View Blue Hour" })).not.toBeInTheDocument();
   });
 
+  it("updates the selected category when Portfolio URL state changes", () => {
+    const { rerender } = render(
+      <PortfolioGallery initialCategory="illustration" items={portfolioItems} locale="en" />,
+    );
+
+    expect(screen.getByRole("button", { name: "View Starlit Traveler" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "View Blue Hour" })).not.toBeInTheDocument();
+
+    rerender(<PortfolioGallery initialCategory="character" items={portfolioItems} locale="en" />);
+
+    expect(screen.getByRole("button", { name: "View Blue Hour" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "View Starlit Traveler" })).not.toBeInTheDocument();
+  });
+
   it("uses the selected locale for card and lightbox accessible content", async () => {
     const user = userEvent.setup();
     const item = portfolioItems[0];

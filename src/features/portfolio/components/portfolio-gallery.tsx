@@ -47,7 +47,6 @@ function categoryLabel(category: string, locale: Locale) {
 }
 
 export function PortfolioGallery({ initialCategory, initialQuery, items, locale }: PortfolioGalleryProps) {
-  const copy = galleryCopy[locale];
   const categories = useMemo(
     () => Array.from(new Set(items.map((item) => item.category))).sort(),
     [items],
@@ -56,7 +55,27 @@ export function PortfolioGallery({ initialCategory, initialQuery, items, locale 
     () => categories.find((value) => normalize(value, locale) === normalize(initialCategory, locale)) ?? "all",
     [categories, initialCategory, locale],
   );
-  const [category, setCategory] = useState(requestedCategory);
+
+  return (
+    <PortfolioGalleryContent
+      categories={categories}
+      initialCategory={requestedCategory}
+      initialQuery={initialQuery}
+      items={items}
+      key={requestedCategory}
+      locale={locale}
+    />
+  );
+}
+
+type PortfolioGalleryContentProps = Omit<PortfolioGalleryProps, "initialCategory"> & {
+  categories: string[];
+  initialCategory: string;
+};
+
+function PortfolioGalleryContent({ categories, initialCategory, initialQuery, items, locale }: PortfolioGalleryContentProps) {
+  const copy = galleryCopy[locale];
+  const [category, setCategory] = useState(initialCategory);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
 
