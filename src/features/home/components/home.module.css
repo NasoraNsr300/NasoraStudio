@@ -189,8 +189,8 @@
 
   .sectionHeading { margin-bottom: var(--space-3); }
   .sectionHeading .eyebrow { display: none; }
-  .loopMedia { aspect-ratio: auto; height: 20rem; }
-  .quickInfo { min-height: 20rem; padding: var(--space-5) var(--space-6); }
+  .loopMedia { aspect-ratio: auto; height: 18rem; }
+  .quickInfo { min-height: 18rem; padding: var(--space-5) var(--space-6); }
   .infoContent { padding: var(--space-5) var(--space-2) var(--space-2); }
   .studioFacts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .studioFact { align-items: flex-start; border-right: 1px solid var(--border); }
