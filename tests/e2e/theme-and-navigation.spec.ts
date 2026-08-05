@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
 
+test("static HTML emits the requested locale before hydration", async ({ request }) => {
+  for (const locale of ["th", "en"] as const) {
+    const response = await request.get(`/${locale}`);
+    expect(response.ok()).toBe(true);
+    const html = await response.text();
+    expect(html).toMatch(new RegExp(`<html[^>]+lang=["']${locale}["']`, "i"));
+  }
+});
+
 test("sidebar traps focus, closes with Escape, and restores focus", async ({ page }) => {
   await page.goto("/en");
   const menuButton = page.getByRole("button", { name: "Open menu" });

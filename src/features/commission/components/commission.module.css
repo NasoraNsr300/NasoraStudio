@@ -3,6 +3,8 @@
 .heading p { color: var(--brand-gold); font-size: var(--font-label); font-weight: 700; letter-spacing: .14em; margin: 0 0 var(--space-3); text-transform: uppercase; }
 .heading h1 { font-family: var(--font-display); font-size: clamp(3rem, 7vw, 6rem); letter-spacing: -.06em; line-height: .94; margin: 0; }
 .heading span { color: var(--text-secondary); display: block; margin-top: var(--space-5); }
+.documentLinks a { align-items: center; display: inline-flex; min-height: 44px; }
+.dialogClose { flex: 0 0 44px; min-width: 44px; }
 
 .albumGrid { display: grid; gap: clamp(.75rem, 1.5vw, 1.25rem); grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); display: block; isolation: isolate; overflow: hidden; position: relative; text-decoration: none; }

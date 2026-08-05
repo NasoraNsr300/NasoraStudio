@@ -18,6 +18,19 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 }
 
+async function expectMinimumTouchTargets(page: Page, state: string) {
+  const undersized = await page.locator("a[href]:visible, button:visible, input:visible, select:visible, textarea:visible, [role='button']:visible, [role='tab']:visible").evaluateAll((elements) =>
+    Array.from(new Set(elements)).flatMap((element) => {
+      if (element.closest("nextjs-portal") || element.getAttribute("aria-label") === "Open Next.js Dev Tools") return [];
+      const box = element.getBoundingClientRect();
+      return box.width < 44 || box.height < 44
+        ? [`${element.tagName.toLowerCase()}[${element.getAttribute("aria-label") ?? element.textContent?.trim() ?? ""}] ${Math.round(box.width)}x${Math.round(box.height)}`]
+        : [];
+    }),
+  );
+  expect(undersized, `undersized targets in ${state}`).toEqual([]);
+}
+
 test("visitor can browse the public commission journey", async ({ page }) => {
   await page.goto("/th");
   await page.getByRole("button", { name: "เปิดเมนู" }).click();
@@ -50,15 +63,15 @@ test("service album eagerly loads its above-fold LCP image", async ({ page }) =>
   await expect(page.locator("main article img").first()).toHaveAttribute("loading", "eager");
 });
 
-test("commission album grid eagerly loads only its desktop first row", async ({ page }) => {
+test("commission album grid eagerly loads only its true LCP item", async ({ page }) => {
   await page.goto("/en/commission");
   const albumImages = page.locator("main a img");
 
   await expect(albumImages).toHaveCount(5);
-  for (let index = 0; index < 4; index += 1) {
-    await expect(albumImages.nth(index)).toHaveAttribute("loading", "eager");
+  await expect(albumImages.first()).toHaveAttribute("loading", "eager");
+  for (let index = 1; index < 5; index += 1) {
+    await expect(albumImages.nth(index)).toHaveAttribute("loading", "lazy");
   }
-  await expect(albumImages.nth(4)).toHaveAttribute("loading", "lazy");
 });
 
 test("mobile service dialog controls stay above floating shell controls", async ({ page }) => {
@@ -90,20 +103,27 @@ test("mobile public routes do not overflow horizontally", async ({ page }) => {
   }
 });
 
-test("mobile public controls provide at least 44px touch targets", async ({ page }) => {
+test("all mobile public and overlay targets provide at least 44px touch targets", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
-  for (const route of ["/en", "/en/portfolio", "/en/commission/illustration", "/en/documents"] as const) {
+  for (const route of publicRoutes) {
     await page.goto(route);
-    const undersized = await page.locator("button:visible, input:visible, select:visible").evaluateAll((elements) =>
-      elements.flatMap((element) => {
-        if (element.closest("nextjs-portal") || element.getAttribute("aria-label") === "Open Next.js Dev Tools") return [];
-        const box = element.getBoundingClientRect();
-        return box.width < 44 || box.height < 44
-          ? [`${element.tagName.toLowerCase()}[${element.getAttribute("aria-label") ?? element.textContent?.trim() ?? ""}] ${Math.round(box.width)}x${Math.round(box.height)}`]
-          : [];
-      }),
-    );
-    expect(undersized, `undersized controls on ${route}`).toEqual([]);
+    await expectMinimumTouchTargets(page, route);
   }
+
+  await page.goto("/en");
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await expectMinimumTouchTargets(page, "open Sidebar");
+
+  await page.goto("/en/portfolio");
+  await page.getByRole("button", { name: /^View / }).first().click();
+  await expectMinimumTouchTargets(page, "open Portfolio lightbox");
+
+  await page.goto("/en/commission/illustration");
+  await page.getByRole("button", { name: /View details for Illustration Half Body/ }).click();
+  await expectMinimumTouchTargets(page, "open service dialog");
+
+  await page.goto("/en/documents");
+  await page.getByRole("button", { name: "Read document" }).first().click();
+  await expectMinimumTouchTargets(page, "open document dialog");
 });

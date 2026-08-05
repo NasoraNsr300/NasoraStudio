@@ -64,7 +64,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
         </form>
         <span className={styles.availability} data-state={availability}>{availability.toUpperCase()}</span>
         <Link className={styles.queueLink} href={`/${locale}/queue`}>{dictionary.queue}</Link>
-        <Link className={styles.languageLink} href={`/${alternateLocale}`}>{alternateLocale.toUpperCase()}</Link>
+        <a className={styles.languageLink} href={`/${alternateLocale}`}>{alternateLocale.toUpperCase()}</a>
         <IconButton aria-label={`${dictionary.theme}: ${theme}`} className={styles.iconButton} onClick={toggleTheme}>
           {theme === "night" ? "☾" : "☀"}
         </IconButton>

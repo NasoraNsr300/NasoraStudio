@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 import { ThemeScript } from "@/shared/theme/theme-script";
 
-import { notoSansThai, sora } from "./fonts";
-import "./globals.css";
+import { notoSansThai, sora } from "../fonts";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: "Nasora",

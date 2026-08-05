@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 const themeScript = `(() => {
   const storageKey = "nasora-theme";
   const storedTheme = window.localStorage.getItem(storageKey);
@@ -14,5 +16,5 @@ const themeScript = `(() => {
 })();`;
 
 export function ThemeScript() {
-  return <script dangerouslySetInnerHTML={{ __html: themeScript }} />;
+  return <Script dangerouslySetInnerHTML={{ __html: themeScript }} id="nasora-theme" strategy="beforeInteractive" />;
 }

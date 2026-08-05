@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 
@@ -15,10 +15,6 @@ export type PublicShellProps = {
 };
 
 export function PublicShell({ children, locale }: PublicShellProps) {
-  useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
-
   return (
     <AuthPreviewProvider>
       <div className={styles.shell} lang={locale}>
