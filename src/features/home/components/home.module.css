@@ -112,7 +112,6 @@
   width: max-content;
   will-change: transform;
 }
-.loopTrack[data-paused="true"] { animation-play-state: paused; }
 .loopGroup { display: flex; gap: var(--loop-gap); }
 .loopCard {
   border-radius: var(--radius-md);
