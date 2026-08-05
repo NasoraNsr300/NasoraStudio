@@ -42,7 +42,7 @@
   box-shadow: var(--elevation-floating);
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 34rem) minmax(0, 1fr);
+  grid-template-columns: auto minmax(16rem, 1fr) auto;
   padding: var(--space-2) var(--space-3);
   width: 100%;
 }
@@ -54,7 +54,7 @@
   justify-self: start;
 }
 
-.search { justify-self: center; width: 100%; }
+.search { justify-self: center; max-width: 34rem; width: 100%; }
 
 .brand {
   align-items: center;
