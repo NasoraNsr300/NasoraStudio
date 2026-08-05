@@ -85,6 +85,7 @@ const copy = {
 } as const;
 
 const navIcons = [FolderOpen, FileText, MessageSquareText, WalletCards, CircleUserRound];
+const navSections = ["jobs/demo", "requests", "messages", "payments", "profile"];
 
 export function MemberJobPage({ locale }: { locale: Locale }) {
   const labels = copy[locale];
@@ -97,7 +98,7 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
       </div>
       <nav>{labels.nav.map((label, index) => {
         const Icon = navIcons[index];
-        return <Link aria-current={index === 0 ? "page" : undefined} href="#" key={label}><Icon size={19} />{label}{index === 2 ? <b>3</b> : null}</Link>;
+        return <Link aria-current={index === 0 ? "page" : undefined} href={`/${locale}/member/${navSections[index]}`} key={label}><Icon size={19} />{label}{index === 2 ? <b>3</b> : null}</Link>;
       })}</nav>
       <div className={styles.memberHelp}><HelpCircle size={20} /><strong>{labels.help}</strong><Link href="#">{labels.contact}</Link></div>
     </aside>

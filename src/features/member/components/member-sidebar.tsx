@@ -1,0 +1,35 @@
+import { CircleUserRound, FileText, FolderOpen, HelpCircle, MessageSquareText, WalletCards } from "lucide-react";
+import Link from "next/link";
+
+import type { Locale } from "@/shared/i18n/locales";
+
+import styles from "./member-sidebar.module.css";
+
+export type MemberSection = "jobs" | "requests" | "messages" | "payments" | "profile";
+
+const labels = {
+  th: ["งานของฉัน", "แบบประเมิน", "ข้อความ", "การชำระเงิน", "โปรไฟล์"],
+  en: ["My jobs", "Requests", "Messages", "Payments", "Profile"],
+} as const;
+
+const sections: MemberSection[] = ["jobs", "requests", "messages", "payments", "profile"];
+const icons = [FolderOpen, FileText, MessageSquareText, WalletCards, CircleUserRound];
+
+function hrefFor(locale: Locale, section: MemberSection) {
+  return section === "jobs" ? `/${locale}/member/jobs/demo` : `/${locale}/member/${section}`;
+}
+
+export function MemberSidebar({ active, locale }: { active: MemberSection; locale: Locale }) {
+  return <aside className={styles.sidebar}>
+    <div className={styles.identity}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixture avatar */}
+      <img alt="Stardust" src="/fixtures/derivatives/moonlit-thumbnail.webp" />
+      <strong>Stardust</strong><span>{locale === "th" ? "สมาชิก" : "Member"}</span>
+    </div>
+    <nav>{sections.map((section, index) => {
+      const Icon = icons[index];
+      return <Link aria-current={active === section ? "page" : undefined} href={hrefFor(locale, section)} key={section}><Icon size={19} />{labels[locale][index]}{section === "messages" ? <b>3</b> : null}</Link>;
+    })}</nav>
+    <div className={styles.help}><HelpCircle size={20} /><strong>{locale === "th" ? "ต้องการความช่วยเหลือ?" : "Need help?"}</strong><a href="mailto:support@nasora.example">{locale === "th" ? "ติดต่อทีมงาน" : "Contact support"}</a></div>
+  </aside>;
+}
