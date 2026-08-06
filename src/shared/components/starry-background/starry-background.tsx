@@ -33,6 +33,7 @@ interface ShootingStar {
   y: number;
   vx: number;
   vy: number;
+  angle: number;
   length: number;
   color: string;
   alpha: number;
@@ -159,15 +160,16 @@ export function StarryBackground() {
         const startX = Math.random() * (width * 0.85);
         const startY = Math.random() * (height * 0.45);
         const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
-        const speed = Math.random() * 3.5 + 3.0;
+        const speed = Math.random() * 2.0 + 1.8;
         const color = shootingStarColors[Math.floor(Math.random() * shootingStarColors.length)];
 
         shootingStars.push({
           x: startX,
-          y: startY + i * 25,
+          y: startY + i * 30,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          length: Math.random() * 160 + 100,
+          angle,
+          length: Math.random() * 240 + 140,
           color,
           alpha: 1.0,
         });
@@ -175,8 +177,8 @@ export function StarryBackground() {
     };
 
     const scheduleShootingStar = () => {
-      // Trigger frequently (every 1.8 to 4.5 seconds)
-      const delay = Math.random() * 2700 + 1800;
+      // Trigger frequently (every 2.5 to 5.5 seconds)
+      const delay = Math.random() * 3000 + 2500;
       shootingStarTimer = setTimeout(() => {
         triggerShootingStar();
         scheduleShootingStar();
@@ -296,15 +298,16 @@ export function StarryBackground() {
         const ss = shootingStars[i];
         ss.x += ss.vx;
         ss.y += ss.vy;
-        ss.alpha -= 0.007;
+        // Slow alpha fade so meteor glides smoothly across screen
+        ss.alpha -= 0.0025;
 
-        if (ss.x > width + 100 || ss.y > height + 100 || ss.alpha <= 0) {
+        if (ss.x > width + 200 || ss.y > height + 200 || ss.alpha <= 0) {
           shootingStars.splice(i, 1);
           continue;
         }
 
-        const tailX = ss.x - (ss.vx / 3) * (ss.length * 0.45);
-        const tailY = ss.y - (ss.vy / 3) * (ss.length * 0.45);
+        const tailX = ss.x - Math.cos(ss.angle) * ss.length;
+        const tailY = ss.y - Math.sin(ss.angle) * ss.length;
 
         ctx.save();
         ctx.globalAlpha = ss.alpha;
