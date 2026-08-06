@@ -3,7 +3,6 @@
 import {
   CalendarDays,
   Check,
-  ImagePlus,
   Minus,
   Plus,
   Save,
@@ -12,9 +11,14 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
+import { createCommissionRequestRepository, type CommissionRequestClient } from "@/features/commission/data/commission-request-repository";
+import { parseEstimateRequest, toCommissionRequestRpcPayload } from "@/features/commission/domain/estimate-request";
+import { useOptionalAuthSession } from "@/shared/auth/auth-session-provider";
+import type { AuthIdentity, AuthStatus } from "@/shared/auth/auth-types";
 import type { Locale } from "@/shared/i18n/locales";
+import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 import type { ServiceType } from "@/shared/types/public-content";
 
 import styles from "./commission.module.css";
@@ -22,8 +26,10 @@ import styles from "./commission.module.css";
 type CustomerMode = "member" | "guest";
 
 type EstimateRequestDialogProps = {
+  auth?: { status: AuthStatus; user: AuthIdentity | null };
   locale: Locale;
   onClose(): void;
+  repository?: ReturnType<typeof createCommissionRequestRepository>;
   service: ServiceType;
 };
 
@@ -76,6 +82,13 @@ const copy = {
     locked: "แก้ไขไม่ได้",
     memberName: "Nasora Member",
     memberContact: "@nasora_member",
+    guestNameHint: "เช่น Lunaris, StarWalker",
+    contactHint: "เช่น @username",
+    draftUnavailable: "ระบบบันทึกร่างจะเปิดให้ใช้ภายหลัง",
+    sending: "กำลังส่ง...",
+    sent: "ส่งแบบประเมินแล้ว เลขอ้างอิงของคุณคือ",
+    identityLoading: "กำลังโหลดข้อมูลสมาชิก...",
+    invalid: "กรุณาตรวจสอบข้อมูลที่กรอก",
   },
   en: {
     title: "Request an estimate",
@@ -125,40 +138,95 @@ const copy = {
     locked: "Locked",
     memberName: "Nasora Member",
     memberContact: "@nasora_member",
+    guestNameHint: "For example: Lunaris, StarWalker",
+    contactHint: "For example: @username",
+    draftUnavailable: "Draft saving will be available later",
+    sending: "Submitting...",
+    sent: "Your estimate request was sent. Reference:",
+    identityLoading: "Loading member information...",
+    invalid: "Please check the information you entered",
   },
 } as const;
 
-function Counter({ label, hint }: { hint: string; label: string }) {
-  const [count, setCount] = useState(0);
+function Counter({ count, disabled, label, hint, onChange }: { count: number; disabled: boolean; hint: string; label: string; onChange(value: number): void }) {
   return <div className={styles.estimateCounter}>
     <span><strong>{label}</strong><small>{hint}</small></span>
     <div>
-      <button aria-label={`Decrease ${label}`} disabled={count === 0} onClick={() => setCount((value) => Math.max(0, value - 1))} type="button"><Minus size={15} /></button>
+      <button aria-label={`Decrease ${label}`} disabled={disabled || count === 0} onClick={() => onChange(Math.max(0, count - 1))} type="button"><Minus size={15} /></button>
       <b>{count}</b>
-      <button aria-label={`Increase ${label}`} onClick={() => setCount((value) => value + 1)} type="button"><Plus size={15} /></button>
+      <button aria-label={`Increase ${label}`} disabled={disabled || count >= 20} onClick={() => onChange(Math.min(20, count + 1))} type="button"><Plus size={15} /></button>
     </div>
   </div>;
 }
 
-function MemberIdentity({ labels }: { labels: typeof copy.th | typeof copy.en }) {
+function MemberIdentity({ contact, labels, loading, nickname }: { contact: string; labels: typeof copy.th | typeof copy.en; loading: boolean; nickname: string }) {
   return <div className={styles.memberIdentity}>
-    <div><UserRound size={18} /><span><small>{labels.nickname}</small><strong>{labels.memberName}</strong></span></div>
-    <div><span className={styles.discordMark}>◉</span><span><small>{labels.contact}</small><strong>{labels.memberContact}</strong></span></div>
+    <div><UserRound size={18} /><span><small>{labels.nickname}</small><strong>{loading ? labels.identityLoading : nickname}</strong></span></div>
+    <div><span className={styles.discordMark}>◉</span><span><small>{labels.contact}</small><strong>{loading ? labels.identityLoading : contact}</strong></span></div>
   </div>;
 }
 
-function GuestIdentity({ labels }: { labels: typeof copy.th | typeof copy.en }) {
+function GuestIdentity({ disabled, labels }: { disabled: boolean; labels: typeof copy.th | typeof copy.en }) {
   return <div className={styles.guestIdentity}>
-    <label>{labels.nickname}<span>*</span><input placeholder="เช่น Lunaris, StarWalker" type="text" /></label>
-    <label>{labels.contact}<span>*</span><div className={styles.contactFields}><select defaultValue="discord"><option value="discord">Discord</option><option value="email">Email</option><option value="facebook">Facebook</option><option value="x">X</option></select><input placeholder="เช่น @username" type="text" /></div></label>
+    <label>{labels.nickname}<span>*</span><input disabled={disabled} maxLength={80} name="guestDisplayName" placeholder={labels.guestNameHint} required type="text" /></label>
+    <label>{labels.contact}<span>*</span><div className={styles.contactFields}><select aria-label={`${labels.contact} method`} defaultValue="discord" disabled={disabled} name="guestContactKind"><option value="discord">Discord</option><option value="email">Email</option><option value="facebook">Facebook</option><option value="x">X</option></select><input aria-label={`${labels.contact} value`} disabled={disabled} maxLength={200} name="guestContactValue" placeholder={labels.contactHint} required type="text" /></div></label>
   </div>;
 }
 
-export function EstimateRequestDialog({ locale, onClose, service }: EstimateRequestDialogProps) {
+function localIsoDate(date = new Date()) {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
+function titleCaseSlug(slug: string) {
+  return slug.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function newSubmissionKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    return (character === "x" ? random : (random & 0x3) | 0x8).toString(16);
+  });
+}
+
+export function EstimateRequestDialog({ auth, locale, onClose, repository, service }: EstimateRequestDialogProps) {
   const labels = copy[locale];
-  const [customerMode, setCustomerMode] = useState<CustomerMode>("member");
+  const contextualAuth = useOptionalAuthSession();
+  const session = auth ?? contextualAuth ?? { status: "signedOut" as const, user: null };
+  const customerMode: CustomerMode = session.status === "signedIn" ? "member" : "guest";
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const repositoryRef = useRef(repository ?? null);
+  const [identity, setIdentity] = useState({ contact: session.user?.email ?? "", nickname: session.user?.nickname ?? labels.memberName });
+  const [loadedIdentityUserId, setLoadedIdentityUserId] = useState<string | null>(null);
+  const [extraCharacterCount, setExtraCharacterCount] = useState(0);
+  const [backgroundLevel, setBackgroundLevel] = useState(0);
+  const [propCount, setPropCount] = useState(0);
+  const [budgetKind, setBudgetKind] = useState<"open" | "range">("range");
+  const [description, setDescription] = useState("");
+  const [moodAndStyle, setMoodAndStyle] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [requestCode, setRequestCode] = useState<string | null>(null);
+  const [submissionKey] = useState(newSubmissionKey);
+  const identityLoading = session.status === "loading"
+    || (session.status === "signedIn" && loadedIdentityUserId !== session.user?.id);
+  const disabled = session.status === "loading" || submitting || requestCode !== null;
+
+  useEffect(() => {
+    if (repository) repositoryRef.current = repository;
+  }, [repository]);
+
+  const getRepository = useCallback(() => {
+    if (!repositoryRef.current) {
+      repositoryRef.current = createCommissionRequestRepository(
+        createSupabaseBrowserClient() as unknown as CommissionRequestClient,
+      );
+    }
+    return repositoryRef.current;
+  }, []);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -168,6 +236,61 @@ export function EstimateRequestDialog({ locale, onClose, service }: EstimateRequ
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (session.status !== "signedIn" || !session.user) return;
+    let active = true;
+    void getRepository().loadMemberIdentity(session.user.id, session.user.email).then((result) => {
+      if (!active) return;
+      if (result.ok) setIdentity({ contact: result.data.contact.value, nickname: result.data.nickname });
+      setLoadedIdentityUserId(session.user?.id ?? null);
+    });
+    return () => { active = false; };
+  }, [getRepository, session.status, session.user]);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting || requestCode) return;
+    setError(null);
+    const form = new FormData(event.currentTarget);
+    try {
+      const minThb = Number(form.get("budgetMin"));
+      const maxThb = Number(form.get("budgetMax"));
+      const parsed = parseEstimateRequest({
+        acceptedLegal: form.get("acceptedLegal") === "on",
+        backgroundLevel,
+        budget: budgetKind === "open" ? { kind: "open" } : { kind: "range", maxThb, minThb },
+        description,
+        extraCharacterCount,
+        guest: customerMode === "guest" ? {
+          contactKind: form.get("guestContactKind"),
+          contactValue: form.get("guestContactValue"),
+          displayName: form.get("guestDisplayName"),
+        } : undefined,
+        moodAndStyle,
+        propCount,
+        requestedDeadline: deadline,
+        requesterMode: customerMode,
+        submissionKey,
+        usageType: form.get("usage"),
+      }, localIsoDate());
+      const categoryName = titleCaseSlug(service.categorySlug);
+      const payload = toCommissionRequestRpcPayload(parsed, {
+        categoryName: { en: categoryName, th: categoryName },
+        categorySlug: service.categorySlug,
+        serviceName: service.name,
+        serviceTypeSlug: service.slug,
+      });
+      setSubmitting(true);
+      const result = await getRepository().submit(payload);
+      if (result.ok) setRequestCode(result.data.requestCode);
+      else setError(result.message);
+    } catch (cause) {
+      setError(cause instanceof Error && cause.message ? cause.message : labels.invalid);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return <div aria-label={labels.title} aria-modal="true" className={styles.estimateBackdrop} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} ref={dialogRef} role="dialog">
     <section className={styles.estimateDialog}>
@@ -183,36 +306,33 @@ export function EstimateRequestDialog({ locale, onClose, service }: EstimateRequ
 
       <p className={styles.estimateNotice}><span>ⓘ</span>{labels.notice}</p>
 
-      <form className={styles.estimateForm} onSubmit={(event) => event.preventDefault()}>
+      <form className={styles.estimateForm} onSubmit={submit}>
         <section className={styles.estimatePanel}>
           <h3><UserRound size={20} />{labels.customer}</h3>
           <p>{labels.modeLabel}</p>
           <div className={styles.customerMode}>
-            <button aria-pressed={customerMode === "member"} onClick={() => setCustomerMode("member")} type="button"><UserRound size={17} />{labels.member}</button>
-            <button aria-pressed={customerMode === "guest"} onClick={() => setCustomerMode("guest")} type="button"><UserRound size={17} />{labels.guest}</button>
+            <button aria-pressed={customerMode === "member"} disabled type="button"><UserRound size={17} />{labels.member}</button>
+            <button aria-pressed={customerMode === "guest"} disabled type="button"><UserRound size={17} />{labels.guest}</button>
           </div>
-          {customerMode === "member" ? <MemberIdentity labels={labels} /> : <GuestIdentity labels={labels} />}
-          <fieldset className={styles.usageFieldset}><legend>{labels.usage}<span>*</span></legend><div><label><input defaultChecked name="usage" type="radio" />{labels.personal}<Sparkles size={15} /></label><label><input name="usage" type="radio" />{labels.commercial}</label></div></fieldset>
-          <label className={styles.formField}>{labels.budget}<span>*</span><div className={styles.budgetFields}><select defaultValue="range"><option value="range">{labels.budgetType}</option><option value="open">Open budget</option></select><input inputMode="numeric" placeholder={labels.min} /><em>{locale === "th" ? "ถึง" : "to"}</em><input inputMode="numeric" placeholder={labels.max} /></div></label>
-          <label className={styles.formField}>{labels.deadline}<span>*</span><div className={styles.dateField}><input aria-label={labels.deadline} type="date" /><span><CalendarDays size={18} />{labels.date}</span></div></label>
+          {customerMode === "member" ? <MemberIdentity contact={identity.contact} labels={labels} loading={identityLoading} nickname={identity.nickname} /> : <GuestIdentity disabled={disabled} labels={labels} />}
+          <fieldset className={styles.usageFieldset} disabled={disabled}><legend>{labels.usage}<span>*</span></legend><div><label><input defaultChecked name="usage" type="radio" value="personal" />{labels.personal}<Sparkles size={15} /></label><label><input name="usage" type="radio" value="commercial" />{labels.commercial}</label></div></fieldset>
+          <label className={styles.formField}>{labels.budget}<span>*</span><div className={styles.budgetFields}><select disabled={disabled} name="budgetKind" onChange={(event) => setBudgetKind(event.target.value === "open" ? "open" : "range")} value={budgetKind}><option value="range">{labels.budgetType}</option><option value="open">Open budget</option></select><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMin" placeholder={labels.min} required={budgetKind === "range"} type="number" /><em>{locale === "th" ? "ถึง" : "to"}</em><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMax" placeholder={labels.max} required={budgetKind === "range"} type="number" /></div></label>
+          <label className={styles.formField}>{labels.deadline}<span>*</span><div className={styles.dateField}><input aria-label={labels.deadline} disabled={disabled} min={localIsoDate()} onChange={(event) => setDeadline(event.target.value)} required type="date" value={deadline} /><span><CalendarDays size={18} />{deadline || labels.date}</span></div></label>
         </section>
 
         <section className={styles.estimatePanel}>
           <h3><UsersRound size={20} />{labels.work}</h3>
-          <label className={styles.formField}>{labels.details}<span>*</span><textarea maxLength={1000} placeholder={labels.detailsHint} /><small>0/1000</small></label>
-          <label className={styles.formField}>{labels.mood}<textarea maxLength={800} placeholder={labels.moodHint} /><small>0/800</small></label>
-          <fieldset className={styles.extrasFieldset}><legend>{labels.extras}</legend><div><Counter hint={labels.extraPeopleHint} label={labels.extraPeople} /><Counter hint={labels.backgroundHint} label={labels.background} /><Counter hint={labels.propsHint} label={labels.props} /></div></fieldset>
-          <div className={styles.referenceField}>
-            <div><strong>{labels.references}</strong><span>{labels.referenceLimit}</span></div>
-            <small>{labels.referencesHint}</small>
-            <label><ImagePlus size={25} /><strong>{labels.addReference}</strong><span>{labels.dropReference}</span><input accept="image/png,image/jpeg,image/webp" multiple type="file" /></label>
-          </div>
+          <label className={styles.formField}>{labels.details}<span>*</span><textarea aria-label={labels.details} disabled={disabled} maxLength={1000} onChange={(event) => setDescription(event.target.value)} placeholder={labels.detailsHint} required value={description} /><small>{description.length}/1000</small></label>
+          <label className={styles.formField}>{labels.mood}<textarea aria-label={labels.mood} disabled={disabled} maxLength={800} onChange={(event) => setMoodAndStyle(event.target.value)} placeholder={labels.moodHint} value={moodAndStyle} /><small>{moodAndStyle.length}/800</small></label>
+          <fieldset className={styles.extrasFieldset}><legend>{labels.extras}</legend><div><Counter count={extraCharacterCount} disabled={disabled} hint={labels.extraPeopleHint} label={labels.extraPeople} onChange={setExtraCharacterCount} /><Counter count={backgroundLevel} disabled={disabled} hint={labels.backgroundHint} label={labels.background} onChange={setBackgroundLevel} /><Counter count={propCount} disabled={disabled} hint={labels.propsHint} label={labels.props} onChange={setPropCount} /></div></fieldset>
         </section>
 
         <div className={styles.estimateFooter}>
-          <label className={styles.legalCheck}><input type="checkbox" /><span>{labels.accept} <a href={`/${locale}/documents/privacy-policy`}>{labels.privacy}</a> {labels.and} <a href={`/${locale}/documents/commission-terms`}>{labels.terms}</a> {labels.legalSuffix}</span></label>
+          {error ? <p className={styles.estimateFeedback} role="alert">{error}</p> : null}
+          {requestCode ? <p className={styles.estimateFeedback} role="status">{labels.sent} <strong>{requestCode}</strong></p> : null}
+          <label className={styles.legalCheck}><input disabled={disabled} name="acceptedLegal" type="checkbox" /><span>{labels.accept} <a href={`/${locale}/documents/privacy-policy`}>{labels.privacy}</a> {labels.and} <a href={`/${locale}/documents/commission-terms`}>{labels.terms}</a> {labels.legalSuffix}</span></label>
           <p><span>ⓘ</span>{labels.finalNotice}</p>
-          <div><button className={styles.draftButton} type="button"><Save size={18} />{labels.draft}</button><button className={styles.reviewButton} type="submit"><Sparkles size={18} />{labels.review}<Check size={18} /></button></div>
+          <div><button className={styles.draftButton} disabled title={labels.draftUnavailable} type="button"><Save size={18} />{labels.draft}</button><button className={styles.reviewButton} disabled={disabled || identityLoading} type="submit"><Sparkles size={18} />{submitting ? labels.sending : labels.review}<Check size={18} /></button></div>
         </div>
       </form>
     </section>
