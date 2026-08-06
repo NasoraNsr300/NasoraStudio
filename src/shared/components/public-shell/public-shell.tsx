@@ -9,6 +9,7 @@ import { AuthSessionProvider, type AuthClientLike } from "@/shared/auth/auth-ses
 import { AccountButton } from "./account-button";
 import { FloatingNavbar } from "./floating-navbar";
 import { StarryBackground } from "../starry-background/starry-background";
+import { AutumnLeavesBackground } from "../autumn-leaves-background/autumn-leaves-background";
 import styles from "./public-shell.module.css";
 
 export type PublicShellProps = {
@@ -23,6 +24,7 @@ export function PublicShell({ authClient, children, locale }: PublicShellProps) 
       <AuthDialogProvider locale={locale}>
         <div className={styles.shell} lang={locale}>
           <StarryBackground />
+          <AutumnLeavesBackground />
           <FloatingNavbar locale={locale} />
           <div className={styles.pageContent}>{children}</div>
           <AccountButton locale={locale} />
