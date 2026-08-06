@@ -26,3 +26,15 @@ test("closed services keep details available while estimate is disabled", async 
   await expect(page.getByRole("button", { name: "Request Estimate" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "View Details & Rates" })).toBeEnabled();
 });
+
+test("estimate opens without leaving service details behind", async ({ page }) => {
+  await page.goto("/en/commission");
+  await page.getByRole("button", { name: /View Chibi album/ }).click();
+  await page.getByRole("button", { name: "Request Estimate" }).first().click();
+
+  await expect(page.getByRole("dialog", { name: "Request an estimate" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});

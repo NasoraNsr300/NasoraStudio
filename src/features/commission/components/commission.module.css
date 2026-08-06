@@ -21,7 +21,9 @@
 .availabilityBadge.open { background: rgb(20 83 45 / 85%); } .availabilityBadge.limited { background: rgb(120 53 15 / 85%); } .availabilityBadge.closed { background: rgb(127 29 29 / 85%); }
 
 .subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
-.backToAlbums { background: transparent; border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); color: var(--brand-violet); cursor: pointer; font: inherit; margin-bottom: var(--space-4); min-height: 44px; padding: 0 var(--space-4); }
+.albumBreadcrumb { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; font: inherit; font-weight: inherit; letter-spacing: inherit; min-height: 44px; padding: 0; text-transform: inherit; }
+.albumBreadcrumb:hover { color: var(--brand-gold); }
+.albumBreadcrumb:focus-visible { border-radius: var(--radius-xs); outline: 2px solid var(--brand-violet); outline-offset: 4px; }
 .subtypeFilters button, .serviceActions button, .dialogActions button, .dialogClose { border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font: inherit; }
 .subtypeFilters button { background: var(--surface-strong); color: var(--text-secondary); min-height: 44px; padding: 0 var(--space-4); }
 .subtypeFilters button[aria-pressed="true"], .serviceActions button:first-child, .dialogActions button:first-child { background: var(--brand-gold); border-color: var(--brand-gold); color: #2a1a12; font-weight: 700; }

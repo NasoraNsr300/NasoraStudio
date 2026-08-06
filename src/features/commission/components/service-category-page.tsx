@@ -8,6 +8,7 @@ import type { ServiceCategory, ServiceType } from "@/shared/types/public-content
 
 import { ServiceCard } from "./service-card";
 import { ServiceDetailDialog } from "./service-detail-dialog";
+import { EstimateRequestDialog } from "./estimate-request-dialog";
 import styles from "./commission.module.css";
 
 export type ServiceCategoryPageProps = {
@@ -18,8 +19,8 @@ export type ServiceCategoryPageProps = {
 };
 
 const copy = {
-  en: { all: "All types", eyebrow: "Commission album", filters: "Service type filters", suffix: "services" },
-  th: { all: "ทุกรูปแบบ", eyebrow: "อัลบั้มคอมมิชชัน", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
+  en: { album: "Album", all: "All types", filters: "Service type filters", suffix: "services" },
+  th: { album: "อัลบั้ม", all: "ทุกรูปแบบ", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
 } as const;
 
 export function ServiceCategoryPage({ category, locale, onBack, services }: ServiceCategoryPageProps) {
@@ -33,8 +34,10 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
   return (
     <main className={`${styles.commissionPage} ${styles.serviceCategoryPage}`}>
       <header className={styles.heading}>
-        {onBack ? <button className={styles.backToAlbums} onClick={onBack} type="button">{messages.backToAlbums}</button> : null}
-        <p>{locale === "th" ? "อัลบั้ม" : "Album"}　/　{category.name[locale]}</p>
+        <p>
+          {onBack ? <button aria-label={messages.backToAlbums} className={styles.albumBreadcrumb} onClick={onBack} type="button">{labels.album}</button> : labels.album}
+          {"　/　"}{category.name[locale]}
+        </p>
         <div className={styles.categoryTitleRow}>
           <h1>{category.name[locale]}</h1>
           <span className={`${styles.categoryAvailability} ${styles[category.availability]}`}>● {category.availability.toUpperCase()}</span>
@@ -48,7 +51,8 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
       <section aria-label={`${category.name[locale]} ${labels.suffix}`} className={styles.serviceGrid}>
         {visibleServices.map((service, index) => <ServiceCard eager={index === 0} key={service.slug} locale={locale} onRequest={setPreviewService} onViewDetails={setSelectedService} service={service} />)}
       </section>
-      <ServiceDetailDialog initialPreview={Boolean(previewService)} key={`${(selectedService ?? previewService)?.slug ?? "none"}-${Boolean(previewService)}`} locale={locale} onClose={() => { setSelectedService(null); setPreviewService(null); }} open={Boolean(selectedService ?? previewService)} service={selectedService ?? previewService ?? services[0]} />
+      {selectedService ? <ServiceDetailDialog locale={locale} onClose={() => setSelectedService(null)} open service={selectedService} /> : null}
+      {previewService ? <EstimateRequestDialog locale={locale} onClose={() => setPreviewService(null)} service={previewService} /> : null}
     </main>
   );
 }

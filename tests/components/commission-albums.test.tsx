@@ -67,7 +67,11 @@ describe("Commission albums", () => {
     expect(window.location.href).toBe(initialUrl);
     expect(screen.getByRole("heading", { level: 1, name: "Chibi" })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "Back to all albums" }));
+    const albumBreadcrumb = screen.getByRole("button", { name: "Back to all albums" });
+    expect(albumBreadcrumb).toHaveTextContent("Album");
+    expect(albumBreadcrumb.closest("p")).toHaveTextContent(/Album.*\/.*Chibi/);
+
+    await user.click(albumBreadcrumb);
     expect(window.location.href).toBe(initialUrl);
     expect(screen.getByRole("button", { name: /view chibi album/i })).toBeVisible();
   });
@@ -105,5 +109,20 @@ describe("Commission albums", () => {
     expect(screen.queryByRole("dialog", { name: /Chibi/i })).not.toBeInTheDocument();
     expect(detailsTrigger).toHaveFocus();
     expect(window.location.href).toBe(initialUrl);
+  });
+
+  it("opens the estimate form directly without mounting service details underneath", async () => {
+    const user = userEvent.setup();
+
+    render(<CommissionAlbumsPage categories={serviceCategories} locale="en" services={serviceTypes} />);
+
+    await user.click(screen.getByRole("button", { name: /view chibi album/i }));
+    await user.click(screen.getAllByRole("button", { name: "Request Estimate" })[0]);
+
+    expect(screen.getByRole("dialog", { name: "Request an estimate" })).toBeVisible();
+    expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { hidden: true })).not.toBeInTheDocument();
   });
 });
