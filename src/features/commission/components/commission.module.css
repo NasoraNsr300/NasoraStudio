@@ -7,7 +7,7 @@
 .dialogClose { flex: 0 0 44px; min-width: 44px; }
 
 .albumGrid { display: grid; gap: clamp(.75rem, 1.5vw, 1.25rem); grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); display: block; isolation: isolate; overflow: hidden; position: relative; text-decoration: none; }
+.albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); cursor: pointer; display: block; font: inherit; isolation: isolate; overflow: hidden; padding: 0; position: relative; text-align: left; width: 100%; }
 .albumMedia { inset: 0; position: absolute; }
 .albumTile img { transition: transform 220ms ease; }
 .albumTile:hover img, .albumTile:focus-visible img { transform: scale(1.035); }
@@ -21,6 +21,7 @@
 .availabilityBadge.open { background: rgb(20 83 45 / 85%); } .availabilityBadge.limited { background: rgb(120 53 15 / 85%); } .availabilityBadge.closed { background: rgb(127 29 29 / 85%); }
 
 .subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
+.backToAlbums { background: transparent; border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); color: var(--brand-violet); cursor: pointer; font: inherit; margin-bottom: var(--space-4); min-height: 44px; padding: 0 var(--space-4); }
 .subtypeFilters button, .serviceActions button, .dialogActions button, .dialogClose { border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font: inherit; }
 .subtypeFilters button { background: var(--surface-strong); color: var(--text-secondary); min-height: 44px; padding: 0 var(--space-4); }
 .subtypeFilters button[aria-pressed="true"], .serviceActions button:first-child, .dialogActions button:first-child { background: var(--brand-gold); border-color: var(--brand-gold); color: #2a1a12; font-weight: 700; }

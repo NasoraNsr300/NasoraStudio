@@ -29,7 +29,7 @@ export function CommissionSearch({ categories, locale, services }: CommissionSea
   const term = normalized(query, locale);
   const publishedCategories = categories.filter((category) => category.published);
   const publishedServices = services.filter((service) => service.published);
-  if (!term) return <CommissionAlbumsPage categories={publishedCategories} locale={locale} />;
+  if (!term) return <CommissionAlbumsPage categories={publishedCategories} locale={locale} services={publishedServices} />;
 
   const matchingCategories = publishedCategories.filter((category) =>
     [category.name[locale], category.description[locale]].some((value) => normalized(value, locale).includes(term)),

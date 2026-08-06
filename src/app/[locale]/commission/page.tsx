@@ -14,7 +14,7 @@ export default async function CommissionRoute({ params }: Readonly<{ params: Pro
   if (!isLocale(locale)) return null;
   const catalog = await getPublicContentRepository().getCommissionCatalog(locale);
   return (
-    <Suspense fallback={<CommissionAlbumsPage categories={catalog.categories} locale={locale} />}>
+    <Suspense fallback={<CommissionAlbumsPage categories={catalog.categories} locale={locale} services={catalog.types} />}>
       <CommissionSearch categories={catalog.categories} locale={locale} services={catalog.types} />
     </Suspense>
   );

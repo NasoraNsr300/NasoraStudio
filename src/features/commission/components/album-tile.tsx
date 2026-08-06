@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceCategory } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
@@ -10,6 +8,7 @@ export type AlbumTileProps = {
   category: ServiceCategory;
   eager?: boolean;
   locale?: Locale;
+  onSelect?(): void;
 };
 
 const availabilityCopy: Record<Locale, Record<ServiceCategory["availability"], string>> = {
@@ -22,13 +21,13 @@ const albumCopy: Record<Locale, { recommended: string; typeCount: (count: number
   th: { recommended: "แนะนำ", typeCount: (count) => `${count} รูปแบบ`, view: (name) => `ดูอัลบั้ม ${name}` },
 };
 
-export function AlbumTile({ category, eager = false, locale = "en" }: AlbumTileProps) {
+export function AlbumTile({ category, eager = false, locale = "en", onSelect }: AlbumTileProps) {
   const copy = albumCopy[locale];
   const countLabel = copy.typeCount(category.typeCount);
   const viewLabel = copy.view(category.name[locale]);
 
   return (
-    <Link aria-label={viewLabel} className={styles.albumTile} href={`/${locale}/commission/${category.slug}`}>
+    <button aria-label={viewLabel} className={styles.albumTile} onClick={onSelect} type="button">
       <ResponsiveMedia
         className={styles.albumMedia}
         crop={category.coverCrop}
@@ -42,6 +41,6 @@ export function AlbumTile({ category, eager = false, locale = "en" }: AlbumTileP
       <span className={`${styles.availabilityBadge} ${styles[category.availability]}`}>{availabilityCopy[locale][category.availability]}</span>
       <span className={styles.albumTitle}>{category.name[locale]}</span>
       <span className={styles.countPill}>{countLabel}</span>
-    </Link>
+    </button>
   );
 }

@@ -19,23 +19,23 @@ function formatThb(amount: number) {
 
 const serviceCopy: Record<Locale, {
   availability: Record<ServiceType["availability"], string>;
-  details: (name: string) => string;
+  details: string;
   priceGuidance: string;
-  request: (name: string) => string;
+  request: string;
   usdGuidance: string;
 }> = {
   en: {
     availability: { open: "Open", limited: "Limited availability", closed: "Closed" },
-    details: (name) => `View details for ${name}`,
+    details: "View Details & Rates",
     priceGuidance: "Starting reference price",
-    request: (name) => `Request estimate for ${name}`,
+    request: "Request Estimate",
     usdGuidance: "USD guidance",
   },
   th: {
     availability: { open: "เปิดรับ", limited: "รับจำนวนจำกัด", closed: "ปิดรับ" },
-    details: (name) => `ดูรายละเอียด ${name}`,
+    details: "ดูรายละเอียดและเรทราคา",
     priceGuidance: "ราคาอ้างอิงเริ่มต้น",
-    request: (name) => `ขอประเมินราคา ${name}`,
+    request: "ประเมินราคา",
     usdGuidance: "แนวทางราคา USD",
   },
 };
@@ -48,8 +48,6 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
   const fromPrice = service.referencePrices[0];
   const isClosed = service.availability === "closed";
   const copy = serviceCopy[locale];
-  const requestLabel = copy.request(service.name[locale]);
-  const detailsLabel = copy.details(service.name[locale]);
   const example = service.examples[0];
 
   return (
@@ -64,8 +62,8 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
         <p className={styles.price}><span>{copy.priceGuidance}</span><strong>{formatThb(fromPrice.amountThb)}</strong><span>{displayUsd(fromPrice.amountThb, locale)}</span></p>
         <p className={styles.timing}>{service.timingGuidance[locale]}</p>
         <div className={styles.serviceActions}>
-          <button disabled={isClosed} onClick={() => onRequest(service)} type="button">{requestLabel}</button>
-          <button className={styles.secondaryButton} onClick={() => onViewDetails(service)} type="button">{detailsLabel}</button>
+          <button disabled={isClosed} onClick={() => onRequest(service)} type="button">{copy.request}</button>
+          <button className={styles.secondaryButton} onClick={() => onViewDetails(service)} type="button">{copy.details}</button>
         </div>
       </div>
     </article>

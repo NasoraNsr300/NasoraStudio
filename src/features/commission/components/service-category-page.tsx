@@ -12,15 +12,16 @@ import styles from "./commission.module.css";
 export type ServiceCategoryPageProps = {
   category: ServiceCategory;
   locale: Locale;
+  onBack?(): void;
   services: ServiceType[];
 };
 
 const copy = {
-  en: { all: "All types", eyebrow: "Commission album", filters: "Service type filters", suffix: "services" },
-  th: { all: "ทุกรูปแบบ", eyebrow: "อัลบั้มคอมมิชชัน", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
+  en: { all: "All types", back: "Back to all albums", eyebrow: "Commission album", filters: "Service type filters", suffix: "services" },
+  th: { all: "ทุกรูปแบบ", back: "กลับไปดูทุกอัลบั้ม", eyebrow: "อัลบั้มคอมมิชชัน", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
 } as const;
 
-export function ServiceCategoryPage({ category, locale, services }: ServiceCategoryPageProps) {
+export function ServiceCategoryPage({ category, locale, onBack, services }: ServiceCategoryPageProps) {
   const [filter, setFilter] = useState("all");
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
   const [previewService, setPreviewService] = useState<ServiceType | null>(null);
@@ -30,6 +31,7 @@ export function ServiceCategoryPage({ category, locale, services }: ServiceCateg
   return (
     <main className={`${styles.commissionPage} ${styles.serviceCategoryPage}`}>
       <header className={styles.heading}>
+        {onBack ? <button className={styles.backToAlbums} onClick={onBack} type="button">{labels.back}</button> : null}
         <p>{locale === "th" ? "อัลบั้ม" : "Album"}　/　{category.name[locale]}</p>
         <div className={styles.categoryTitleRow}>
           <h1>{category.name[locale]}</h1>

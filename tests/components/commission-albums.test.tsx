@@ -10,9 +10,9 @@ afterEach(cleanup);
 
 describe("Commission albums", () => {
   it("renders image-led album tiles with title, subtype count, availability, and recommendation without prices or requests", () => {
-    render(<CommissionAlbumsPage categories={serviceCategories} locale="en" />);
+    render(<CommissionAlbumsPage categories={serviceCategories} locale="en" services={serviceTypes} />);
 
-    const chibi = screen.getByRole("link", { name: /view chibi album/i });
+    const chibi = screen.getByRole("button", { name: /view chibi album/i });
     expect(chibi).toHaveTextContent("Chibi");
     expect(chibi).toHaveTextContent("2 types");
     expect(chibi).toHaveTextContent("Open");
@@ -27,7 +27,7 @@ describe("Commission albums", () => {
     const closedService = serviceTypes.find((service) => service.availability === "closed");
     if (!chibi || !closedService) throw new Error("Expected fixture services");
 
-    const { rerender } = render(<CommissionAlbumsPage categories={[chibi]} locale="th" />);
+    const { rerender } = render(<CommissionAlbumsPage categories={[chibi]} locale="th" services={serviceTypes} />);
     expect(screen.getByText("แนะนำ")).toBeVisible();
     expect(screen.getByText("เปิดรับ")).toBeVisible();
     expect(screen.queryByText("Recommended")).not.toBeInTheDocument();
@@ -51,9 +51,37 @@ describe("Commission albums", () => {
 
     expect(screen.getByText("THB 1,800")).toBeVisible();
     expect(screen.getByText("≈ $50")).toBeVisible();
-    expect(screen.getByRole("button", { name: /request estimate for 3d model prop/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Request Estimate" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: /view details for 3d model prop/i }));
+    await user.click(screen.getByRole("button", { name: "View Details & Rates" }));
     expect(screen.getByRole("dialog", { name: "3D Model Prop" })).toBeVisible();
+  });
+
+  it("opens an album and returns to the overview without changing the URL", async () => {
+    const user = userEvent.setup();
+    const initialUrl = window.location.href;
+
+    render(<CommissionAlbumsPage categories={serviceCategories} locale="en" services={serviceTypes} />);
+
+    await user.click(screen.getByRole("button", { name: /view chibi album/i }));
+    expect(window.location.href).toBe(initialUrl);
+    expect(screen.getByRole("heading", { level: 1, name: "Chibi" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Back to all albums" }));
+    expect(window.location.href).toBe(initialUrl);
+    expect(screen.getByRole("button", { name: /view chibi album/i })).toBeVisible();
+  });
+
+  it("uses fixed Thai action labels without repeating the service name", () => {
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    const chibiServices = serviceTypes.filter((service) => service.categorySlug === "chibi");
+    if (!chibi || chibiServices.length === 0) throw new Error("Expected Chibi fixtures");
+
+    render(<ServiceCategoryPage category={chibi} locale="th" services={chibiServices} />);
+
+    expect(screen.getAllByRole("button", { name: "ประเมินราคา" })).not.toHaveLength(0);
+    expect(screen.getAllByRole("button", { name: "ดูรายละเอียดและเรทราคา" })).not.toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /ประเมินราคา.+Chibi/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ดูรายละเอียด.+Chibi/i })).not.toBeInTheDocument();
   });
 });
