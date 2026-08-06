@@ -46,6 +46,16 @@ describe("core commission RLS", () => {
     expect(sql).toContain("(select auth.uid())");
   });
 
+  it("keeps one permissive select policy per authenticated table", () => {
+    const sql = readFileSync(migrationPath, "utf8").toLowerCase();
+
+    expect(sql).not.toContain("_admin_all");
+    expect(sql).toContain("commission_requests_admin_insert");
+    expect(sql).toContain("commission_requests_admin_update");
+    expect(sql).toContain("commission_requests_admin_delete");
+    expect(sql).toContain("private.is_admin()) or");
+  });
+
   it("publishes a safe security-invoker queue projection", () => {
     const sql = readFileSync(migrationPath, "utf8").toLowerCase();
 

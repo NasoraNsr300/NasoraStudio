@@ -315,51 +315,71 @@ alter table public.job_status_history enable row level security;
 alter table public.queue_entries enable row level security;
 alter table public.audit_logs enable row level security;
 
-create policy commission_requests_admin_all
-on public.commission_requests for all to authenticated
-using ((select private.is_admin()))
+create policy commission_requests_admin_insert
+on public.commission_requests for insert to authenticated
 with check ((select private.is_admin()));
+create policy commission_requests_admin_update
+on public.commission_requests for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy commission_requests_admin_delete
+on public.commission_requests for delete to authenticated
+using ((select private.is_admin()));
 
 create policy commission_requests_select_own
 on public.commission_requests for select to authenticated
-using ((select auth.uid()) = user_id);
+using ((select private.is_admin()) or (select auth.uid()) = user_id);
 
-create policy request_answers_admin_all
-on public.request_answers for all to authenticated
-using ((select private.is_admin()))
+create policy request_answers_admin_insert
+on public.request_answers for insert to authenticated
 with check ((select private.is_admin()));
+create policy request_answers_admin_update
+on public.request_answers for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy request_answers_admin_delete
+on public.request_answers for delete to authenticated
+using ((select private.is_admin()));
 
 create policy request_answers_select_own
 on public.request_answers for select to authenticated
-using (
+using ((select private.is_admin()) or
   exists (
     select 1 from public.commission_requests request
     where request.id = request_id and request.user_id = (select auth.uid())
   )
 );
 
-create policy quotes_admin_all
-on public.quotes for all to authenticated
-using ((select private.is_admin()))
+create policy quotes_admin_insert
+on public.quotes for insert to authenticated
 with check ((select private.is_admin()));
+create policy quotes_admin_update
+on public.quotes for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy quotes_admin_delete
+on public.quotes for delete to authenticated
+using ((select private.is_admin()));
 
 create policy quotes_select_own
 on public.quotes for select to authenticated
-using (
+using ((select private.is_admin()) or
   exists (
     select 1 from public.commission_requests request
     where request.id = request_id and request.user_id = (select auth.uid())
   )
 );
 
-create policy quote_items_admin_all
-on public.quote_items for all to authenticated
-using ((select private.is_admin()))
+create policy quote_items_admin_insert
+on public.quote_items for insert to authenticated
 with check ((select private.is_admin()));
+create policy quote_items_admin_update
+on public.quote_items for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy quote_items_admin_delete
+on public.quote_items for delete to authenticated
+using ((select private.is_admin()));
 
 create policy quote_items_select_own
 on public.quote_items for select to authenticated
-using (
+using ((select private.is_admin()) or
   exists (
     select 1
     from public.quotes quote
@@ -370,63 +390,93 @@ using (
 
 create policy status_workflows_select_authenticated
 on public.status_workflows for select to authenticated
-using (is_active and archived_at is null);
+using ((select private.is_admin()) or (is_active and archived_at is null));
 
-create policy status_workflows_admin_all
-on public.status_workflows for all to authenticated
-using ((select private.is_admin()))
+create policy status_workflows_admin_insert
+on public.status_workflows for insert to authenticated
 with check ((select private.is_admin()));
+create policy status_workflows_admin_update
+on public.status_workflows for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy status_workflows_admin_delete
+on public.status_workflows for delete to authenticated
+using ((select private.is_admin()));
 
 create policy status_definitions_select_authenticated
 on public.status_definitions for select to authenticated
-using (archived_at is null);
+using ((select private.is_admin()) or archived_at is null);
 
-create policy status_definitions_admin_all
-on public.status_definitions for all to authenticated
-using ((select private.is_admin()))
+create policy status_definitions_admin_insert
+on public.status_definitions for insert to authenticated
 with check ((select private.is_admin()));
+create policy status_definitions_admin_update
+on public.status_definitions for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy status_definitions_admin_delete
+on public.status_definitions for delete to authenticated
+using ((select private.is_admin()));
 
-create policy jobs_admin_all
-on public.jobs for all to authenticated
-using ((select private.is_admin()))
+create policy jobs_admin_insert
+on public.jobs for insert to authenticated
 with check ((select private.is_admin()));
+create policy jobs_admin_update
+on public.jobs for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy jobs_admin_delete
+on public.jobs for delete to authenticated
+using ((select private.is_admin()));
 
 create policy jobs_select_own
 on public.jobs for select to authenticated
-using ((select auth.uid()) = user_id);
+using ((select private.is_admin()) or (select auth.uid()) = user_id);
 
-create policy job_charge_adjustments_admin_all
-on public.job_charge_adjustments for all to authenticated
-using ((select private.is_admin()))
+create policy job_charge_adjustments_admin_insert
+on public.job_charge_adjustments for insert to authenticated
 with check ((select private.is_admin()));
+create policy job_charge_adjustments_admin_update
+on public.job_charge_adjustments for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy job_charge_adjustments_admin_delete
+on public.job_charge_adjustments for delete to authenticated
+using ((select private.is_admin()));
 
 create policy job_charge_adjustments_select_own
 on public.job_charge_adjustments for select to authenticated
-using (
+using ((select private.is_admin()) or
   exists (
     select 1 from public.jobs job
     where job.id = job_id and job.user_id = (select auth.uid())
   )
 );
 
-create policy job_status_history_admin_all
-on public.job_status_history for all to authenticated
-using ((select private.is_admin()))
+create policy job_status_history_admin_insert
+on public.job_status_history for insert to authenticated
 with check ((select private.is_admin()));
+create policy job_status_history_admin_update
+on public.job_status_history for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy job_status_history_admin_delete
+on public.job_status_history for delete to authenticated
+using ((select private.is_admin()));
 
 create policy job_status_history_select_own
 on public.job_status_history for select to authenticated
-using (
+using ((select private.is_admin()) or
   exists (
     select 1 from public.jobs job
     where job.id = job_id and job.user_id = (select auth.uid())
   )
 );
 
-create policy queue_entries_admin_all
-on public.queue_entries for all to authenticated
-using ((select private.is_admin()))
+create policy queue_entries_admin_insert
+on public.queue_entries for insert to authenticated
 with check ((select private.is_admin()));
+create policy queue_entries_admin_update
+on public.queue_entries for update to authenticated
+using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy queue_entries_admin_delete
+on public.queue_entries for delete to authenticated
+using ((select private.is_admin()));
 
 create policy queue_entries_public_visible
 on public.queue_entries for select to anon, authenticated
