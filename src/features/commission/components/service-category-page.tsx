@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, LayoutGrid, List, ListOrdered, MessageSquare, Image as ImageIcon, Share2 } from "lucide-react";
+import { FileText, LayoutGrid, List, ListOrdered, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -33,15 +33,6 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
   const visibleServices = useMemo(() => services.filter((service) => filter === "all" || service.slug === filter), [filter, services]);
   const labels = copy[locale];
   const messages = getDictionary(locale).commission;
-
-  const copyShareLink = async () => {
-    try {
-      await navigator.clipboard?.writeText(window.location.href);
-      alert(locale === "th" ? "คัดลอกลิงก์เรียบร้อยแล้ว" : "Link copied to clipboard");
-    } catch {
-      /* ignore */
-    }
-  };
 
   return (
     <main className={`${styles.commissionPage} ${styles.serviceCategoryPage}`}>
@@ -102,14 +93,8 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
                     <button className={styles.estimatePrimaryButton} disabled={isClosed} onClick={() => setPreviewService(service)} type="button">
                       <FileText size={16} /> {messages.estimate}
                     </button>
-                    <button aria-label={locale === "th" ? "ติดต่อ" : "Contact"} className={styles.iconCircleButton} onClick={() => setPreviewService(service)} type="button">
-                      <MessageSquare size={16} />
-                    </button>
                     <button className={styles.detailsSecondaryButton} onClick={() => setSelectedService(service)} type="button">
                       <ListOrdered size={16} /> {messages.detailsAndRates}
-                    </button>
-                    <button aria-label={locale === "th" ? "แชร์" : "Share"} className={styles.iconCircleButton} onClick={() => void copyShareLink()} type="button">
-                      <Share2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -141,14 +126,8 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
                     <button className={styles.estimatePrimaryButton} disabled={isClosed} onClick={() => setPreviewService(service)} type="button">
                       <FileText size={16} /> {messages.estimate}
                     </button>
-                    <button aria-label={locale === "th" ? "ติดต่อ" : "Contact"} className={styles.iconCircleButton} onClick={() => setPreviewService(service)} type="button">
-                      <MessageSquare size={16} />
-                    </button>
                     <button className={styles.detailsSecondaryButton} onClick={() => setSelectedService(service)} type="button">
                       <ListOrdered size={16} /> {messages.detailsAndRates}
-                    </button>
-                    <button aria-label={locale === "th" ? "แชร์" : "Share"} className={styles.iconCircleButton} onClick={() => void copyShareLink()} type="button">
-                      <Share2 size={16} />
                     </button>
                   </div>
                 </div>
