@@ -63,7 +63,10 @@
 - Initial categories cover Chibi, Illustration, VTuber, Skin Minecraft, and Model 3D Minecraft
 - New categories and subtypes can be created without code changes
 - The category overview uses image-led album tiles: cover image, bottom gradient, title at bottom-left, subtype count at bottom-right, and optional recommended badge
+- Selecting an album replaces the catalog content in place on the Commission page; it does not navigate to another HTML page or change the locale Commission URL
+- The in-page album view includes a clear control to return to the category overview
 - Reference prices and request actions are not placed on the category overview tile; they appear after entering the album or opening service details
+- Every subtype card uses the same two localized action labels without appending the service name: `ประเมินราคา` / `Request Estimate` and `ดูรายละเอียดและเรทราคา` / `View Details & Rates`
 - Availability can be controlled globally, by category, and by subtype
 - Closed subtypes disable request submission; no waitlist is collected
 - Each subtype has its own descriptions, media examples, reference pricing, modifiers, timing guidance, linked documents, and editable form

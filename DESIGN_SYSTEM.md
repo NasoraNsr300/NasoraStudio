@@ -155,8 +155,10 @@ Glass surfaces use restrained backdrop blur. A solid fallback is mandatory for u
 - Uses `CommissionAlbumLayout`
 - Category layer, subtype layer, then service detail
 - Category album tiles are image-led with a dark bottom gradient, title at bottom-left, item-count pill at bottom-right, and optional recommended badge
+- Album selection swaps the category overview for the selected subtype collection in place; the Commission URL remains unchanged and a visible back-to-albums control restores the overview
 - Category tiles prioritize recognition and navigation; pricing and request actions begin at the subtype or service layer
 - Subtype cards prioritize availability, service identity, reference price access, and request action
+- Subtype card actions use shared localized labels rather than service-specific copy: `ประเมินราคา` / `Request Estimate` and `ดูรายละเอียดและเรทราคา` / `View Details & Rates`
 - Detail view separates reference pricing, additions, timing, linked documents, examples, and request button
 
 ### Queue
