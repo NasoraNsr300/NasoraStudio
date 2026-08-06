@@ -27,6 +27,18 @@ function subscribeToTheme(onStoreChange: () => void) {
   return () => observer.disconnect();
 }
 
+export function getAlternateLocalePath(pathname: string | null, currentLocale: Locale, nextLocale: Locale): string {
+  if (!pathname) return `/${nextLocale}`;
+  const prefix = `/${currentLocale}`;
+  if (pathname === prefix || pathname === `${prefix}/`) {
+    return `/${nextLocale}`;
+  }
+  if (pathname.startsWith(`${prefix}/`)) {
+    return `/${nextLocale}${pathname.slice(prefix.length)}`;
+  }
+  return `/${nextLocale}`;
+}
+
 function getSearchConfig(locale: Locale, pathname: string | null) {
   const basePath = `/${locale}`;
   const route = pathname ?? basePath;
@@ -42,7 +54,9 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
   const theme = useSyncExternalStore(subscribeToTheme, currentTheme, () => "night");
   const dictionary = getDictionary(locale);
   const alternateLocale = locale === "th" ? "en" : "th";
-  const search = getSearchConfig(locale, usePathname());
+  const pathname = usePathname();
+  const search = getSearchConfig(locale, pathname);
+  const alternatePath = getAlternateLocalePath(pathname, locale, alternateLocale);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   const setTheme = (nextTheme: ThemeName) => {
@@ -76,7 +90,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
           <span className={styles.localeControl}>
             <strong>{locale.toUpperCase()}</strong>
             <span aria-hidden="true">/</span>
-            <a className={styles.languageLink} href={`/${alternateLocale}`}>{alternateLocale.toUpperCase()}</a>
+            <a className={styles.languageLink} href={alternatePath}>{alternateLocale.toUpperCase()}</a>
           </span>
           <span className={styles.themeControls}>
             <button aria-pressed={theme === "night"} data-active={theme === "night"} onClick={() => setTheme("night")} type="button">
