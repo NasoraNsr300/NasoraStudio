@@ -151,24 +151,32 @@ export function StarryBackground() {
 
     const triggerShootingStar = () => {
       if (isReducedMotion || !isNightTheme || document.hidden) return;
-      const startX = Math.random() * (width * 0.75);
-      const startY = Math.random() * (height * 0.35);
-      const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.2;
-      const speed = Math.random() * 10 + 8;
 
-      shootingStars.push({
-        x: startX,
-        y: startY,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        length: Math.random() * 140 + 90,
-        color: Math.random() > 0.5 ? "#f6c85f" : "#c4b5fd",
-        alpha: 1.0,
-      });
+      const shootingStarColors = ["#f6c85f", "#c4b5fd", "#38bdf8", "#f472b6", "#ffffff"];
+      const count = Math.random() > 0.72 ? (Math.random() > 0.5 ? 3 : 2) : 1;
+
+      for (let i = 0; i < count; i++) {
+        const startX = Math.random() * (width * 0.85);
+        const startY = Math.random() * (height * 0.45);
+        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
+        const speed = Math.random() * 3.5 + 3.0;
+        const color = shootingStarColors[Math.floor(Math.random() * shootingStarColors.length)];
+
+        shootingStars.push({
+          x: startX,
+          y: startY + i * 25,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          length: Math.random() * 160 + 100,
+          color,
+          alpha: 1.0,
+        });
+      }
     };
 
     const scheduleShootingStar = () => {
-      const delay = Math.random() * 7000 + 4000;
+      // Trigger frequently (every 1.8 to 4.5 seconds)
+      const delay = Math.random() * 2700 + 1800;
       shootingStarTimer = setTimeout(() => {
         triggerShootingStar();
         scheduleShootingStar();
@@ -288,15 +296,15 @@ export function StarryBackground() {
         const ss = shootingStars[i];
         ss.x += ss.vx;
         ss.y += ss.vy;
-        ss.alpha -= 0.015;
+        ss.alpha -= 0.007;
 
         if (ss.x > width + 100 || ss.y > height + 100 || ss.alpha <= 0) {
           shootingStars.splice(i, 1);
           continue;
         }
 
-        const tailX = ss.x - (ss.vx / 8) * ss.length;
-        const tailY = ss.y - (ss.vy / 8) * ss.length;
+        const tailX = ss.x - (ss.vx / 3) * (ss.length * 0.45);
+        const tailY = ss.y - (ss.vy / 3) * (ss.length * 0.45);
 
         ctx.save();
         ctx.globalAlpha = ss.alpha;
