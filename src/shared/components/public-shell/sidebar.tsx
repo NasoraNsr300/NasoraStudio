@@ -27,7 +27,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const links = [
     { href: `/${locale}`, label: dictionary.home },
     { href: `/${locale}/portfolio`, label: dictionary.portfolio },
-    { href: `/${locale}/commission`, label: dictionary.commission },
+    { href: `/${locale}/commission`, label: dictionary.commissionNav },
     { href: `/${locale}/queue`, label: dictionary.queue },
     { href: `/${locale}/documents`, label: dictionary.documents },
     { href: `/${locale}/about`, label: dictionary.about },

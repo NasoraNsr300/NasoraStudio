@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance";
+import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceAvailability, ServiceType } from "@/shared/types/public-content";
 
@@ -24,8 +25,6 @@ const focusableSelector = 'button:not([disabled]), [href], input:not([disabled])
 const dialogCopy: Record<Locale, {
   additions: string;
   availability: Record<ServiceAvailability, string>;
-  close: string;
-  closeDetails: string;
   commercial: string;
   documents: string;
   finalPrice: string;
@@ -36,7 +35,6 @@ const dialogCopy: Record<Locale, {
   personal: string;
   referenceNote: string;
   referencePricing: string;
-  request: string;
   revisions: string;
   revisionsHint: string;
   revisionsValue: string;
@@ -47,8 +45,6 @@ const dialogCopy: Record<Locale, {
   en: {
     additions: "Additional pricing",
     availability: { open: "Open", limited: "Limited", closed: "Closed" },
-    close: "Close",
-    closeDetails: "Close service details",
     commercial: "Commercial",
     documents: "Read service terms",
     finalPrice: "The final price is assessed once the project details have been reviewed.",
@@ -59,7 +55,6 @@ const dialogCopy: Record<Locale, {
     personal: "Personal",
     referenceNote: "Reference pricing may change based on the project details.",
     referencePricing: "Reference pricing",
-    request: "Request estimate",
     revisions: "Standard revisions",
     revisionsHint: "Additional changes are assessed separately",
     revisionsValue: "4 rounds",
@@ -70,8 +65,6 @@ const dialogCopy: Record<Locale, {
   th: {
     additions: "ราคาเพิ่มเติม",
     availability: { open: "เปิดรับ", limited: "รับจำนวนจำกัด", closed: "ปิดรับ" },
-    close: "ปิด",
-    closeDetails: "ปิดรายละเอียดบริการ",
     commercial: "เชิงพาณิชย์",
     documents: "อ่านข้อตกลงการใช้งาน",
     finalPrice: "ราคาสุดท้ายจะประเมินอีกครั้งหลังจากได้รับรายละเอียดของงาน",
@@ -82,7 +75,6 @@ const dialogCopy: Record<Locale, {
     personal: "PERSONAL",
     referenceNote: "ราคาเป็นราคาอ้างอิง อาจเปลี่ยนแปลงตามรายละเอียดของงาน",
     referencePricing: "ราคาอ้างอิง",
-    request: "ส่งแบบประเมินราคา",
     revisions: "แก้ฟรีมาตรฐาน",
     revisionsHint: "เกินกว่านี้คิดเพิ่มตามรายละเอียด",
     revisionsValue: "4 ครั้ง",
@@ -175,8 +167,11 @@ function useDialogFocus(
 
 export function ServiceDetailDialog({ initialPreview = false, locale = "en", onClose, open, service }: ServiceDetailDialogProps) {
   const copy = dialogCopy[locale];
+  const messages = getDictionary(locale).commission;
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const requestRef = useRef<HTMLButtonElement>(null);
+  const previousPreviewOpen = useRef(initialPreview);
   const [previewOpen, setPreviewOpen] = useState(initialPreview);
   const [activeExample, setActiveExample] = useState(0);
   const close = useDialogFocus(open, onClose, dialogRef, closeRef, !previewOpen);
@@ -184,20 +179,23 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
   const serviceName = service.name[locale].replace(new RegExp(`^${categoryName}\\s+`, "i"), "");
   const example = service.examples[activeExample] ?? service.examples[0];
 
-  useEffect(() => setActiveExample(0), [service.slug]);
+  useEffect(() => {
+    if (previousPreviewOpen.current && !previewOpen) requestRef.current?.focus();
+    previousPreviewOpen.current = previewOpen;
+  }, [previewOpen]);
 
   if (!open) return null;
 
   return <>
-    <div aria-hidden={previewOpen || undefined} aria-label={service.name[locale]} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
+    <div aria-hidden={previewOpen || undefined} aria-labelledby={`service-${service.slug}`} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
       <section className={styles.detailDialog}>
         <header className={styles.detailHeroHeader}>
-          <div className={styles.detailTitleLine}><Sparkles aria-hidden="true" /><h2>{serviceName}</h2><span>—</span><strong>{categoryName}</strong></div>
+          <div className={styles.detailTitleLine}><Sparkles aria-hidden="true" /><h2 aria-label={service.name[locale]} id={`service-${service.slug}`}>{serviceName}</h2><span>—</span><strong>{categoryName}</strong></div>
           <div className={styles.detailIntro}>
             <span className={`${styles.detailAvailability} ${styles[service.availability]}`}>● {copy.availability[service.availability]}</span>
             <p>{service.description[locale]}</p>
           </div>
-          <button aria-label={copy.closeDetails} className={styles.detailClose} onClick={close} ref={closeRef} type="button"><X /></button>
+          <button aria-label={messages.closeDetails} className={styles.detailClose} onClick={close} ref={closeRef} type="button"><X /></button>
         </header>
 
         <div className={styles.detailBody}>
@@ -248,7 +246,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
 
         <footer className={styles.detailFooter}>
           <p><Info />{copy.finalPrice}</p>
-          <div><button disabled={service.availability === "closed"} onClick={() => setPreviewOpen(true)} type="button"><Sparkles />{copy.request}</button><button onClick={close} type="button">{copy.close}</button></div>
+          <div><button disabled={service.availability === "closed"} onClick={() => setPreviewOpen(true)} ref={requestRef} type="button"><Sparkles />{messages.estimate}</button><button onClick={close} type="button">{messages.closeEstimate}</button></div>
         </footer>
       </section>
     </div>

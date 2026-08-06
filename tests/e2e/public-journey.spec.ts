@@ -1,0 +1,28 @@
+import { expect, test } from "@playwright/test";
+
+test("visitor browses an album and details without leaving Commission", async ({ page }) => {
+  await page.goto("/th/commission");
+  const commissionUrl = page.url();
+
+  await page.getByRole("button", { name: /ดูอัลบั้ม Chibi/ }).click();
+  await expect(page).toHaveURL(commissionUrl);
+
+  const details = page.getByRole("button", { name: "ดูรายละเอียดและเรทราคา" }).first();
+  await details.click();
+  await expect(page.getByRole("dialog", { name: /Chibi/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "ปิดรายละเอียด" }).click();
+  await expect(details).toBeFocused();
+  await page.getByRole("button", { name: "กลับไปดูทุกอัลบั้ม" }).click();
+
+  await expect(page).toHaveURL(commissionUrl);
+  await expect(page.getByRole("button", { name: /ดูอัลบั้ม Chibi/ })).toBeVisible();
+});
+
+test("closed services keep details available while estimate is disabled", async ({ page }) => {
+  await page.goto("/en/commission");
+  await page.getByRole("button", { name: /View Minecraft 3D Model album/ }).click();
+
+  await expect(page.getByRole("button", { name: "Request Estimate" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "View Details & Rates" })).toBeEnabled();
+});

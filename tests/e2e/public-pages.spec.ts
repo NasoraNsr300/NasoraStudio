@@ -35,8 +35,8 @@ test("visitor can browse the public commission journey", async ({ page }) => {
   await page.goto("/th");
   await page.getByRole("button", { name: "เปิดเมนู" }).click();
   await page.getByRole("link", { name: "คอมมิชชัน", exact: true }).click();
-  await page.getByRole("link", { name: /Illustration/ }).click();
-  await page.getByRole("button", { name: /ดูรายละเอียด Illustration Half Body/ }).click();
+  await page.getByRole("button", { name: /ดูอัลบั้ม Illustration/ }).click();
+  await page.getByRole("button", { name: "ดูรายละเอียดและเรทราคา" }).first().click();
   await expect(page.getByRole("dialog", { name: /Illustration Half Body/ })).toBeVisible();
 });
 
@@ -127,7 +127,7 @@ test("service album eagerly loads its above-fold LCP image", async ({ page }) =>
 
 test("commission album grid eagerly loads only its true LCP item", async ({ page }) => {
   await page.goto("/en/commission");
-  const albumImages = page.locator("main a img");
+  const albumImages = page.locator("main section button img");
 
   await expect(albumImages).toHaveCount(5);
   await expect(albumImages.first()).toHaveAttribute("loading", "eager");
@@ -139,11 +139,11 @@ test("commission album grid eagerly loads only its true LCP item", async ({ page
 test("mobile service dialog controls stay above floating shell controls", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/en/commission/illustration");
-  await page.getByRole("button", { name: /View details for Illustration Half Body/ }).click();
+  await page.getByRole("button", { name: "View Details & Rates" }).first().click();
 
   const dialog = page.getByRole("dialog", { name: "Illustration Half Body" });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Close service details" }).click({ trial: true });
+  await dialog.getByRole("button", { name: "Close details" }).click({ trial: true });
   await dialog.getByRole("button", { name: "Close", exact: true }).click({ trial: true });
 });
 
@@ -182,9 +182,9 @@ test("all mobile public and overlay targets provide at least 44px touch targets"
   await expectMinimumTouchTargets(page, "open Portfolio lightbox");
 
   await page.goto("/en/commission/illustration");
-  await page.getByRole("button", { name: /View details for Illustration Half Body/ }).click();
+  await page.getByRole("button", { name: "View Details & Rates" }).first().click();
   await expectMinimumTouchTargets(page, "open service dialog");
-  await page.getByRole("button", { name: "Request estimate", exact: true }).click();
+  await page.getByRole("button", { name: "Request Estimate", exact: true }).click();
   await expectMinimumTouchTargets(page, "open nested request preview");
 
   await page.goto("/en/documents");

@@ -2,6 +2,7 @@ import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance"
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceType } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
+import { getDictionary } from "@/shared/i18n/dictionaries";
 
 import styles from "./commission.module.css";
 
@@ -19,23 +20,17 @@ function formatThb(amount: number) {
 
 const serviceCopy: Record<Locale, {
   availability: Record<ServiceType["availability"], string>;
-  details: string;
   priceGuidance: string;
-  request: string;
   usdGuidance: string;
 }> = {
   en: {
     availability: { open: "Open", limited: "Limited availability", closed: "Closed" },
-    details: "View Details & Rates",
     priceGuidance: "Starting reference price",
-    request: "Request Estimate",
     usdGuidance: "USD guidance",
   },
   th: {
     availability: { open: "เปิดรับ", limited: "รับจำนวนจำกัด", closed: "ปิดรับ" },
-    details: "ดูรายละเอียดและเรทราคา",
     priceGuidance: "ราคาอ้างอิงเริ่มต้น",
-    request: "ประเมินราคา",
     usdGuidance: "แนวทางราคา USD",
   },
 };
@@ -48,6 +43,7 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
   const fromPrice = service.referencePrices[0];
   const isClosed = service.availability === "closed";
   const copy = serviceCopy[locale];
+  const messages = getDictionary(locale).commission;
   const example = service.examples[0];
 
   return (
@@ -62,8 +58,8 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
         <p className={styles.price}><span>{copy.priceGuidance}</span><strong>{formatThb(fromPrice.amountThb)}</strong><span>{displayUsd(fromPrice.amountThb, locale)}</span></p>
         <p className={styles.timing}>{service.timingGuidance[locale]}</p>
         <div className={styles.serviceActions}>
-          <button disabled={isClosed} onClick={() => onRequest(service)} type="button">{copy.request}</button>
-          <button className={styles.secondaryButton} onClick={() => onViewDetails(service)} type="button">{copy.details}</button>
+          <button disabled={isClosed} onClick={() => onRequest(service)} type="button">{messages.estimate}</button>
+          <button className={styles.secondaryButton} onClick={() => onViewDetails(service)} type="button">{messages.detailsAndRates}</button>
         </div>
       </div>
     </article>

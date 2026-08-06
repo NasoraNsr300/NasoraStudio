@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
+import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { ServiceCategory, ServiceType } from "@/shared/types/public-content";
 
 import { ServiceCard } from "./service-card";
@@ -17,8 +18,8 @@ export type ServiceCategoryPageProps = {
 };
 
 const copy = {
-  en: { all: "All types", back: "Back to all albums", eyebrow: "Commission album", filters: "Service type filters", suffix: "services" },
-  th: { all: "ทุกรูปแบบ", back: "กลับไปดูทุกอัลบั้ม", eyebrow: "อัลบั้มคอมมิชชัน", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
+  en: { all: "All types", eyebrow: "Commission album", filters: "Service type filters", suffix: "services" },
+  th: { all: "ทุกรูปแบบ", eyebrow: "อัลบั้มคอมมิชชัน", filters: "ตัวกรองประเภทงาน", suffix: "รูปแบบงาน" },
 } as const;
 
 export function ServiceCategoryPage({ category, locale, onBack, services }: ServiceCategoryPageProps) {
@@ -27,11 +28,12 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
   const [previewService, setPreviewService] = useState<ServiceType | null>(null);
   const visibleServices = useMemo(() => services.filter((service) => filter === "all" || service.slug === filter), [filter, services]);
   const labels = copy[locale];
+  const messages = getDictionary(locale).commission;
 
   return (
     <main className={`${styles.commissionPage} ${styles.serviceCategoryPage}`}>
       <header className={styles.heading}>
-        {onBack ? <button className={styles.backToAlbums} onClick={onBack} type="button">{labels.back}</button> : null}
+        {onBack ? <button className={styles.backToAlbums} onClick={onBack} type="button">{messages.backToAlbums}</button> : null}
         <p>{locale === "th" ? "อัลบั้ม" : "Album"}　/　{category.name[locale]}</p>
         <div className={styles.categoryTitleRow}>
           <h1>{category.name[locale]}</h1>

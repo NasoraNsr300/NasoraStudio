@@ -84,4 +84,26 @@ describe("Commission albums", () => {
     expect(screen.queryByRole("button", { name: /ประเมินราคา.+Chibi/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /ดูรายละเอียด.+Chibi/i })).not.toBeInTheDocument();
   });
+
+  it("opens an accessible detail dialog and restores focus without changing the URL", async () => {
+    const user = userEvent.setup();
+    const initialUrl = window.location.href;
+
+    render(<CommissionAlbumsPage categories={serviceCategories} locale="en" services={serviceTypes} />);
+
+    await user.click(screen.getByRole("button", { name: /view chibi album/i }));
+    const detailsTrigger = screen.getAllByRole("button", { name: "View Details & Rates" })[0];
+    await user.click(detailsTrigger);
+
+    const dialog = screen.getByRole("dialog", { name: /Chibi/i });
+    const labelledBy = dialog.getAttribute("aria-labelledby");
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toBeVisible();
+    expect(window.location.href).toBe(initialUrl);
+
+    await user.click(screen.getByRole("button", { name: "Close details" }));
+    expect(screen.queryByRole("dialog", { name: /Chibi/i })).not.toBeInTheDocument();
+    expect(detailsTrigger).toHaveFocus();
+    expect(window.location.href).toBe(initialUrl);
+  });
 });

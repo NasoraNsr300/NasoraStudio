@@ -1,0 +1,9 @@
+- [ ] `/th/commission` and `/en/commission` show album overview tiles without prices or request CTAs.
+- [ ] Selecting an album changes visible content without changing the URL.
+- [ ] Back to all albums restores the overview without changing the URL.
+- [ ] Thai cards show only `ประเมินราคา` and `ดูรายละเอียดและเรทราคา`.
+- [ ] English cards show only `Request Estimate` and `View Details & Rates`.
+- [ ] Closed services disable Estimate and keep Details enabled.
+- [ ] Keyboard focus enters and returns from the service detail dialog correctly.
+- [ ] Reduced-motion mode does not depend on album transition animation.
+- [ ] Local files under `E:/NasoraStudio/img/` remain untracked and are reserved for manual upload testing in the later upload-management stage.

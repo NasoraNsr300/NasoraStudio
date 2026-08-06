@@ -54,7 +54,7 @@ describe("PublicShell sidebar", () => {
     await user.click(screen.getByRole("button", { name: th.menu }));
     expect(screen.getByRole("link", { name: th.home })).toBeVisible();
     expect(screen.getByRole("link", { name: th.portfolio })).toBeVisible();
-    expect(screen.getByRole("link", { name: th.commission })).toBeVisible();
+    expect(screen.getByRole("link", { name: th.commissionNav })).toBeVisible();
     await user.click(screen.getByRole("button", { name: th.login }));
     const preview = screen.getByRole("dialog", { name: "ตัวอย่างการเข้าสู่ระบบ" });
     expect(preview).toBeVisible();
