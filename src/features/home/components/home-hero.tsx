@@ -87,7 +87,7 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{labels.studio}</p>
         <h1 id="home-hero-title">
-          <span className={styles.heroLine}>{labels.headlineLead}</span>
+          <span className={styles.heroLine}>{labels.headlineLead}</span>{" "}
           <span className={styles.heroLine}>
             {labels.headlineSub}{" "}
             <span className={styles.heroAccent}>{labels.headlineAccent}</span>
