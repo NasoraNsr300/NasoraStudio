@@ -21,7 +21,12 @@
 .open { color: #86efac; } .limited { color: var(--brand-gold); } .closed { color: #fca5a5; }
 .availabilityBadge.open { background: rgb(20 83 45 / 85%); } .availabilityBadge.limited { background: rgb(120 53 15 / 85%); } .availabilityBadge.closed { background: rgb(127 29 29 / 85%); }
 
-.subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
+.categoryControlsBar { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: space-between; margin-bottom: var(--space-6); }
+.subtypeFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.viewModePill { align-items: center; background: var(--surface-strong); border: 1px solid var(--border); border-radius: 999px; display: flex; gap: .25rem; padding: .25rem; }
+.viewModeButton { align-items: center; background: transparent; border: 0; border-radius: 50%; color: var(--text-secondary); cursor: pointer; display: flex; height: 2.25rem; justify-content: center; width: 2.25rem; }
+.viewModeButton:hover { color: var(--text-primary); }
+.viewModeButton[aria-pressed="true"] { background: var(--text-primary); color: var(--background); box-shadow: var(--elevation-floating); }
 .albumBreadcrumb { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; font: inherit; font-weight: inherit; letter-spacing: inherit; min-height: 44px; padding: 0; text-transform: inherit; }
 .albumBreadcrumb:hover { color: var(--brand-gold); }
 .albumBreadcrumb:focus-visible { border-radius: var(--radius-xs); outline: 2px solid var(--brand-violet); outline-offset: 4px; }
@@ -36,6 +41,32 @@
 .price { align-items: baseline; display: flex; flex-wrap: wrap; gap: var(--space-2); } .price strong { color: var(--brand-gold); } .price span { font-size: var(--font-label); }
 .timing { font-size: var(--font-label); }.serviceActions { display: grid; gap: var(--space-2); margin-top: var(--space-5); }.serviceActions button, .dialogActions button { min-height: 44px; padding: 0 var(--space-3); }.secondaryButton { background: transparent !important; color: var(--brand-violet) !important; }
 .serviceActions button:disabled, .dialogActions button:disabled { cursor: not-allowed; opacity: .5; }
+
+/* List & Gallery View Modes */
+.serviceList { display: grid; gap: 1.25rem; }
+.serviceListItem { background: var(--surface-strong); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elevation-floating); display: grid; gap: 1.5rem; grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr); overflow: hidden; padding: 1.25rem; }
+.listMedia { aspect-ratio: 3 / 4; border-radius: var(--radius-md); overflow: hidden; position: relative; width: 100%; }
+.listMedia img { height: 100%; object-fit: cover; width: 100%; }
+.listContent { display: flex; flex-direction: column; justify-content: center; gap: .85rem; }
+.serviceSubtitle { color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.listTitleRow, .galleryTitleRow { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; }
+.listTitleRow h2, .galleryTitleRow h2 { font-family: var(--font-display); font-size: clamp(1.4rem, 2.5vw, 1.85rem); margin: 0; }
+.listDescription { color: var(--text-secondary); font-size: .88rem; line-height: 1.5; margin: 0; }
+.subtypeBadge { background: color-mix(in srgb, var(--brand-violet) 25%, transparent); border: 1px solid color-mix(in srgb, var(--brand-violet) 40%, transparent); border-radius: 999px; color: var(--brand-violet); font-size: .68rem; font-weight: 700; padding: .25rem .65rem; }
+.listActionsGroup, .galleryActionsGroup { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: .5rem; }
+.estimatePrimaryButton { align-items: center; background: linear-gradient(135deg, #18181b, #09090b); border: 1px solid var(--border); border-radius: 999px; color: #ffffff; cursor: pointer; display: inline-flex; font: inherit; font-weight: 700; gap: .5rem; min-height: 2.75rem; padding: 0 1.5rem; }
+:global([data-theme="autumn"]) .estimatePrimaryButton { background: linear-gradient(135deg, #2a1a12, #1a0f08); }
+.estimatePrimaryButton:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.estimatePrimaryButton:disabled { opacity: .5; cursor: not-allowed; }
+.detailsSecondaryButton { align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text-primary); cursor: pointer; display: inline-flex; font: inherit; font-weight: 600; gap: .5rem; min-height: 2.75rem; padding: 0 1.5rem; }
+.detailsSecondaryButton:hover { background: color-mix(in srgb, var(--brand-gold) 15%, var(--surface)); border-color: var(--brand-gold); }
+.iconCircleButton { align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; color: var(--text-primary); cursor: pointer; display: inline-flex; height: 2.75rem; justify-content: center; width: 2.75rem; }
+.iconCircleButton:hover { border-color: var(--brand-gold); color: var(--brand-gold); }
+.serviceGallery { display: grid; gap: 2rem; }
+.serviceGalleryItem { background: var(--surface-strong); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elevation-floating); overflow: hidden; }
+.galleryMedia { aspect-ratio: 21 / 9; max-height: 32rem; overflow: hidden; position: relative; width: 100%; }
+.galleryMedia img { height: 100%; object-fit: cover; width: 100%; }
+.galleryBar { align-items: center; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; padding: 1.25rem 1.5rem; }
 
 .dialogBackdrop { align-items: center; background: rgb(4 6 16 / 86%); display: flex; inset: 0; justify-content: center; padding: clamp(1rem, 4vw, 3rem); position: fixed; z-index: var(--z-overlay); }
 .detailDialog { background: var(--background-elevated); border: var(--border-subtle) solid var(--brand-violet); border-radius: var(--radius-lg); box-shadow: var(--elevation-modal); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: min(52rem, calc(100dvh - 2rem)); max-width: 76rem; overflow: hidden; width: 100%; }
