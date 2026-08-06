@@ -270,3 +270,204 @@ create index jobs_user_created_idx
 
 create index job_status_history_job_changed_idx
   on public.job_status_history (job_id, changed_at desc);
+
+create function private.is_admin() returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce((select auth.jwt()) -> 'app_metadata' ->> 'role', '') = 'admin';
+$$;
+
+alter table public.commission_requests enable row level security;
+alter table public.request_answers enable row level security;
+alter table public.quotes enable row level security;
+alter table public.quote_items enable row level security;
+alter table public.status_workflows enable row level security;
+alter table public.status_definitions enable row level security;
+alter table public.jobs enable row level security;
+alter table public.job_charge_adjustments enable row level security;
+alter table public.job_status_history enable row level security;
+alter table public.queue_entries enable row level security;
+alter table public.audit_logs enable row level security;
+
+create policy commission_requests_admin_all
+on public.commission_requests for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy commission_requests_select_own
+on public.commission_requests for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy request_answers_admin_all
+on public.request_answers for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy request_answers_select_own
+on public.request_answers for select to authenticated
+using (
+  exists (
+    select 1 from public.commission_requests request
+    where request.id = request_id and request.user_id = (select auth.uid())
+  )
+);
+
+create policy quotes_admin_all
+on public.quotes for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy quotes_select_own
+on public.quotes for select to authenticated
+using (
+  exists (
+    select 1 from public.commission_requests request
+    where request.id = request_id and request.user_id = (select auth.uid())
+  )
+);
+
+create policy quote_items_admin_all
+on public.quote_items for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy quote_items_select_own
+on public.quote_items for select to authenticated
+using (
+  exists (
+    select 1
+    from public.quotes quote
+    join public.commission_requests request on request.id = quote.request_id
+    where quote.id = quote_id and request.user_id = (select auth.uid())
+  )
+);
+
+create policy status_workflows_select_authenticated
+on public.status_workflows for select to authenticated
+using (is_active and archived_at is null);
+
+create policy status_workflows_admin_all
+on public.status_workflows for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy status_definitions_select_authenticated
+on public.status_definitions for select to authenticated
+using (archived_at is null);
+
+create policy status_definitions_admin_all
+on public.status_definitions for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy jobs_admin_all
+on public.jobs for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy jobs_select_own
+on public.jobs for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy job_charge_adjustments_admin_all
+on public.job_charge_adjustments for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy job_charge_adjustments_select_own
+on public.job_charge_adjustments for select to authenticated
+using (
+  exists (
+    select 1 from public.jobs job
+    where job.id = job_id and job.user_id = (select auth.uid())
+  )
+);
+
+create policy job_status_history_admin_all
+on public.job_status_history for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy job_status_history_select_own
+on public.job_status_history for select to authenticated
+using (
+  exists (
+    select 1 from public.jobs job
+    where job.id = job_id and job.user_id = (select auth.uid())
+  )
+);
+
+create policy queue_entries_admin_all
+on public.queue_entries for all to authenticated
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
+
+create policy queue_entries_public_visible
+on public.queue_entries for select to anon, authenticated
+using (is_visible and archived_at is null);
+
+create policy audit_logs_admin_select
+on public.audit_logs for select to authenticated
+using ((select private.is_admin()));
+
+create policy audit_logs_admin_insert
+on public.audit_logs for insert to authenticated
+with check ((select private.is_admin()));
+
+create view public.public_queue
+with (security_invoker = true)
+as
+select
+  row_number() over (
+    order by manual_rank nulls last, default_order_at, created_at
+  )::bigint as position,
+  customer_display_name,
+  category_name_snapshot,
+  service_type_name_snapshot,
+  status_label_snapshot,
+  deadline
+from public.queue_entries
+where is_visible and archived_at is null;
+
+revoke all on public.commission_requests, public.request_answers,
+  public.quotes, public.quote_items, public.status_workflows,
+  public.status_definitions, public.jobs, public.job_charge_adjustments,
+  public.job_status_history, public.queue_entries, public.audit_logs
+from anon, authenticated;
+
+grant usage on schema public to anon, authenticated;
+grant usage on schema private to authenticated;
+
+grant select, insert, update, delete on public.commission_requests to authenticated;
+grant select, insert, update, delete on public.request_answers to authenticated;
+grant select, insert, update, delete on public.quotes to authenticated;
+grant select, insert, update, delete on public.quote_items to authenticated;
+grant select, insert, update, delete on public.status_workflows to authenticated;
+grant select, insert, update, delete on public.status_definitions to authenticated;
+grant select, insert, update, delete on public.jobs to authenticated;
+grant select, insert, update, delete on public.job_charge_adjustments to authenticated;
+grant select, insert, update, delete on public.job_status_history to authenticated;
+grant insert, update, delete on public.queue_entries to authenticated;
+grant select on public.audit_logs to authenticated;
+grant insert on public.audit_logs to authenticated;
+
+grant select (
+  customer_display_name,
+  category_name_snapshot,
+  service_type_name_snapshot,
+  status_label_snapshot,
+  deadline,
+  default_order_at,
+  manual_rank,
+  is_visible,
+  archived_at,
+  created_at
+) on public.queue_entries to anon, authenticated;
+
+grant select on public.public_queue to anon, authenticated;
+
+revoke all on function private.is_admin() from public, anon;
+grant execute on function private.is_admin() to authenticated;
