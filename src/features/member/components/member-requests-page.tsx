@@ -18,7 +18,9 @@ import styles from "./member-pages.module.css";
 
 type Props = {
   auth?: { status: AuthStatus; user: AuthIdentity | null };
+  hideSidebar?: boolean;
   locale: Locale;
+  onSelectSection?: (section: import("./member-sidebar").MemberSection) => void;
   repository?: ReturnType<typeof createCommissionRequestRepository>;
 };
 
@@ -57,7 +59,7 @@ function statusClass(status: MemberRequestSummary["status"]) {
   return styles.closed;
 }
 
-export function MemberRequestsPage({ auth, locale, repository }: Props) {
+export function MemberRequestsPage({ auth, hideSidebar, locale, onSelectSection, repository }: Props) {
   const th = locale === "th";
   const contextualAuth = useOptionalAuthSession();
   const session = auth ?? contextualAuth ?? { status: "signedOut" as const, user: null };
@@ -110,24 +112,35 @@ export function MemberRequestsPage({ auth, locale, repository }: Props) {
   const quotedCount = requests.filter((request) => request.status === "quoted").length;
   const closedCount = requests.length - waitingCount - quotedCount;
 
-  return <main className={styles.memberArea}><MemberSidebar active="requests" locale={locale} /><section className={styles.pagePanel}>
-    <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
-    <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>{waitingCount}</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>{quotedCount}</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>{closedCount}</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
-    <section className={styles.surface}><div className={styles.surfaceTitle}><h2>{th ? "รายการล่าสุด" : "Recent requests"}</h2><span>{requests.length} {th ? "รายการ" : "items"}</span></div>
-      {loading ? <p>{th ? "กำลังโหลดแบบประเมิน..." : "Loading requests..."}</p> : null}
-      {error ? <p role="alert">{error}</p> : null}
-      {!loading && !error && requests.length === 0 ? <p>{th ? "คุณยังไม่ได้ส่งแบบประเมินราคา" : "You have not submitted an estimate request yet."}</p> : null}
-      <div className={styles.requestList}>
-        {requests.map((request) => {
-          const cancellable = request.status === "submitted" || request.status === "reviewing";
-          return <article className={styles.requestRow} key={request.id}>
-            <div className={styles.requestMain}><strong>{request.serviceName[locale]}</strong><small>{request.requestCode} · {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium" }).format(new Date(request.submittedAt))}</small></div>
-            <div className={styles.requestMeta}><span>{th ? "งบประมาณ" : "Budget"}</span><strong>{formatBudget(request, locale)}</strong></div>
-            <span className={`${styles.statusPill} ${statusClass(request.status)}`}>● {statusCopy[locale][request.status]}</span>
-            {cancellable ? <button className={styles.rowButton} disabled={cancellingId === request.id} onClick={() => void cancelRequest(request)} type="button">{cancellingId === request.id ? (th ? "กำลังยกเลิก..." : "Cancelling...") : (th ? "ยกเลิกแบบประเมิน" : "Cancel request")}</button> : <span />}
-          </article>;
-        })}
-      </div>
+  const content = (
+    <section className={styles.pagePanel}>
+      <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
+      <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>{waitingCount}</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>{quotedCount}</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>{closedCount}</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
+      <section className={styles.surface}><div className={styles.surfaceTitle}><h2>{th ? "รายการล่าสุด" : "Recent requests"}</h2><span>{requests.length} {th ? "รายการ" : "items"}</span></div>
+        {loading ? <p>{th ? "กำลังโหลดแบบประเมิน..." : "Loading requests..."}</p> : null}
+        {error ? <p role="alert">{error}</p> : null}
+        {!loading && !error && requests.length === 0 ? <p>{th ? "คุณยังไม่ได้ส่งแบบประเมินราคา" : "You have not submitted an estimate request yet."}</p> : null}
+        <div className={styles.requestList}>
+          {requests.map((request) => {
+            const cancellable = request.status === "submitted" || request.status === "reviewing";
+            return <article className={styles.requestRow} key={request.id}>
+              <div className={styles.requestMain}><strong>{request.serviceName[locale]}</strong><small>{request.requestCode} · {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium" }).format(new Date(request.submittedAt))}</small></div>
+              <div className={styles.requestMeta}><span>{th ? "งบประมาณ" : "Budget"}</span><strong>{formatBudget(request, locale)}</strong></div>
+              <span className={`${styles.statusPill} ${statusClass(request.status)}`}>● {statusCopy[locale][request.status]}</span>
+              {cancellable ? <button className={styles.rowButton} disabled={cancellingId === request.id} onClick={() => void cancelRequest(request)} type="button">{cancellingId === request.id ? (th ? "กำลังยกเลิก..." : "Cancelling...") : (th ? "ยกเลิกแบบประเมิน" : "Cancel request")}</button> : <span />}
+            </article>;
+          })}
+        </div>
+      </section>
     </section>
-  </section></main>;
+  );
+
+  if (hideSidebar) return content;
+
+  return (
+    <main className={styles.memberArea}>
+      <MemberSidebar active="requests" locale={locale} onSelectSection={onSelectSection} />
+      {content}
+    </main>
+  );
 }

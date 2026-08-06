@@ -1,11 +1,9 @@
+"use client";
+
 import {
   CalendarDays,
   Check,
-  CircleUserRound,
   Clock3,
-  CreditCard,
-  FileText,
-  FolderOpen,
   HelpCircle,
   LockKeyhole,
   MessageSquareText,
@@ -13,12 +11,17 @@ import {
   Send,
   Sparkles,
   UserRound,
-  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 
+import { MemberMessagesPage } from "./member-messages-page";
+import { MemberPaymentsPage } from "./member-payments-page";
+import { MemberProfilePage } from "./member-profile-page";
+import { MemberRequestsPage } from "./member-requests-page";
+import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import styles from "./member.module.css";
 
 const copy = {
@@ -84,60 +87,232 @@ const copy = {
   },
 } as const;
 
-const navIcons = [FolderOpen, FileText, MessageSquareText, WalletCards, CircleUserRound];
-const navSections = ["jobs/demo", "requests", "messages", "payments", "profile"];
-
 export function MemberJobPage({ locale }: { locale: Locale }) {
   const labels = copy[locale];
-  return <main className={styles.memberPage}>
-    <aside className={styles.memberRail}>
-      <div className={styles.memberIdentity}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- fixture avatar */}
-        <img alt="Stardust" src="/fixtures/derivatives/moonlit-thumbnail.webp" />
-        <strong>Stardust</strong><span>{labels.member}</span>
-      </div>
-      <nav>{labels.nav.map((label, index) => {
-        const Icon = navIcons[index];
-        return <Link aria-current={index === 0 ? "page" : undefined} href={`/${locale}/member/${navSections[index]}`} key={label}><Icon size={19} />{label}{index === 2 ? <b>3</b> : null}</Link>;
-      })}</nav>
-      <div className={styles.memberHelp}><HelpCircle size={20} /><strong>{labels.help}</strong><Link href="#">{labels.contact}</Link></div>
-    </aside>
+  const [activeSection, setActiveSection] = useState<MemberSection>("jobs");
 
-    <section className={styles.jobWorkspace}>
-      <header className={styles.jobHeader}>
-        <h1>{labels.title}</h1>
-        <div><span>{labels.job}</span><b>● {labels.status}</b><span><CalendarDays size={15} />{labels.deadline}</span></div>
-      </header>
+  return (
+    <main className={styles.memberPage}>
+      <MemberSidebar active={activeSection} locale={locale} onSelectSection={setActiveSection} />
 
-      <ol className={styles.stageTrack}>
-        {labels.stages.map((stage, index) => <li className={index < 3 ? styles.stageDone : index === 3 ? styles.stageActive : undefined} key={stage}><span>{index < 3 ? <Check size={17} /> : index === 3 ? <Sparkles size={17} /> : <LockKeyhole size={15} />}</span><strong>{stage}</strong></li>)}
-      </ol>
+      {activeSection === "jobs" && (
+        <section className={styles.jobWorkspace}>
+          <header className={styles.jobHeader}>
+            <h1>{labels.title}</h1>
+            <div>
+              <span>{labels.job}</span>
+              <b>● {labels.status}</b>
+              <span>
+                <CalendarDays size={15} />
+                {labels.deadline}
+              </span>
+            </div>
+          </header>
 
-      <div className={styles.jobGrid}>
-        <section className={styles.timelineCard}>
-          <h2>{labels.progress}</h2>
-          <div className={styles.timeline}>
-            <article><time>20 พ.ค. 2026<br />10:21</time><span className={styles.eventDone}><Check size={15} /></span><div><strong>ลูกค้ายืนยันราคางาน</strong><p>ยืนยันราคา 6,500 THB</p></div></article>
-            <article><time>20 พ.ค. 2026<br />10:36</time><span className={styles.eventDone}><Check size={15} /></span><div><strong>ตรวจสอบมัดจำแล้ว</strong><p>มัดจำ 3,250 THB (50%) <em>Verified</em></p></div></article>
-            <article><time>21 พ.ค. 2026<br />15:42</time><span className={styles.eventActive}><Sparkles size={15} /></span><div><strong>อัปเดตร่าง — ภาพร่างขั้นต้น</strong><p>อัปโหลดภาพร่างขั้นต้น</p><button className={styles.progressImage} type="button"><img alt="ภาพร่างขั้นต้น" src="/fixtures/derivatives/forest-card.webp" /><Sparkles size={18} /></button></div></article>
-            <article><time>21 พ.ค. 2026<br />18:07</time><span className={styles.eventMessage}><MessageSquareText size={14} /></span><div><strong>ข้อความจากคุณ</strong><p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง และเปลี่ยนรูปดาวด้านหลังเป็นพระจันทร์เต็มดวงได้ไหมคะ?</p></div></article>
+          <ol className={styles.stageTrack}>
+            {labels.stages.map((stage, index) => (
+              <li className={index < 3 ? styles.stageDone : index === 3 ? styles.stageActive : undefined} key={stage}>
+                <span>
+                  {index < 3 ? <Check size={17} /> : index === 3 ? <Sparkles size={17} /> : <LockKeyhole size={15} />}
+                </span>
+                <strong>{stage}</strong>
+              </li>
+            ))}
+          </ol>
+
+          <div className={styles.jobGrid}>
+            <section className={styles.timelineCard}>
+              <h2>{labels.progress}</h2>
+              <div className={styles.timeline}>
+                <article>
+                  <time>
+                    20 พ.ค. 2026
+                    <br />
+                    10:21
+                  </time>
+                  <span className={styles.eventDone}>
+                    <Check size={15} />
+                  </span>
+                  <div>
+                    <strong>ลูกค้ายืนยันราคางาน</strong>
+                    <p>ยืนยันราคา 6,500 THB</p>
+                  </div>
+                </article>
+                <article>
+                  <time>
+                    20 พ.ค. 2026
+                    <br />
+                    10:36
+                  </time>
+                  <span className={styles.eventDone}>
+                    <Check size={15} />
+                  </span>
+                  <div>
+                    <strong>ตรวจสอบมัดจำแล้ว</strong>
+                    <p>
+                      มัดจำ 3,250 THB (50%) <em>Verified</em>
+                    </p>
+                  </div>
+                </article>
+                <article>
+                  <time>
+                    21 พ.ค. 2026
+                    <br />
+                    15:42
+                  </time>
+                  <span className={styles.eventActive}>
+                    <Sparkles size={15} />
+                  </span>
+                  <div>
+                    <strong>อัปเดตร่าง — ภาพร่างขั้นต้น</strong>
+                    <p>อัปโหลดภาพร่างขั้นต้น</p>
+                    <button className={styles.progressImage} type="button">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- fixture image */}
+                      <img alt="ภาพร่างขั้นต้น" src="/fixtures/derivatives/forest-card.webp" />
+                      <Sparkles size={18} />
+                    </button>
+                  </div>
+                </article>
+                <article>
+                  <time>
+                    21 พ.ค. 2026
+                    <br />
+                    18:07
+                  </time>
+                  <span className={styles.eventMessage}>
+                    <MessageSquareText size={14} />
+                  </span>
+                  <div>
+                    <strong>ข้อความจากคุณ</strong>
+                    <p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง และเปลี่ยนรูปดาวด้านหลังเป็นพระจันทร์เต็มดวงได้ไหมคะ?</p>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <div className={styles.jobSide}>
+              <section className={styles.paymentCard}>
+                <div>
+                  <h2>
+                    <Sparkles size={18} />
+                    {labels.cost}
+                  </h2>
+                  <dl>
+                    <div>
+                      <dt>{labels.total}</dt>
+                      <dd>6,500 THB</dd>
+                    </div>
+                    <div>
+                      <dt>{labels.paid}</dt>
+                      <dd className={styles.paid}>
+                        3,250 THB <small>(50%)</small>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{labels.balance}</dt>
+                      <dd className={styles.balance}>3,250 THB</dd>
+                    </div>
+                  </dl>
+                  <p>
+                    <HelpCircle size={16} />
+                    {labels.paymentHint}
+                  </p>
+                </div>
+                <aside>
+                  <span>PromptPay</span>
+                  <button onClick={() => setActiveSection("payments")} type="button">
+                    {labels.payMore}
+                  </button>
+                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("payments"); }}>
+                    วิธีชำระเงิน
+                  </Link>
+                </aside>
+              </section>
+
+              <div className={styles.sidePair}>
+                <section className={styles.quoteCard}>
+                  <h2>{labels.quote}</h2>
+                  <dl>
+                    <div>
+                      <dt>
+                        <UserRound size={15} />
+                        {labels.usage}
+                      </dt>
+                      <dd>{labels.personal}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <Clock3 size={15} />
+                        {labels.due}
+                      </dt>
+                      <dd>28 ส.ค. 2026</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <RefreshCcw size={15} />
+                        {labels.revisions}
+                      </dt>
+                      <dd>{labels.revisionsValue}</dd>
+                    </div>
+                  </dl>
+                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("requests"); }}>
+                    {labels.viewQuote} →
+                  </Link>
+                </section>
+
+                <section className={styles.messageCard}>
+                  <h2>
+                    {labels.latest}
+                    <b>3</b>
+                  </h2>
+                  <div>
+                    <small>
+                      จากทีมงาน <time>15:42</time>
+                    </small>
+                    <p>อัปเดตร่าง — ภาพร่างขั้นต้น</p>
+                  </div>
+                  <div>
+                    <small>
+                      จากคุณ <time>18:07</time>
+                    </small>
+                    <p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง...</p>
+                  </div>
+                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("messages"); }}>
+                    {labels.openMessages}
+                  </Link>
+                </section>
+              </div>
+
+              <section className={styles.deliveryCard}>
+                <div>
+                  <h2>
+                    <LockKeyhole size={18} />
+                    {labels.delivery}
+                  </h2>
+                  <p>{labels.deliveryHint}</p>
+                </div>
+                <button disabled type="button">
+                  <Send size={17} />
+                  {labels.locked}
+                </button>
+              </section>
+            </div>
           </div>
         </section>
+      )}
 
-        <div className={styles.jobSide}>
-          <section className={styles.paymentCard}>
-            <div><h2><Sparkles size={18} />{labels.cost}</h2><dl><div><dt>{labels.total}</dt><dd>6,500 THB</dd></div><div><dt>{labels.paid}</dt><dd className={styles.paid}>3,250 THB <small>(50%)</small></dd></div><div><dt>{labels.balance}</dt><dd className={styles.balance}>3,250 THB</dd></div></dl><p><HelpCircle size={16} />{labels.paymentHint}</p></div>
-            <aside><span>PromptPay</span><button type="button">{labels.payMore}</button><Link href="#">วิธีชำระเงิน</Link></aside>
-          </section>
-
-          <div className={styles.sidePair}>
-            <section className={styles.quoteCard}><h2>{labels.quote}</h2><dl><div><dt><UserRound size={15} />{labels.usage}</dt><dd>{labels.personal}</dd></div><div><dt><Clock3 size={15} />{labels.due}</dt><dd>28 ส.ค. 2026</dd></div><div><dt><RefreshCcw size={15} />{labels.revisions}</dt><dd>{labels.revisionsValue}</dd></div></dl><Link href="#">{labels.viewQuote} →</Link></section>
-            <section className={styles.messageCard}><h2>{labels.latest}<b>3</b></h2><div><small>จากทีมงาน <time>15:42</time></small><p>อัปเดตร่าง — ภาพร่างขั้นต้น</p></div><div><small>จากคุณ <time>18:07</time></small><p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง...</p></div><Link href="#">{labels.openMessages}</Link></section>
-          </div>
-
-          <section className={styles.deliveryCard}><div><h2><LockKeyhole size={18} />{labels.delivery}</h2><p>{labels.deliveryHint}</p></div><button disabled type="button"><Send size={17} />{labels.locked}</button></section>
-        </div>
-      </div>
-    </section>
-  </main>;
+      {activeSection === "requests" && (
+        <MemberRequestsPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
+      )}
+      {activeSection === "messages" && (
+        <MemberMessagesPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
+      )}
+      {activeSection === "payments" && (
+        <MemberPaymentsPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
+      )}
+      {activeSection === "profile" && (
+        <MemberProfilePage hideSidebar locale={locale} onSelectSection={setActiveSection} />
+      )}
+    </main>
+  );
 }
