@@ -22,16 +22,18 @@ const copy = {
   en: {
     commission: "View commissions",
     explore: "Explore featured work",
-    headlineAccent: "your world",
-    headlineLead: "Artwork in",
+    headlineAccent: "Studio",
+    headlineLead: "Visual Designer &",
+    headlineSub: "Illustrator",
     services: "Commission · Illustration · Minecraft",
     studio: "NASORA STUDIO",
   },
   th: {
     commission: "ดูบริการคอมมิชชัน",
     explore: "สำรวจผลงานแนะนำ",
-    headlineAccent: "ในโลกของคุณ",
-    headlineLead: "รับวาดภาพ",
+    headlineAccent: "Studio",
+    headlineLead: "Visual Designer &",
+    headlineSub: "Illustrator",
     services: "คอมมิชชัน · ภาพประกอบ · Minecraft",
     studio: "NASORA STUDIO",
   },
@@ -85,8 +87,11 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{labels.studio}</p>
         <h1 id="home-hero-title">
-          {labels.headlineLead}{" "}
-          <span className={styles.heroAccent}>{labels.headlineAccent}</span>
+          <span className={styles.heroLine}>{labels.headlineLead}</span>
+          <span className={styles.heroLine}>
+            {labels.headlineSub}{" "}
+            <span className={styles.heroAccent}>{labels.headlineAccent}</span>
+          </span>
         </h1>
         <p className={styles.heroServices}>{labels.services}</p>
         <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>

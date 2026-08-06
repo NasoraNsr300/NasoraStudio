@@ -31,17 +31,21 @@
 }
 
 .hero h1 {
-  font-size: clamp(2.5rem, 5vw, 4.5rem);
-  line-height: 1.08;
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.15;
   margin: 0;
 }
 
+.heroLine {
+  display: block;
+}
+
 .heroAccent {
-  background: linear-gradient(135deg, #fff3c4 0%, #f6c85f 45%, #e5a420 100%);
-  color: var(--brand-gold);
-  filter: drop-shadow(0 2px 14px rgba(246, 200, 95, 0.4));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #38bdf8;
+  filter: drop-shadow(0 2px 14px rgba(56, 189, 248, 0.45));
+  font-style: italic;
 }
 
 .heroDescription {

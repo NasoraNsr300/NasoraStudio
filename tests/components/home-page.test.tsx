@@ -17,7 +17,7 @@ describe("HomePage", () => {
     container.innerHTML = markup;
     const preload = container.querySelector('link[rel="preload"][as="image"]');
 
-    expect(container).toHaveTextContent("Artwork in your world");
+    expect(container).toHaveTextContent("Visual Designer & Illustrator Studio");
     expect(preload).toHaveAttribute(
       "imagesrcset",
       `${heroItems[0].media.thumbnailSrc} 480w, ${heroItems[0].media.cardSrc} 960w, ${heroItems[0].media.detailSrc} 1600w`,
@@ -31,12 +31,12 @@ describe("HomePage", () => {
     );
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Visual Designer & Illustrator Studio" })).toBeVisible();
 
     rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Visual Designer & Illustrator Studio" })).toBeVisible();
   });
 
   it("changes only Hero media after client selection while fallback copy stays stable", () => {
@@ -50,12 +50,12 @@ describe("HomePage", () => {
     );
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Visual Designer & Illustrator Studio" })).toBeVisible();
 
     rerender(<HomePage featuredItems={featuredItems} heroItems={heroItems} locale="en" randomValue={0} />);
 
     expect(screen.getByRole("img", { name: "Character in amber light" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Artwork in your world" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Visual Designer & Illustrator Studio" })).toBeVisible();
   });
 
   it("keeps the static Hero frame dimensions after client selection", () => {
@@ -101,7 +101,7 @@ describe("HomePage", () => {
 
     expect(screen.getByRole("link", { name: "ดูบริการคอมมิชชัน" })).toBeVisible();
     expect(screen.getByRole("region", { name: "ผลงานแนะนำ" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "หยุดผลงานเด่น" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "หยุดผลงานเด่น" })).not.toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: "ข้อมูลฉบับย่อ" })).toBeVisible();
   });
 });
