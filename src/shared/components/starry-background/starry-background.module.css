@@ -6,6 +6,11 @@
   z-index: var(--z-ambient);
 }
 
+/* Hide starry background when autumn theme is active */
+:global([data-theme="autumn"]) .container {
+  display: none !important;
+}
+
 .canvas {
   display: block;
   height: 100%;
@@ -27,10 +32,6 @@
   pointer-events: none;
   position: absolute;
   transition: background 600ms ease;
-}
-
-:global([data-theme="autumn"]) .atmosphereGlow {
-  background: radial-gradient(circle at 50% 20%, rgba(233, 162, 59, 0.15) 0%, rgba(255, 247, 232, 0.3) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
