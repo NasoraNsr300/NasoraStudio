@@ -10,22 +10,12 @@ import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 import { MemberContactList } from "./member-contact-list";
 import { MemberPasswordForm } from "./member-password-form";
 import { MemberProfileForm } from "./member-profile-form";
-import { MemberSidebar } from "./member-sidebar";
+import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import type { ContactChannel, MemberProfile, MemberProfileClient } from "../data/member-profile-repository";
 import { createMemberProfileRepository } from "../data/member-profile-repository";
 import styles from "./member-pages.module.css";
 
-export function MemberProfilePage({
-  hideSidebar,
-  locale,
-  onSelectSection,
-  profileClient,
-}: {
-  hideSidebar?: boolean;
-  locale: Locale;
-  onSelectSection?: (section: import("./member-sidebar").MemberSection) => void;
-  profileClient?: MemberProfileClient;
-}) {
+export function MemberProfileContent({ locale, profileClient }: { locale: Locale; profileClient?: MemberProfileClient }) {
   const th = locale === "th";
   const { signIn, status, updateNickname, updatePassword, user } = useAuthSession();
   const client = useMemo(() => profileClient ?? (createSupabaseBrowserClient() as unknown as MemberProfileClient), [profileClient]);
@@ -56,7 +46,7 @@ export function MemberProfilePage({
     userId: user?.id ?? "",
   };
 
-  const content = (
+  return (
     <section className={styles.pagePanel}>
       <header className={styles.pageHeader}><div><h1>{th ? "โปรไฟล์" : "Profile"}</h1><p>{th ? "จัดการชื่อ ช่องทางติดต่อ ภาษา และความปลอดภัยของบัญชี" : "Manage your nickname, contacts, language, and account security."}</p></div></header>
       {status === "loading" && <p className={styles.loadingCopy}>{th ? "กำลังโหลดข้อมูลสมาชิก…" : "Loading member profile…"}</p>}
@@ -93,13 +83,21 @@ export function MemberProfilePage({
       </div>}
     </section>
   );
+}
 
-  if (hideSidebar) return content;
-
+export function MemberProfilePage({
+  locale,
+  onSelectSection,
+  profileClient,
+}: {
+  locale: Locale;
+  onSelectSection?: (section: MemberSection) => void;
+  profileClient?: MemberProfileClient;
+}) {
   return (
     <main className={styles.memberArea}>
       <MemberSidebar active="profile" locale={locale} onSelectSection={onSelectSection} />
-      {content}
+      <MemberProfileContent locale={locale} profileClient={profileClient} />
     </main>
   );
 }

@@ -17,10 +17,10 @@ import { useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 
-import { MemberMessagesPage } from "./member-messages-page";
-import { MemberPaymentsPage } from "./member-payments-page";
-import { MemberProfilePage } from "./member-profile-page";
-import { MemberRequestsPage } from "./member-requests-page";
+import { MemberMessagesContent } from "./member-messages-page";
+import { MemberPaymentsContent } from "./member-payments-page";
+import { MemberProfileContent } from "./member-profile-page";
+import { MemberRequestsContent } from "./member-requests-page";
 import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import styles from "./member.module.css";
 
@@ -301,18 +301,10 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
         </section>
       )}
 
-      {activeSection === "requests" && (
-        <MemberRequestsPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
-      )}
-      {activeSection === "messages" && (
-        <MemberMessagesPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
-      )}
-      {activeSection === "payments" && (
-        <MemberPaymentsPage hideSidebar locale={locale} onSelectSection={setActiveSection} />
-      )}
-      {activeSection === "profile" && (
-        <MemberProfilePage hideSidebar locale={locale} onSelectSection={setActiveSection} />
-      )}
+      {activeSection === "requests" && <MemberRequestsContent locale={locale} />}
+      {activeSection === "messages" && <MemberMessagesContent locale={locale} />}
+      {activeSection === "payments" && <MemberPaymentsContent locale={locale} />}
+      {activeSection === "profile" && <MemberProfileContent locale={locale} />}
     </main>
   );
 }

@@ -13,14 +13,13 @@ import type { AuthIdentity, AuthStatus } from "@/shared/auth/auth-types";
 import type { Locale } from "@/shared/i18n/locales";
 import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 
-import { MemberSidebar } from "./member-sidebar";
+import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import styles from "./member-pages.module.css";
 
 type Props = {
   auth?: { status: AuthStatus; user: AuthIdentity | null };
-  hideSidebar?: boolean;
   locale: Locale;
-  onSelectSection?: (section: import("./member-sidebar").MemberSection) => void;
+  onSelectSection?: (section: MemberSection) => void;
   repository?: ReturnType<typeof createCommissionRequestRepository>;
 };
 
@@ -59,7 +58,7 @@ function statusClass(status: MemberRequestSummary["status"]) {
   return styles.closed;
 }
 
-export function MemberRequestsPage({ auth, hideSidebar, locale, onSelectSection, repository }: Props) {
+export function MemberRequestsContent({ auth, locale, repository }: Omit<Props, "onSelectSection">) {
   const th = locale === "th";
   const contextualAuth = useOptionalAuthSession();
   const session = auth ?? contextualAuth ?? { status: "signedOut" as const, user: null };
@@ -112,7 +111,7 @@ export function MemberRequestsPage({ auth, hideSidebar, locale, onSelectSection,
   const quotedCount = requests.filter((request) => request.status === "quoted").length;
   const closedCount = requests.length - waitingCount - quotedCount;
 
-  const content = (
+  return (
     <section className={styles.pagePanel}>
       <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
       <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>{waitingCount}</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>{quotedCount}</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>{closedCount}</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
@@ -134,13 +133,13 @@ export function MemberRequestsPage({ auth, hideSidebar, locale, onSelectSection,
       </section>
     </section>
   );
+}
 
-  if (hideSidebar) return content;
-
+export function MemberRequestsPage({ auth, locale, onSelectSection, repository }: Props) {
   return (
     <main className={styles.memberArea}>
       <MemberSidebar active="requests" locale={locale} onSelectSection={onSelectSection} />
-      {content}
+      <MemberRequestsContent auth={auth} locale={locale} repository={repository} />
     </main>
   );
 }
