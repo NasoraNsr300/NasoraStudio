@@ -1,4 +1,4 @@
-.memberPage { display: grid; gap: .75rem; grid-template-columns: 13rem minmax(0, 1fr); margin: 0 auto; padding: .75rem 0 5rem; width: var(--page-shell-width); }
+.memberPage { display: grid; gap: .75rem; grid-template-columns: 13rem minmax(0, 1fr); margin: 0 auto; padding: .75rem 0 1rem; width: var(--page-shell-width); }
 .memberRail, .jobWorkspace { background: rgb(10 21 43 / 76%); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .memberRail { display: flex; flex-direction: column; min-height: calc(100dvh - 8.5rem); padding: 1.25rem .65rem; }
 .memberIdentity { align-items: center; display: flex; flex-direction: column; }.memberIdentity img { border: 1px solid var(--brand-gold); border-radius: 50%; height: 5.6rem; object-fit: cover; width: 5.6rem; }.memberIdentity strong { font-size: 1.1rem; margin-top: .55rem; }.memberIdentity span { border: 1px solid var(--brand-violet); border-radius: 999px; color: var(--brand-violet); font-size: .68rem; margin-top: .35rem; padding: .2rem .65rem; }
