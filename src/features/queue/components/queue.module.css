@@ -15,7 +15,12 @@
 .search { color: var(--text-secondary); display: grid; font-size: var(--font-label); font-weight: 700; gap: var(--space-2); margin-bottom: var(--space-6); max-width: 28rem; }
 .search input { background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font: inherit; font-size: 1rem; min-height: 46px; padding: 0 var(--space-4); }
 .tableFrame { background: var(--surface); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); overflow: hidden; padding: var(--space-2) var(--space-3); }
-.queueTable { border-collapse: collapse; width: 100%; }
+.queueTable { border-collapse: collapse; table-layout: fixed; width: 100%; }
+.colPosition { width: 5.5rem; }
+.colName { width: 20%; }
+.colService { width: 38%; }
+.colStatus { width: 11rem; }
+.colDeadline { width: 9.5rem; }
 .queueTable th { color: var(--text-primary); font-size: var(--font-label); letter-spacing: .04em; padding: var(--space-3) var(--space-4); text-align: left; }
 .queueTable th::before { color: var(--brand-gold); content: "✦"; margin-right: var(--space-2); }
 .queueTable td { border-top: var(--border-subtle) solid var(--border); height: 58px; padding: var(--space-3) var(--space-4); }

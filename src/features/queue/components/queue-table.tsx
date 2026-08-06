@@ -27,6 +27,13 @@ export function QueueTable({ items, locale }: QueueTableProps) {
   return (
     <div className={styles.tableFrame}>
       <table className={styles.queueTable}>
+        <colgroup>
+          <col className={styles.colPosition} />
+          <col className={styles.colName} />
+          <col className={styles.colService} />
+          <col className={styles.colStatus} />
+          <col className={styles.colDeadline} />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col">{labels.position}</th>
