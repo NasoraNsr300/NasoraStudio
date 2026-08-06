@@ -140,7 +140,8 @@ export function AutumnLeavesBackground() {
     };
 
     const scheduleWindGust = () => {
-      const delay = Math.random() * 8000 + 6000;
+      // Wind comes infrequently (every 15 to 33 seconds)
+      const delay = Math.random() * 18000 + 15000;
       gustTimer = setTimeout(() => {
         triggerWindGust();
         scheduleWindGust();
