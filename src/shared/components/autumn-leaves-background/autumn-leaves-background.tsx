@@ -118,29 +118,29 @@ export function AutumnLeavesBackground() {
     const triggerWindGust = () => {
       if (isReducedMotion || !isAutumnTheme || document.hidden) return;
 
-      // Strong gust of wind blowing from left to right
-      targetWindForce = Math.random() * 3.2 + 2.0;
+      // Gentle breeze blowing softly from left to right
+      targetWindForce = Math.random() * 0.9 + 0.5;
 
-      // Add visual wind breeze streaks
-      const streakCount = Math.floor(Math.random() * 5) + 4;
+      // Add subtle visual breeze streaks
+      const streakCount = Math.floor(Math.random() * 4) + 3;
       for (let i = 0; i < streakCount; i++) {
         windStreaks.push({
           x: -100 - Math.random() * 200,
           y: Math.random() * height,
-          length: Math.random() * 180 + 120,
-          speed: Math.random() * 14 + 10,
-          alpha: Math.random() * 0.35 + 0.15,
+          length: Math.random() * 160 + 100,
+          speed: Math.random() * 3.5 + 2.0,
+          alpha: Math.random() * 0.25 + 0.1,
         });
       }
 
-      // Calm down gust after 2.5 - 3.5 seconds
+      // Calm down breeze after 3.5 - 5 seconds
       setTimeout(() => {
-        targetWindForce = 0.2;
-      }, Math.random() * 1000 + 2500);
+        targetWindForce = 0.15;
+      }, Math.random() * 1500 + 3500);
     };
 
     const scheduleWindGust = () => {
-      const delay = Math.random() * 6000 + 5000;
+      const delay = Math.random() * 8000 + 6000;
       gustTimer = setTimeout(() => {
         triggerWindGust();
         scheduleWindGust();
@@ -186,13 +186,13 @@ export function AutumnLeavesBackground() {
       if (!isAutumnTheme) return;
 
       // Smoothly adjust current wind force towards target wind force
-      windForce += (targetWindForce - windForce) * 0.05;
+      windForce += (targetWindForce - windForce) * 0.015;
 
       // Render Wind Streaks
       for (let i = windStreaks.length - 1; i >= 0; i--) {
         const streak = windStreaks[i];
         streak.x += streak.speed;
-        streak.alpha -= 0.003;
+        streak.alpha -= 0.002;
 
         if (streak.x > width + streak.length || streak.alpha <= 0) {
           windStreaks.splice(i, 1);
@@ -208,14 +208,14 @@ export function AutumnLeavesBackground() {
           streak.y
         );
         grad.addColorStop(0, "transparent");
-        grad.addColorStop(0.5, "rgba(255, 235, 200, 0.4)");
+        grad.addColorStop(0.5, "rgba(255, 235, 200, 0.3)");
         grad.addColorStop(1, "transparent");
 
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
         ctx.moveTo(streak.x, streak.y);
-        ctx.lineTo(streak.x + streak.length, streak.y - 10);
+        ctx.lineTo(streak.x + streak.length, streak.y - 6);
         ctx.stroke();
         ctx.restore();
       }
@@ -225,13 +225,13 @@ export function AutumnLeavesBackground() {
         if (!isReducedMotion) {
           // Physics update
           leaf.swingTimer += leaf.swingSpeed;
-          leaf.rotation += leaf.rotationSpeed + windForce * 0.015;
+          leaf.rotation += leaf.rotationSpeed + windForce * 0.008;
           leaf.flipAngle += leaf.flipSpeed;
 
           // Side-to-side sway combined with wind velocity
           const swingDx = Math.sin(leaf.swingTimer) * leaf.swingAmplitude;
-          leaf.x += swingDx + leaf.vx + windForce * 1.8;
-          leaf.y += leaf.vy - Math.abs(windForce * 0.2);
+          leaf.x += swingDx + leaf.vx + windForce * 0.5;
+          leaf.y += leaf.vy - Math.abs(windForce * 0.08);
 
           // Reset when off screen
           if (leaf.y > height + 40 || leaf.x > width + 120) {
