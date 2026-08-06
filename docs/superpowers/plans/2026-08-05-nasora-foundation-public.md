@@ -483,6 +483,8 @@ git commit -m "feat: add independent portfolio gallery"
 
 ### Task 6: Commission albums, subtype cards, and service details
 
+Execute the approved focused plan in `docs/superpowers/plans/2026-08-06-commission-in-page-albums-and-cta-labels.md` for this task; it preserves this task's detail and pricing requirements while replacing category-route navigation with same-URL in-page album browsing.
+
 **Files:**
 - Create: `src/features/commission/components/commission-albums-page.tsx`
 - Create: `src/features/commission/components/album-tile.tsx`
