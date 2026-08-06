@@ -50,8 +50,8 @@ export function DocumentCenterPage({ documents, initialQuery = "", locale }: Doc
     </section>
     <div className={styles.controls}>
       <div aria-label={labels.title} className={styles.filters} role="group">
-        <button aria-pressed={category === "all"} onClick={() => setCategory("all")} type="button">✧ {labels.all}</button>
-        {categories.map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)} type="button">◇ {getDocumentCategoryLabel(locale, value)}</button>)}
+        <button aria-label={labels.all} aria-pressed={category === "all"} onClick={() => setCategory("all")} type="button">✧ {labels.all}</button>
+        {categories.map((value) => <button aria-label={getDocumentCategoryLabel(locale, value)} aria-pressed={category === value} key={value} onClick={() => setCategory(value)} type="button">◇ {getDocumentCategoryLabel(locale, value)}</button>)}
       </div>
       <div className={styles.viewToggle}>
         <button aria-label={locale === "th" ? "มุมมองรายการ" : "List view"} aria-pressed={view === "list"} onClick={() => setView("list")} type="button">☷</button>

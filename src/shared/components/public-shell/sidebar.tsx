@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
+import { useAuthDialog } from "@/shared/auth/auth-dialog-controller";
 
-import { useAuthPreview } from "./auth-preview";
 import styles from "./public-shell.module.css";
 
 type SidebarProps = {
@@ -21,7 +21,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const panelRef = useRef<HTMLElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const dictionary = getDictionary(locale);
-  const { open: authOpen, show } = useAuthPreview();
+  const { open: authOpen, show } = useAuthDialog();
   const authOpenRef = useRef(authOpen);
   const pathname = usePathname();
   const links = [

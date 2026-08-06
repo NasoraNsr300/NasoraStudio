@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Bell, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, Bell, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -9,8 +9,10 @@ import styles from "./public-shell.module.css";
 
 type AccountMenuProps = {
   locale: Locale;
+  nickname: string;
   onClose: () => void;
   onShowNotifications: () => void;
+  onSignOut: () => void | Promise<void>;
 };
 
 type NotificationPanelProps = {
@@ -31,13 +33,13 @@ const notifications = {
   ],
 } as const;
 
-export function AccountMenu({ locale, onClose, onShowNotifications }: AccountMenuProps) {
+export function AccountMenu({ locale, nickname, onClose, onShowNotifications, onSignOut }: AccountMenuProps) {
   const th = locale === "th";
   return <section aria-label={th ? "เมนูบัญชี" : "Account menu"} className={styles.accountPanel}>
     <header className={styles.accountSummary}>
       {/* eslint-disable-next-line @next/next/no-img-element -- fixture avatar */}
-      <img alt="Stardust" src="/fixtures/derivatives/moonlit-thumbnail.webp" />
-      <span><strong>Stardust</strong><small>{th ? "สมาชิก" : "Member"}</small></span>
+      <img alt={nickname} src="/fixtures/derivatives/moonlit-thumbnail.webp" />
+      <span><strong>{nickname}</strong><small>{th ? "สมาชิก" : "Member"}</small></span>
     </header>
     <div className={styles.accountMenuList}>
       <button className={styles.accountMenuItem} onClick={onShowNotifications} type="button">
@@ -47,6 +49,7 @@ export function AccountMenu({ locale, onClose, onShowNotifications }: AccountMen
       <Link className={styles.accountMenuItem} href={`/${locale}/member/requests`} onClick={onClose}>
         <LayoutDashboard size={19} /><span>{th ? "พื้นที่สมาชิก" : "Member area"}</span>
       </Link>
+      <button className={styles.accountMenuItem} onClick={onSignOut} type="button"><LogOut size={19} /><span>{th ? "ออกจากระบบ" : "Sign out"}</span></button>
     </div>
   </section>;
 }
