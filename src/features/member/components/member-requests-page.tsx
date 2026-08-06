@@ -116,9 +116,9 @@ export function MemberRequestsContent({ auth, locale, repository }: Omit<Props, 
       <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
       <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>{waitingCount}</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>{quotedCount}</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>{closedCount}</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
       <section className={styles.surface}><div className={styles.surfaceTitle}><h2>{th ? "รายการล่าสุด" : "Recent requests"}</h2><span>{requests.length} {th ? "รายการ" : "items"}</span></div>
-        {loading ? <p>{th ? "กำลังโหลดแบบประเมิน..." : "Loading requests..."}</p> : null}
-        {error ? <p role="alert">{error}</p> : null}
-        {!loading && !error && requests.length === 0 ? <p>{th ? "คุณยังไม่ได้ส่งแบบประเมินราคา" : "You have not submitted an estimate request yet."}</p> : null}
+        {loading ? <p className={styles.loadingCopy}>{th ? "กำลังโหลดแบบประเมิน..." : "Loading requests..."}</p> : null}
+        {error ? <p className={styles.errorMessage} role="alert">{error}</p> : null}
+        {!loading && !error && requests.length === 0 ? <p className={styles.emptyCopy}>{th ? "คุณยังไม่ได้ส่งแบบประเมินราคา" : "You have not submitted an estimate request yet."}</p> : null}
         <div className={styles.requestList}>
           {requests.map((request) => {
             const cancellable = request.status === "submitted" || request.status === "reviewing";
