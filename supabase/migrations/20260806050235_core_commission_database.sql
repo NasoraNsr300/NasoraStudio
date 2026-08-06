@@ -471,3 +471,343 @@ grant select on public.public_queue to anon, authenticated;
 
 revoke all on function private.is_admin() from public, anon;
 grant execute on function private.is_admin() to authenticated;
+
+insert into public.status_workflows (
+  id,
+  stable_key,
+  name,
+  is_default,
+  is_active
+) values (
+  '00000000-0000-4000-8000-000000000001',
+  'nasora_default',
+  '{"th":"ขั้นตอนงานมาตรฐาน","en":"Default commission workflow"}'::jsonb,
+  true,
+  true
+);
+
+insert into public.status_definitions (
+  id,
+  workflow_id,
+  stable_key,
+  label,
+  display_order,
+  is_terminal,
+  customer_visible,
+  starts_work
+) values
+  ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001', 'waiting',   '{"th":"รอเริ่มงาน","en":"Waiting"}'::jsonb,   10, false, true,  false),
+  ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001', 'sketching', '{"th":"กำลังร่าง","en":"Sketching"}'::jsonb,  20, false, true,  true),
+  ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'coloring',  '{"th":"ลงสี","en":"Coloring"}'::jsonb,       30, false, true,  false),
+  ('00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000001', 'review',    '{"th":"รอตรวจ","en":"Review"}'::jsonb,        40, false, true,  false),
+  ('00000000-0000-4000-8000-000000000105', '00000000-0000-4000-8000-000000000001', 'delivery',  '{"th":"ส่งมอบงาน","en":"Delivery"}'::jsonb,   50, false, true,  false),
+  ('00000000-0000-4000-8000-000000000106', '00000000-0000-4000-8000-000000000001', 'completed', '{"th":"เสร็จสิ้น","en":"Completed"}'::jsonb,   60, true,  true,  false),
+  ('00000000-0000-4000-8000-000000000107', '00000000-0000-4000-8000-000000000001', 'cancelled', '{"th":"ยกเลิก","en":"Cancelled"}'::jsonb,     70, true,  true,  false);
+
+create function private.set_updated_at() returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger commission_requests_set_updated_at
+before update on public.commission_requests
+for each row execute function private.set_updated_at();
+
+create trigger quotes_set_updated_at
+before update on public.quotes
+for each row execute function private.set_updated_at();
+
+create trigger status_workflows_set_updated_at
+before update on public.status_workflows
+for each row execute function private.set_updated_at();
+
+create trigger status_definitions_set_updated_at
+before update on public.status_definitions
+for each row execute function private.set_updated_at();
+
+create trigger jobs_set_updated_at
+before update on public.jobs
+for each row execute function private.set_updated_at();
+
+create trigger queue_entries_set_updated_at
+before update on public.queue_entries
+for each row execute function private.set_updated_at();
+
+create function private.enforce_quote_immutability() returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if old.status <> 'draft'
+    and (
+      to_jsonb(new) - array[
+        'status', 'sent_at', 'accepted_at', 'declined_at', 'closed_at', 'updated_at'
+      ]::text[]
+    ) is distinct from (
+      to_jsonb(old) - array[
+        'status', 'sent_at', 'accepted_at', 'declined_at', 'closed_at', 'updated_at'
+      ]::text[]
+    )
+  then
+    raise exception 'quote_snapshot_is_immutable';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger quotes_enforce_immutability
+before update on public.quotes
+for each row execute function private.enforce_quote_immutability();
+
+create function private.enforce_quote_item_immutability() returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_quote_id uuid;
+  v_status text;
+begin
+  v_quote_id := case when tg_op = 'DELETE' then old.quote_id else new.quote_id end;
+
+  select status into v_status
+  from public.quotes
+  where id = v_quote_id;
+
+  if v_status is distinct from 'draft' then
+    raise exception 'quote_snapshot_is_immutable';
+  end if;
+
+  return case when tg_op = 'DELETE' then old else new end;
+end;
+$$;
+
+create trigger quote_items_enforce_immutability
+before insert or update or delete on public.quote_items
+for each row execute function private.enforce_quote_item_immutability();
+
+create function private.adjust_job_total(
+  p_job_id uuid,
+  p_amount_satang bigint,
+  p_category text,
+  p_reason_th text,
+  p_reason_en text default null
+) returns bigint
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_before public.jobs%rowtype;
+  v_after public.jobs%rowtype;
+  v_new_total bigint;
+begin
+  if not private.is_admin() then
+    raise exception 'admin_required' using errcode = '42501';
+  end if;
+
+  if p_amount_satang = 0 then
+    raise exception 'adjustment_must_be_nonzero';
+  end if;
+
+  select * into v_before
+  from public.jobs
+  where id = p_job_id
+  for update;
+
+  if not found then
+    raise exception 'job_not_found';
+  end if;
+
+  v_new_total := v_before.current_total_satang + p_amount_satang;
+  if v_new_total < 0 then
+    raise exception 'job_total_cannot_be_negative';
+  end if;
+
+  insert into public.job_charge_adjustments (
+    job_id,
+    category,
+    reason,
+    amount_satang,
+    created_by
+  ) values (
+    p_job_id,
+    p_category,
+    jsonb_build_object('th', p_reason_th, 'en', p_reason_en),
+    p_amount_satang,
+    auth.uid()
+  );
+
+  update public.jobs
+  set current_total_satang = v_new_total
+  where id = p_job_id
+  returning * into v_after;
+
+  insert into public.audit_logs (
+    actor_user_id, actor_role, action, entity_type, entity_id,
+    before_state, after_state, reason
+  ) values (
+    auth.uid(), 'admin', 'adjust_total', 'job', p_job_id,
+    to_jsonb(v_before), to_jsonb(v_after), p_reason_th
+  );
+
+  return v_new_total;
+end;
+$$;
+
+create function private.change_job_status(
+  p_job_id uuid,
+  p_new_status_id uuid,
+  p_public_note text default null,
+  p_private_note text default null
+) returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_before public.jobs%rowtype;
+  v_after public.jobs%rowtype;
+  v_status public.status_definitions%rowtype;
+begin
+  if not private.is_admin() then
+    raise exception 'admin_required' using errcode = '42501';
+  end if;
+
+  select * into v_before
+  from public.jobs
+  where id = p_job_id
+  for update;
+
+  if not found then
+    raise exception 'job_not_found';
+  end if;
+
+  select * into v_status
+  from public.status_definitions
+  where id = p_new_status_id and archived_at is null;
+
+  if not found or v_status.workflow_id <> v_before.workflow_id then
+    raise exception 'status_not_in_job_workflow';
+  end if;
+
+  insert into public.job_status_history (
+    job_id,
+    from_status_id,
+    to_status_id,
+    public_note,
+    private_note,
+    changed_by
+  ) values (
+    p_job_id,
+    v_before.status_id,
+    p_new_status_id,
+    p_public_note,
+    p_private_note,
+    auth.uid()
+  );
+
+  update public.jobs
+  set
+    status_id = p_new_status_id,
+    work_started_at = case
+      when v_status.starts_work and work_started_at is null then now()
+      else work_started_at
+    end,
+    completed_at = case
+      when v_status.stable_key = 'completed' then now()
+      else completed_at
+    end,
+    cancelled_at = case
+      when v_status.stable_key = 'cancelled' then now()
+      else cancelled_at
+    end
+  where id = p_job_id
+  returning * into v_after;
+
+  update public.queue_entries
+  set
+    status_label_snapshot = v_status.label,
+    archived_at = case
+      when v_status.is_terminal then coalesce(archived_at, now())
+      else null
+    end
+  where job_id = p_job_id and archived_at is null;
+
+  insert into public.audit_logs (
+    actor_user_id, actor_role, action, entity_type, entity_id,
+    before_state, after_state, reason
+  ) values (
+    auth.uid(), 'admin', 'change_status', 'job', p_job_id,
+    to_jsonb(v_before), to_jsonb(v_after), p_private_note
+  );
+end;
+$$;
+
+create function private.reorder_queue_entry(
+  p_queue_entry_id uuid,
+  p_manual_rank integer,
+  p_reason text
+) returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_before public.queue_entries%rowtype;
+  v_after public.queue_entries%rowtype;
+begin
+  if not private.is_admin() then
+    raise exception 'admin_required' using errcode = '42501';
+  end if;
+
+  if p_manual_rank is not null and nullif(btrim(p_reason), '') is null then
+    raise exception 'queue_override_reason_required';
+  end if;
+
+  select * into v_before
+  from public.queue_entries
+  where id = p_queue_entry_id
+  for update;
+
+  if not found then
+    raise exception 'queue_entry_not_found';
+  end if;
+
+  update public.queue_entries
+  set manual_rank = p_manual_rank, override_reason = p_reason
+  where id = p_queue_entry_id
+  returning * into v_after;
+
+  insert into public.audit_logs (
+    actor_user_id, actor_role, action, entity_type, entity_id,
+    before_state, after_state, reason
+  ) values (
+    auth.uid(), 'admin', 'reorder_queue', 'queue_entry', p_queue_entry_id,
+    to_jsonb(v_before), to_jsonb(v_after), p_reason
+  );
+end;
+$$;
+
+revoke update, delete on public.job_charge_adjustments from authenticated;
+revoke update, delete on public.job_status_history from authenticated;
+revoke update, delete on public.audit_logs from authenticated;
+
+revoke all on function private.set_updated_at() from public, anon, authenticated;
+revoke all on function private.enforce_quote_immutability() from public, anon, authenticated;
+revoke all on function private.enforce_quote_item_immutability() from public, anon, authenticated;
+revoke all on function private.adjust_job_total(uuid, bigint, text, text, text) from public, anon;
+revoke all on function private.change_job_status(uuid, uuid, text, text) from public, anon;
+revoke all on function private.reorder_queue_entry(uuid, integer, text) from public, anon;
+
+grant execute on function private.adjust_job_total(uuid, bigint, text, text, text) to authenticated;
+grant execute on function private.change_job_status(uuid, uuid, text, text) to authenticated;
+grant execute on function private.reorder_queue_entry(uuid, integer, text) to authenticated;
