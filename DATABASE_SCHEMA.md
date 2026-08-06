@@ -1,5 +1,21 @@
 # DATABASE SCHEMA — Nasora
 
+## Implemented core foundation (2026-08-06)
+
+Roadmap item 3 is deployed to Supabase. The implemented foundation contains:
+
+- `commission_requests` and `request_answers` for member/Guest estimate history
+- immutable, versioned `quotes` and `quote_items` with amounts stored as integer satang
+- editable `status_workflows` and `status_definitions`, seeded with 7 default statuses
+- `jobs`, append-only `job_charge_adjustments`, and append-only `job_status_history`
+- `queue_entries` plus the safe `public_queue` security-invoker view
+- append-only `audit_logs`
+- admin-only atomic operations in the private schema for total adjustments, status changes, and queue reordering
+
+All 11 exposed core tables have RLS enabled. Members can read only records owned by their `auth.uid()`. Guest contact data is admin-only, and the public queue projection excludes internal job IDs and all contact fields. The default deposit is 50% and the default free revision count is 4; both remain overridable per quote/job.
+
+Payments, slips/R2 assets, conversations, delivery links, and email outbox remain intentionally deferred to roadmap items 6–8.
+
 ## Conventions
 
 - Database: Supabase PostgreSQL

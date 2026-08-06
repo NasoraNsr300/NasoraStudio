@@ -33,6 +33,17 @@ describe("core commission workflow operations", () => {
     expect(sql).toContain("insert into public.job_status_history");
     expect(sql).toContain("insert into public.audit_logs");
     expect(sql).toContain("for update");
+
+    for (const functionName of [
+      "adjust_job_total",
+      "change_job_status",
+      "reorder_queue_entry",
+    ]) {
+      const functionSql = sql.split(
+        `create function private.${functionName}`,
+      )[1];
+      expect(functionSql?.split("as $$")[0]).toContain("security definer");
+    }
   });
 
   it("protects accepted quote snapshots and append-only ledgers", () => {

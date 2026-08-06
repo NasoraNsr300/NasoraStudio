@@ -271,6 +271,29 @@ create index jobs_user_created_idx
 create index job_status_history_job_changed_idx
   on public.job_status_history (job_id, changed_at desc);
 
+
+create index audit_logs_actor_user_idx
+  on public.audit_logs (actor_user_id);
+create index job_charge_adjustments_job_idx
+  on public.job_charge_adjustments (job_id);
+create index job_charge_adjustments_created_by_idx
+  on public.job_charge_adjustments (created_by);
+create index job_status_history_changed_by_idx
+  on public.job_status_history (changed_by);
+create index job_status_history_from_status_idx
+  on public.job_status_history (from_status_id);
+create index job_status_history_to_status_idx
+  on public.job_status_history (to_status_id);
+create index jobs_request_idx
+  on public.jobs (request_id);
+create index jobs_status_idx
+  on public.jobs (status_id);
+create index jobs_workflow_idx
+  on public.jobs (workflow_id);
+create index quotes_created_by_idx
+  on public.quotes (created_by);
+
+
 create function private.is_admin() returns boolean
 language sql
 stable
@@ -602,7 +625,7 @@ create function private.adjust_job_total(
   p_reason_en text default null
 ) returns bigint
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -670,7 +693,7 @@ create function private.change_job_status(
   p_private_note text default null
 ) returns void
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -758,7 +781,7 @@ create function private.reorder_queue_entry(
   p_reason text
 ) returns void
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare

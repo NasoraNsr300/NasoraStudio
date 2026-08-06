@@ -44,4 +44,23 @@ describe("core commission database migration", () => {
     expect(sql).toContain("requester_type = 'member'");
     expect(sql).toContain("requester_type = 'guest'");
   });
+
+  it("indexes foreign keys used by admin and history queries", () => {
+    const sql = readFileSync(migrationPath, "utf8").toLowerCase();
+
+    for (const index of [
+      "audit_logs_actor_user_idx",
+      "job_charge_adjustments_job_idx",
+      "job_charge_adjustments_created_by_idx",
+      "job_status_history_changed_by_idx",
+      "job_status_history_from_status_idx",
+      "job_status_history_to_status_idx",
+      "jobs_request_idx",
+      "jobs_status_idx",
+      "jobs_workflow_idx",
+      "quotes_created_by_idx",
+    ]) {
+      expect(sql).toContain(`create index ${index}`);
+    }
+  });
 });

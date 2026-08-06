@@ -307,7 +307,7 @@ Each function must:
 4. Update the current projection.
 5. Append the corresponding history and redacted audit row in the same transaction.
 6. Use `security invoker`, `set search_path = ''`, schema-qualified objects, and no dynamic SQL.
-7. Revoke execution from `PUBLIC` and `anon`, grant it to `authenticated`, and require `private.is_admin()` inside every function so an admin JWT can call the operations while RLS remains enforced.
+7. Use `SECURITY DEFINER` with a fixed empty `search_path`, revoke execution from `PUBLIC` and `anon`, grant it to `authenticated`, and require `private.is_admin()` inside every function. This lets an admin JWT perform the atomic operation without granting private queue columns to every authenticated member.
 
 Seed the workflow with stable keys `waiting`, `sketching`, `coloring`, `review`, `delivery`, `completed`, and `cancelled`, including Thai/English private and public labels.
 
