@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+import { X } from "lucide-react";
+
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
@@ -90,7 +92,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
       <button aria-label="Close menu backdrop" className={styles.sidebarBackdrop} onClick={onClose} type="button" />
       <aside aria-hidden={authOpen || undefined} aria-label="Site navigation" className={styles.sidebar} inert={authOpen || undefined} ref={panelRef}>
         <IconButton aria-label={dictionary.closeMenu} className={styles.iconButton} onClick={onClose}>
-          ×
+          <X aria-hidden="true" size={18} />
         </IconButton>
         <nav className={styles.sidebarNav}>
           {links.map(({ href, label }) => <Link aria-current={href === activeHref ? "page" : undefined} href={href} key={href} onClick={onClose}>{label}</Link>)}

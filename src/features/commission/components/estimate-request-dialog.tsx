@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   Check,
+  Info,
   Minus,
   Plus,
   Save,
@@ -304,7 +305,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
         <div className={styles.lockedService}><UsersRound size={20} /><strong>{service.name[locale]}</strong><span>{labels.locked}</span></div>
       </header>
 
-      <p className={styles.estimateNotice}><span>ⓘ</span>{labels.notice}</p>
+      <p className={styles.estimateNotice}><Info aria-hidden="true" size={16} />{labels.notice}</p>
 
       <form className={styles.estimateForm} onSubmit={submit}>
         <section className={styles.estimatePanel}>
@@ -331,7 +332,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
           {error ? <p className={styles.estimateFeedback} role="alert">{error}</p> : null}
           {requestCode ? <p className={styles.estimateFeedback} role="status">{labels.sent} <strong>{requestCode}</strong></p> : null}
           <label className={styles.legalCheck}><input disabled={disabled} name="acceptedLegal" type="checkbox" /><span>{labels.accept} <a href={`/${locale}/documents/privacy-policy`}>{labels.privacy}</a> {labels.and} <a href={`/${locale}/documents/commission-terms`}>{labels.terms}</a> {labels.legalSuffix}</span></label>
-          <p><span>ⓘ</span>{labels.finalNotice}</p>
+          <p><Info aria-hidden="true" size={15} />{labels.finalNotice}</p>
           <div><button className={styles.draftButton} disabled title={labels.draftUnavailable} type="button"><Save size={18} />{labels.draft}</button><button className={styles.reviewButton} disabled={disabled || identityLoading} type="submit"><Sparkles size={18} />{submitting ? labels.sending : labels.review}<Check size={18} /></button></div>
         </div>
       </form>

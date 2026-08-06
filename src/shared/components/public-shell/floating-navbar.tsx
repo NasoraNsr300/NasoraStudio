@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useState, useSyncExternalStore } from "react";
 
+import { Layers, Menu, Moon, Sparkles } from "lucide-react";
+
 import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
@@ -70,7 +72,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
       <header className={styles.navbar}>
         <div className={styles.navIdentity}>
           <IconButton aria-label={dictionary.menu} className={styles.iconButton} onClick={() => setSidebarOpen(true)}>
-            ☰
+            <Menu aria-hidden="true" size={18} />
           </IconButton>
           <Link aria-label="Nasora home" className={styles.brand} href={`/${locale}`}>NASORA</Link>
         </div>
@@ -84,7 +86,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
             {availability.toUpperCase()}
           </span>
           <Link className={styles.queueLink} href={`/${locale}/queue`}>
-            <span aria-hidden="true">▣</span>
+            <Layers aria-hidden="true" size={15} />
             {locale === "th" ? "ดูคิวงาน" : "Queue"}
           </Link>
           <span className={styles.localeControl}>
@@ -94,10 +96,10 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
           </span>
           <span className={styles.themeControls}>
             <button aria-pressed={theme === "night"} data-active={theme === "night"} onClick={() => setTheme("night")} type="button">
-              <span aria-hidden="true">☾</span> Night
+              <Moon aria-hidden="true" size={14} /> Night
             </button>
             <button aria-pressed={theme === "autumn"} data-active={theme === "autumn"} onClick={() => setTheme("autumn")} type="button">
-              <span aria-hidden="true">🍂</span> Autumn
+              <Sparkles aria-hidden="true" size={14} /> Autumn
             </button>
           </span>
         </div>
