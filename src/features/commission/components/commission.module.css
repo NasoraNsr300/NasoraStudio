@@ -81,7 +81,7 @@
 .usageFieldset, .extrasFieldset { border: 0; margin: 0 0 .7rem; padding: 0; }
 .usageFieldset legend, .extrasFieldset legend { font-size: .78rem; font-weight: 600; margin-bottom: .35rem; }
 .usageFieldset > div { display: grid; grid-template-columns: 1fr 1fr; }
-.usageFieldset label { align-items: center; border: 1px solid var(--border); display: flex; gap: .5rem; justify-content: center; min-height: 2.35rem; }
+.usageFieldset label { align-items: center; border: 1px solid var(--border); display: flex; font-size: .75rem; gap: .5rem; justify-content: center; min-height: 2.35rem; white-space: nowrap; }
 .usageFieldset label:first-child { background: rgb(92 64 166 / 30%); border-color: rgb(139 107 221 / 60%); border-radius: .45rem 0 0 .45rem; color: #c7adff; }.usageFieldset label:last-child { border-radius: 0 .45rem .45rem 0; }
 .usageFieldset input { accent-color: var(--brand-violet); height: .9rem; width: .9rem; }
 .budgetFields { align-items: center; display: grid; gap: .4rem; grid-template-columns: 1.25fr .65fr auto .65fr; }.budgetFields em { color: var(--text-secondary); font-style: normal; margin-top: .35rem; }

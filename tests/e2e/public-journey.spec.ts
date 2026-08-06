@@ -38,3 +38,16 @@ test("estimate opens without leaving service details behind", async ({ page }) =
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+
+test("Thai usage choices stay on one line in the estimate form", async ({ page }) => {
+  await page.goto("/th/commission");
+  await page.getByRole("button", { name: /Chibi/ }).first().click();
+  await page.getByRole("button", { name: "ประเมินราคา" }).first().click();
+
+  const commercialChoice = page
+    .getByRole("radio", { name: "Commercial (เชิงพาณิชย์)" })
+    .locator("..");
+
+  await expect(commercialChoice).toHaveCSS("font-size", "12px");
+  await expect(commercialChoice).toHaveCSS("white-space", "nowrap");
+});
