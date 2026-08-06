@@ -154,22 +154,22 @@ export function StarryBackground() {
       if (isReducedMotion || !isNightTheme || document.hidden) return;
 
       const shootingStarColors = ["#f6c85f", "#c4b5fd", "#38bdf8", "#f472b6", "#ffffff"];
-      const count = Math.random() > 0.72 ? (Math.random() > 0.5 ? 3 : 2) : 1;
+      const count = Math.random() > 0.45 ? (Math.random() > 0.5 ? 3 : 2) : 1;
 
       for (let i = 0; i < count; i++) {
-        const startX = Math.random() * (width * 0.85);
-        const startY = Math.random() * (height * 0.45);
-        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
-        const speed = Math.random() * 2.0 + 1.8;
+        const startX = Math.random() * (width * 0.9);
+        const startY = Math.random() * (height * 0.5);
+        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+        const speed = Math.random() * 2.2 + 1.6;
         const color = shootingStarColors[Math.floor(Math.random() * shootingStarColors.length)];
 
         shootingStars.push({
           x: startX,
-          y: startY + i * 30,
+          y: startY + i * 25,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           angle,
-          length: Math.random() * 240 + 140,
+          length: Math.random() * 260 + 150,
           color,
           alpha: 1.0,
         });
@@ -177,8 +177,8 @@ export function StarryBackground() {
     };
 
     const scheduleShootingStar = () => {
-      // Trigger frequently (every 2.5 to 5.5 seconds)
-      const delay = Math.random() * 3000 + 2500;
+      // Trigger very frequently (every 0.8 to 2.2 seconds)
+      const delay = Math.random() * 1400 + 800;
       shootingStarTimer = setTimeout(() => {
         triggerShootingStar();
         scheduleShootingStar();
