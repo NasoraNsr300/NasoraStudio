@@ -45,8 +45,8 @@
 /* List & Gallery View Modes */
 .serviceList { display: grid; gap: 1.25rem; }
 .serviceListItem { background: var(--surface-strong); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elevation-floating); display: grid; gap: 1.5rem; grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr); overflow: hidden; padding: 1.25rem; }
-.listMedia { aspect-ratio: 3 / 4; border-radius: var(--radius-md); overflow: hidden; position: relative; width: 100%; }
-.listMedia img { height: 100%; object-fit: cover; width: 100%; }
+.listMedia { aspect-ratio: 4 / 3; border-radius: var(--radius-md); overflow: hidden; position: relative; width: 100%; }
+.listImage, .listImage img, .listImage video { aspect-ratio: unset !important; display: block; height: 100% !important; object-fit: cover !important; width: 100% !important; }
 .listContent { display: flex; flex-direction: column; justify-content: center; gap: .85rem; }
 .serviceSubtitle { color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .listTitleRow, .galleryTitleRow { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; }
@@ -65,7 +65,7 @@
 .serviceGallery { display: grid; gap: 2rem; }
 .serviceGalleryItem { background: var(--surface-strong); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elevation-floating); overflow: hidden; }
 .galleryMedia { aspect-ratio: 21 / 9; max-height: 32rem; overflow: hidden; position: relative; width: 100%; }
-.galleryMedia img { height: 100%; object-fit: cover; width: 100%; }
+.galleryImage, .galleryImage img, .galleryImage video { aspect-ratio: unset !important; display: block; height: 100% !important; object-fit: cover !important; width: 100% !important; }
 .galleryBar { align-items: center; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; padding: 1.25rem 1.5rem; }
 
 .dialogBackdrop { align-items: center; background: rgb(4 6 16 / 86%); display: flex; inset: 0; justify-content: center; padding: clamp(1rem, 4vw, 3rem); position: fixed; z-index: var(--z-overlay); }

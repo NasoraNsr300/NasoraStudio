@@ -80,7 +80,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
             return (
               <article className={styles.serviceListItem} key={service.slug}>
                 <div className={styles.listMedia}>
-                  {example ? <ResponsiveMedia crop={example.crop} locale={locale} media={example.media} priority={index === 0} sizes="(max-width: 768px) 100vw, 360px" /> : null}
+                  {example ? <ResponsiveMedia className={styles.listImage} crop={example.crop} locale={locale} media={example.media} priority={index === 0} sizes="(max-width: 768px) 100vw, 360px" /> : null}
                 </div>
                 <div className={styles.listContent}>
                   <span className={styles.serviceSubtitle}>COMMISSION</span>
@@ -112,7 +112,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
             return (
               <article className={styles.serviceGalleryItem} key={service.slug}>
                 <div className={styles.galleryMedia}>
-                  {example ? <ResponsiveMedia crop={example.crop} locale={locale} media={example.media} priority={index === 0} sizes="(max-width: 1200px) 100vw, 1100px" /> : null}
+                  {example ? <ResponsiveMedia className={styles.galleryImage} crop={example.crop} locale={locale} media={example.media} priority={index === 0} sizes="(max-width: 1200px) 100vw, 1100px" /> : null}
                 </div>
                 <div className={styles.galleryBar}>
                   <div className={styles.galleryInfo}>
