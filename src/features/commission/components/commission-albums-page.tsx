@@ -19,12 +19,12 @@ const copy = {
   en: {
     description: "Choose an album to browse available commission types and their guidance.",
     eyebrow: "Commission catalog",
-    title: "Commission albums",
+    title: "COMMISSION",
   },
   th: {
     description: "เลือกอัลบั้มเพื่อดูรูปแบบงานและรายละเอียด",
     eyebrow: "รายการคอมมิชชัน",
-    title: "อัลบั้มคอมมิชชัน",
+    title: "COMMISSION",
   },
 } as const;
 
@@ -55,7 +55,7 @@ export function CommissionAlbumsPage({ categories, locale, services }: Commissio
     <main className={styles.commissionPage}>
       <header className={styles.heading}>
         <p>{labels.eyebrow}</p>
-        <h1>{labels.title}</h1>
+        <h1 className={styles.albumPageTitle}>{labels.title}</h1>
         <span>{labels.description}</span>
       </header>
       <section aria-label={labels.title} className={styles.albumGrid}>

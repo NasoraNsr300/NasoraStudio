@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+test("commission overview uses the English album display title in Thai", async ({ page }) => {
+  await page.goto("/th/commission");
+
+  const heading = page.getByRole("heading", { level: 1, name: "COMMISSION" });
+  await expect(heading).toBeVisible();
+  expect(await heading.evaluate((element) => getComputedStyle(element).fontFamily)).toContain("Georgia");
+});
+
 test("visitor browses an album and details without leaving Commission", async ({ page }) => {
   await page.goto("/th/commission");
   const commissionUrl = page.url();
