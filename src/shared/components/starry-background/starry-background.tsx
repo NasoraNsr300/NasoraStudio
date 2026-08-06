@@ -157,15 +157,28 @@ export function StarryBackground() {
       const count = Math.random() > 0.45 ? (Math.random() > 0.5 ? 3 : 2) : 1;
 
       for (let i = 0; i < count; i++) {
-        const startX = Math.random() * (width * 0.9);
-        const startY = Math.random() * (height * 0.5);
-        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3;
-        const speed = Math.random() * 2.2 + 1.6;
+        // Spawn strictly OUTSIDE the visible viewport (off-screen top or left)
+        const spawnFromTop = Math.random() > 0.4;
+        let startX: number;
+        let startY: number;
+
+        if (spawnFromTop) {
+          // Spawn above the top edge of the screen
+          startX = Math.random() * (width * 0.85) - 50;
+          startY = -60 - Math.random() * 60;
+        } else {
+          // Spawn to the left of the left edge of the screen
+          startX = -60 - Math.random() * 60;
+          startY = Math.random() * (height * 0.6) - 30;
+        }
+
+        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
+        const speed = Math.random() * 2.4 + 1.8;
         const color = shootingStarColors[Math.floor(Math.random() * shootingStarColors.length)];
 
         shootingStars.push({
-          x: startX,
-          y: startY + i * 25,
+          x: startX + i * 20,
+          y: startY + i * 20,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           angle,
