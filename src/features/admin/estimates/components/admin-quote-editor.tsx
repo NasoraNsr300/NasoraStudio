@@ -10,13 +10,13 @@ type EditableItem = {
   description: AdminQuoteLocalizedText;
   itemType: AdminQuoteItemType;
   label: AdminQuoteLocalizedText;
-  quantity: number;
+  quantity: string;
   unitAmountThb: string;
 };
 
 const approximateThbPerUsd = 35;
-const bigintMin = BigInt("-9223372036854775808");
-const bigintMax = BigInt("9223372036854775807");
+const moneyMax = BigInt(2_147_483_647);
+const moneyMin = -moneyMax;
 const zero = BigInt(0);
 const oneHundred = BigInt(100);
 
@@ -31,7 +31,13 @@ function toSatang(amountThb: string) {
   if (!match) return null;
   const magnitude = BigInt(match[2]!) * oneHundred + BigInt((match[3] ?? "").padEnd(2, "0") || "0");
   const amount = match[1] ? -magnitude : magnitude;
-  return amount >= bigintMin && amount <= bigintMax ? amount : null;
+  return amount >= moneyMin && amount <= moneyMax ? amount : null;
+}
+
+function toQuantity(value: string) {
+  if (!/^[1-9]\d{0,3}$/.test(value)) return null;
+  const quantity = Number(value);
+  return Number.isSafeInteger(quantity) && quantity <= 1_000 ? quantity : null;
 }
 
 function formatDecimalMinorUnits(amount: bigint, currencySymbol: string) {
@@ -56,7 +62,7 @@ function newAddition(): EditableItem {
     description: { en: "Additional work", th: "งานเพิ่มเติม" },
     itemType: "other",
     label: { en: "Addition", th: "รายการเพิ่มเติม" },
-    quantity: 1,
+    quantity: "1",
     unitAmountThb: "0",
   };
 }
@@ -74,7 +80,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
   const [expiresAt, setExpiresAt] = useState(futureExpiryValue);
   const [freeRevisions, setFreeRevisions] = useState(4);
   const [isSaving, setIsSaving] = useState(false);
-  const [items, setItems] = useState<EditableItem[]>([{ description: serviceName, itemType: "base", label: serviceName, quantity: 1, unitAmountThb: "0" }]);
+  const [items, setItems] = useState<EditableItem[]>([{ description: serviceName, itemType: "base", label: serviceName, quantity: "1", unitAmountThb: "0" }]);
   const [proposedDeadline, setProposedDeadline] = useState(requestedDeadline ?? "");
   const [scope, setScope] = useState(serviceName);
   const [submissionKey, setSubmissionKey] = useState(() => crypto.randomUUID());
@@ -83,10 +89,15 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
 
   const itemSnapshots = items.map((item) => {
     const unitAmountSatang = toSatang(item.unitAmountThb);
-    const lineTotalSatang = unitAmountSatang === null ? null : unitAmountSatang * BigInt(item.quantity);
-    return { ...item, lineTotalSatang, unitAmountSatang };
+    const quantity = toQuantity(item.quantity);
+    const calculatedLineTotal = unitAmountSatang === null || quantity === null ? null : unitAmountSatang * BigInt(quantity);
+    const lineTotalSatang = calculatedLineTotal !== null && calculatedLineTotal >= moneyMin && calculatedLineTotal <= moneyMax ? calculatedLineTotal : null;
+    return { ...item, lineTotalSatang, quantity, unitAmountSatang };
   });
-  const totalSatang = itemSnapshots.reduce<bigint | null>((total, item) => total === null || item.lineTotalSatang === null ? null : total + item.lineTotalSatang, zero);
+  const totalSatang = itemSnapshots.reduce<bigint | null>((total, item) => {
+    if (total === null || item.lineTotalSatang === null) return null;
+    return total + item.lineTotalSatang;
+  }, zero);
 
   function updateItem(index: number, update: Partial<EditableItem>) {
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...update } : item));
@@ -101,9 +112,8 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
   async function sendQuote() {
     setError(null);
     const expiry = new Date(expiresAt);
-    const hasInvalidItem = itemSnapshots.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 1_000
+    const hasInvalidItem = itemSnapshots.some((item) => item.quantity === null
       || item.unitAmountSatang === null || item.lineTotalSatang === null
-      || item.lineTotalSatang < bigintMin || item.lineTotalSatang > bigintMax
       || !item.label.en.trim() || !item.label.th.trim() || !item.description.en.trim() || !item.description.th.trim());
     if (!scope.en.trim() || !scope.th.trim()
       || !expiresAt || Number.isNaN(expiry.getTime())
@@ -111,7 +121,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
       || !Number.isInteger(depositPercent) || depositPercent < 0 || depositPercent > 100
       || !Number.isInteger(freeRevisions) || freeRevisions < 0
       || !termsSlug.trim() || !Number.isInteger(termsVersion) || termsVersion <= 0
-      || totalSatang === null || totalSatang < zero || totalSatang > bigintMax || hasInvalidItem) {
+      || totalSatang === null || totalSatang < zero || totalSatang > moneyMax || hasInvalidItem) {
       setError("Complete a valid quote before sending.");
       return;
     }
@@ -125,6 +135,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
       idempotencyKey: submissionKey,
       items: itemSnapshots.map(({ unitAmountThb: _unitAmountThb, lineTotalSatang, unitAmountSatang, ...item }) => ({
         ...item,
+        quantity: item.quantity!,
         lineTotalSatang: lineTotalSatang!.toString(),
         unitAmountSatang: unitAmountSatang!.toString(),
       })),
@@ -170,7 +181,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
         <label>Label (Thai)<input onChange={(event) => updateLocalizedItem(index, "label", "th", event.target.value)} value={item.label.th} /></label>
         <label>Description (English)<input onChange={(event) => updateLocalizedItem(index, "description", "en", event.target.value)} value={item.description.en} /></label>
         <label>Description (Thai)<input onChange={(event) => updateLocalizedItem(index, "description", "th", event.target.value)} value={item.description.th} /></label>
-        <label>Quantity<input aria-label="Quantity" min="1" onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} step="1" type="number" value={item.quantity} /></label>
+        <label>Quantity<input aria-label="Quantity" inputMode="numeric" onChange={(event) => updateItem(index, { quantity: event.target.value })} pattern="[1-9][0-9]{0,3}" type="text" value={item.quantity} /></label>
         <label>Unit price THB<input aria-label="Unit price THB" inputMode="decimal" onChange={(event) => updateItem(index, { unitAmountThb: event.target.value })} pattern="-?[0-9]+(?:\.[0-9]{1,2})?" type="text" value={item.unitAmountThb} /></label>
         <output>{formatThb(itemSnapshots[index]!.lineTotalSatang ?? zero)}</output>
         {items.length > 1 && <button onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))} type="button">Remove item {index + 1}</button>}

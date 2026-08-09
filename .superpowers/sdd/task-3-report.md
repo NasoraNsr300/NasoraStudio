@@ -139,3 +139,33 @@ GREEN/final runs:
 ### Remaining concern
 
 - The environment still has no Docker/Supabase runtime, so these SQL corrections have contract coverage and manual SQL review but have not been applied to a live local Postgres database. No new external dependency was added.
+
+## Second re-review corrections (2026-08-09)
+
+Status: both additional Important findings are addressed.
+
+### Corrections
+
+- Quantity is retained as decimal text in client state and converted only after matching a canonical positive-integer pattern and the 1–1,000 range. Decimal and Infinity-like input now renders safely, reports validation, and never reaches `BigInt` or `fetch`.
+- The authoritative money ceiling is now 2,147,483,647 satang, matching `moneySatangSchema` and the numeric repository/detail projection. Signed quote items use the symmetric -2,147,483,647 floor for discounts; line totals and nonnegative quote totals are capped at every editor, route, and SQL boundary.
+- Route/editor arithmetic remains exact with `BigInt`, while SQL validates syntax and range through `numeric` before casts. Values above the canonical ceiling are rejected rather than claiming wider bigint support that the read projection cannot preserve.
+
+### TDD and verification evidence
+
+- RED: `npm test -- --run tests/components/admin-quote-editor.test.tsx tests/unit/admin-quote-route.test.ts tests/unit/admin-quote-migration.test.ts`
+  - Exit 1; 6/27 failed as expected: the quantity control still used eager numeric conversion, editor/route accepted 2,147,483,648 satang, and SQL still declared PostgreSQL bigint extrema.
+- Focused GREEN: same command
+  - Exit 0; 3/3 files and 27/27 tests passed.
+- Full suite: `npm test -- --run --maxWorkers=2`
+  - Exit 0; 60/60 files and 247/247 tests passed.
+- `npm run typecheck`
+  - Exit 0; no TypeScript errors.
+- `npm run lint`
+  - Exit 0; no ESLint errors or warnings.
+- `npm run build`
+  - Exit 0; Next.js production build compiled, typechecked, generated 41 static pages, and registered the quote route.
+
+### Self-review and concern
+
+- Exact signed item arithmetic still permits discounts and cancellation while requiring the final quote total to remain within 0–2,147,483,647 satang; no intermediate value passes through JavaScript `number`.
+- Live Postgres migration execution remains unavailable in this environment; SQL is covered by migration contract tests and manual review.

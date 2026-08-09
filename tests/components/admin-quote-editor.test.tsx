@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -42,8 +42,8 @@ describe("AdminQuoteEditor", () => {
     await user.type(within(baseLine).getByRole("textbox", { name: "Unit price THB" }), "2500");
     await user.click(screen.getByRole("button", { name: "Add quote item" }));
     const addition = screen.getByRole("group", { name: "Quote item 2" });
-    await user.clear(within(addition).getByRole("spinbutton", { name: "Quantity" }));
-    await user.type(within(addition).getByRole("spinbutton", { name: "Quantity" }), "2");
+    await user.clear(within(addition).getByRole("textbox", { name: "Quantity" }));
+    await user.type(within(addition).getByRole("textbox", { name: "Quantity" }), "2");
     await user.clear(within(addition).getByRole("textbox", { name: "Unit price THB" }));
     await user.type(within(addition).getByRole("textbox", { name: "Unit price THB" }), "500");
 
@@ -92,7 +92,7 @@ describe("AdminQuoteEditor", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Complete a valid quote before sending.");
   });
 
-  it("preserves exact satang above the JavaScript safe integer boundary", async () => {
+  it("rejects an amount above the canonical money ceiling", async () => {
     const user = userEvent.setup();
     const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 201 }));
     vi.stubGlobal("fetch", fetch);
@@ -100,14 +100,24 @@ describe("AdminQuoteEditor", () => {
 
     const amount = screen.getByRole("textbox", { name: "Unit price THB" });
     await user.clear(amount);
-    await user.type(amount, "90071992547409.93");
+    await user.type(amount, "21474836.48");
     await user.click(screen.getByRole("button", { name: "Save and send quote" }));
 
-    const body = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body));
-    expect(body.items[0].unitAmountSatang).toBe("9007199254740993");
-    expect(body.items[0].lineTotalSatang).toBe("9007199254740993");
-    expect(body.totalSatang).toBe("9007199254740993");
-    expect(screen.getByTestId("quote-total-thb")).toHaveTextContent("฿90,071,992,547,409.93");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Complete a valid quote before sending.");
+  });
+
+  it.each(["1.5", "Infinity"])('rejects invalid quantity "%s" without crashing', async (quantity) => {
+    const user = userEvent.setup();
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    render(<AdminQuoteEditor {...props} />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Quantity" }), { target: { value: quantity } });
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Complete a valid quote before sending.");
   });
 
   it("reuses the same submission key after an ambiguous network failure", async () => {

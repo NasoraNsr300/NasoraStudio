@@ -4,8 +4,8 @@ import { adminQuoteItemTypes, type AdminQuoteDraftInput } from "@/features/admin
 import { adminEstimateRequestIdSchema } from "@/features/admin/estimates/domain/admin-estimate-request-id";
 import { createClient } from "@/shared/supabase/server";
 
-const bigintMin = BigInt("-9223372036854775808");
-const bigintMax = BigInt("9223372036854775807");
+const moneyMax = BigInt(2_147_483_647);
+const moneyMin = -moneyMax;
 const zero = BigInt(0);
 const signedSatangPattern = /^-?(?:0|[1-9]\d*)$/;
 const totalSatangPattern = /^(?:0|[1-9]\d*)$/;
@@ -16,8 +16,8 @@ function isSatangInRange(value: string, minimum: bigint, maximum: bigint, patter
   return amount >= minimum && amount <= maximum;
 }
 
-const signedSatangSchema = z.string().max(20).refine((value) => isSatangInRange(value, bigintMin, bigintMax, signedSatangPattern));
-const totalSatangSchema = z.string().max(19).refine((value) => isSatangInRange(value, zero, bigintMax, totalSatangPattern));
+const signedSatangSchema = z.string().max(11).refine((value) => isSatangInRange(value, moneyMin, moneyMax, signedSatangPattern));
+const totalSatangSchema = z.string().max(10).refine((value) => isSatangInRange(value, zero, moneyMax, totalSatangPattern));
 const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   th: z.string().trim().min(1).max(2_000),
@@ -60,7 +60,7 @@ const bodySchema = z.object({
     return;
   }
   const itemTotal = quote.items.reduce((total, item) => total + BigInt(item.lineTotalSatang), zero);
-  if (itemTotal < zero || itemTotal > bigintMax || itemTotal !== BigInt(quote.totalSatang)) {
+  if (itemTotal < zero || itemTotal > moneyMax || itemTotal !== BigInt(quote.totalSatang)) {
     context.addIssue({ code: "custom", message: "Quote total is invalid", path: ["totalSatang"] });
   }
 });

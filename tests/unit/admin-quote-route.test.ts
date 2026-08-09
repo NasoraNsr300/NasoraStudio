@@ -156,8 +156,8 @@ describe("POST /api/admin/estimates/:requestId/quotes", () => {
     expect(rpc).toHaveBeenCalledOnce();
   });
 
-  it("accepts precise satang strings beyond the JavaScript safe integer range", async () => {
-    const exactSatang = "9007199254740993";
+  it("accepts the canonical money ceiling", async () => {
+    const exactSatang = "2147483647";
     const rpc = vi.fn(async () => ({ data: [{ quote_id: "9bc1c392-2b24-4df8-b971-b2320c51555c", status: "sent", version: 1 }], error: null }));
     supabase.createClient.mockResolvedValue(client({ rpc }));
 
@@ -173,7 +173,7 @@ describe("POST /api/admin/estimates/:requestId/quotes", () => {
     }));
   });
 
-  it("rejects numeric satang and decimal strings outside the PostgreSQL bigint range", async () => {
+  it("rejects numeric, malformed, and above-ceiling satang", async () => {
     const rpc = vi.fn();
     supabase.createClient.mockResolvedValue(client({ rpc }));
 
@@ -185,8 +185,8 @@ describe("POST /api/admin/estimates/:requestId/quotes", () => {
     }), { params });
     const overflow = await POST(request({
       ...payload,
-      items: [{ ...payload.items[0], lineTotalSatang: "9223372036854775808", unitAmountSatang: "9223372036854775808" }],
-      totalSatang: "9223372036854775808",
+      items: [{ ...payload.items[0], lineTotalSatang: "2147483648", unitAmountSatang: "2147483648" }],
+      totalSatang: "2147483648",
     }), { params });
 
     expect(numeric.status).toBe(400);

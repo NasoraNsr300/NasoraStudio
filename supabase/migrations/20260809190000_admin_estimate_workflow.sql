@@ -53,8 +53,8 @@ declare
   v_quantity_text text;
   v_unit_amount_text text;
   v_line_total_text text;
-  v_bigint_min constant numeric := -9223372036854775808;
-  v_bigint_max constant numeric := 9223372036854775807;
+  v_money_min constant numeric := -2147483647;
+  v_money_max constant numeric := 2147483647;
 begin
   if not private.is_admin() then
     raise exception 'admin_required' using errcode = '42501';
@@ -108,7 +108,7 @@ begin
     or jsonb_typeof(v_items) <> 'array'
     or jsonb_array_length(v_items) = 0
     or jsonb_typeof(p_payload -> 'totalSatang') <> 'string'
-    or char_length(p_payload ->> 'totalSatang') > 19
+    or char_length(p_payload ->> 'totalSatang') > 10
     or (p_payload ->> 'totalSatang') !~ '^(0|[1-9][0-9]*)$'
     or char_length(p_payload ->> 'depositPercent') > 3
     or (p_payload ->> 'depositPercent') !~ '^(0|[1-9][0-9]*)$'
@@ -124,7 +124,7 @@ begin
     raise exception 'invalid_quote_payload';
   end if;
 
-  if (p_payload ->> 'totalSatang')::numeric > v_bigint_max
+  if (p_payload ->> 'totalSatang')::numeric > v_money_max
     or (p_payload ->> 'depositPercent')::numeric > 100
     or (p_payload ->> 'freeRevisions')::numeric > 1000
     or (p_payload ->> 'durationMinDays')::numeric not between 1 and 3650
@@ -169,16 +169,16 @@ begin
       or nullif(btrim(v_item #>> '{description,en}'), '') is null
       or v_quantity_text is null or char_length(v_quantity_text) > 4 or v_quantity_text !~ '^(0|[1-9][0-9]*)$'
       or jsonb_typeof(v_item -> 'unitAmountSatang') <> 'string'
-      or v_unit_amount_text is null or char_length(v_unit_amount_text) > 20 or v_unit_amount_text !~ '^-?(0|[1-9][0-9]*)$'
+      or v_unit_amount_text is null or char_length(v_unit_amount_text) > 11 or v_unit_amount_text !~ '^-?(0|[1-9][0-9]*)$'
       or jsonb_typeof(v_item -> 'lineTotalSatang') <> 'string'
-      or v_line_total_text is null or char_length(v_line_total_text) > 20 or v_line_total_text !~ '^-?(0|[1-9][0-9]*)$'
+      or v_line_total_text is null or char_length(v_line_total_text) > 11 or v_line_total_text !~ '^-?(0|[1-9][0-9]*)$'
     then
       raise exception 'invalid_quote_item';
     end if;
 
     if v_quantity_text::numeric not between 1 and 1000
-      or v_unit_amount_text::numeric not between v_bigint_min and v_bigint_max
-      or v_line_total_text::numeric not between v_bigint_min and v_bigint_max
+      or v_unit_amount_text::numeric not between v_money_min and v_money_max
+      or v_line_total_text::numeric not between v_money_min and v_money_max
       or v_line_total_text::numeric <> v_unit_amount_text::numeric * v_quantity_text::numeric
     then
       raise exception 'invalid_quote_item';

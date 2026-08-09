@@ -80,12 +80,13 @@ describe("admin quote workflow migration", () => {
     expect(functionSql).not.toContain("'submitted', 'reviewing', 'quoted'");
   });
 
-  it("checks decimal strings as arbitrary precision numeric values before bigint casts", () => {
+  it("caps money at the canonical integer boundary before bigint casts", () => {
     const sql = migrationSql();
     const functionSql = sql.split("create function private.save_and_send_quote")[1] ?? "";
 
-    expect(functionSql).toContain("9223372036854775807");
-    expect(functionSql).toContain("-9223372036854775808");
+    expect(functionSql).toContain("2147483647");
+    expect(functionSql).toContain("-2147483647");
+    expect(functionSql).not.toContain("9223372036854775807");
     expect(functionSql).toContain("::numeric");
     expect(functionSql).toContain("v_item_total numeric := 0");
     expect(functionSql.indexOf("unitamountsatang') !~")).toBeLessThan(functionSql.indexOf("unitamountsatang')::bigint"));
