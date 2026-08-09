@@ -25,6 +25,7 @@ Status mutations are guarded by `public.admin_transition_commission_request`. Th
 ## Commits
 
 - `fc2de42 feat(admin): add estimate review and decline workflow`
+- `b065017 fix(admin): harden estimate detail workflow`
 
 ## TDD evidence
 
@@ -50,3 +51,22 @@ Status mutations are guarded by `public.admin_transition_commission_request`. Th
 
 - The full suite has two unrelated failures in user-dirty estimate-request dialog files; they were not changed or staged by Task 2.
 - This task intentionally revokes direct `authenticated` updates to `commission_requests`; future workflow changes must use a similarly guarded RPC rather than browser-side writes.
+
+## Review-fix follow-up
+
+- Private contact rendering is now entirely in the server-rendered `AdminEstimateDetail`. `AdminEstimateStatusControls` is the only client component below it and receives only `requestId` and `status`; the client inbox receives request summaries only.
+- The status route now requires a canonical UUID, `application/json`, and a strict same-origin `Origin` match. It handles one unambiguous `x-forwarded-host`/`x-forwarded-proto` pair for reverse proxies and rejects missing, comma-separated, or mismatched values.
+- The page ignores malformed `?request=` values rather than querying detail data or raising a server error. Status tones are shared from one presentation map, and the decline textarea uses `--admin-input` plus an Autumn override.
+
+### Follow-up tests and commands
+
+- RED: focused review-fix tests failed before implementation: private detail was a Client Component, client inbox accepted a detail prop, malformed deep links queried the repository, the route accepted malformed/cross-origin/non-JSON requests, and status controls did not exist.
+- GREEN: `npm test -- --run tests/unit/admin-estimate-repository.test.ts tests/unit/admin-estimate-status-route.test.ts tests/unit/admin-estimate-status-migration.test.ts tests/unit/admin-estimate-page.test.tsx tests/unit/admin-estimate-private-boundary.test.ts tests/components/admin-estimate-detail.test.tsx tests/components/admin-estimate-status-controls.test.tsx tests/components/admin-estimate-inbox.test.tsx` — 8 files, 30 tests passed.
+- `npm run lint` — passed.
+- `npx tsc --noEmit` — passed.
+- `git diff --check` — passed.
+- `npm test -- --maxWorkers=2` — 57 files, 219 tests passed (82.03s); raw failure summary: none.
+
+### Migration verification limitation
+
+- Non-destructive environment probe found Supabase CLI `2.113.0` but no `docker` or `psql` executable. No local database was started, reset, or modified. The migration was verified through its existing contract tests; runtime SQL execution requires a provisioned Postgres/Supabase environment.
