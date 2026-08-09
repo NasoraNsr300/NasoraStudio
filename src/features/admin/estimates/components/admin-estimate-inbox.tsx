@@ -3,22 +3,9 @@
 import { ChevronDown, Filter, PenLine, Search, UserRound } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { AdminEstimateDetail } from "@/features/admin/estimates/components/admin-estimate-detail";
 import type { AdminEstimateStatus, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
-import type { AdminEstimateDetail as AdminEstimateDetailModel } from "@/features/admin/estimates/domain/admin-estimate";
+import { adminEstimateStatusPresentation } from "@/features/admin/estimates/domain/admin-estimate-status-presentation";
 import styles from "@/features/admin/components/admin-section-pages.module.css";
-
-type StatusPresentation = { label: string; tone: "danger" | "neutral" | "success" | "violet" | "warning" };
-
-const statusPresentation: Record<AdminEstimateStatus, StatusPresentation> = {
-  cancelled: { label: "ยกเลิก", tone: "neutral" },
-  closed: { label: "ปิดงาน", tone: "neutral" },
-  converted: { label: "ยืนยันแล้ว", tone: "success" },
-  declined: { label: "ปฏิเสธ", tone: "danger" },
-  quoted: { label: "ส่งราคาแล้ว", tone: "violet" },
-  reviewing: { label: "กำลังประเมิน", tone: "warning" },
-  submitted: { label: "รอประเมิน", tone: "warning" },
-};
 
 function formatBudget({ budgetMaxSatang, budgetMinSatang }: AdminEstimateSummary) {
   const format = (satang: number) => `฿${new Intl.NumberFormat("th-TH").format(satang / 100)}`;
@@ -33,10 +20,8 @@ function formatSubmittedAt(submittedAt: string) {
 }
 
 export function AdminEstimateInbox({
-  detail,
   requests,
 }: {
-  detail?: AdminEstimateDetailModel | null;
   requests: AdminEstimateSummary[];
 }) {
   const pathname = usePathname();
@@ -49,13 +34,6 @@ export function AdminEstimateInbox({
     const nextSearchParams = new URLSearchParams(searchParams.toString());
     nextSearchParams.set("request", request.id);
     router.push(`${pathname}?${nextSearchParams.toString()}`);
-  }
-
-  function closePreview() {
-    const nextSearchParams = new URLSearchParams(searchParams.toString());
-    nextSearchParams.delete("request");
-    const query = nextSearchParams.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
   }
 
   return <>
@@ -71,7 +49,7 @@ export function AdminEstimateInbox({
           {requests.length === 0
             ? <tr><td colSpan={6}>ยังไม่มีแบบประเมินในรายการนี้</td></tr>
             : requests.map((request) => {
-              const status = statusPresentation[request.status];
+              const status = adminEstimateStatusPresentation[request.status];
               return <tr aria-selected={openedRequestId === request.id} key={request.id}>
                 <td><UserRound size={17} /><span>{request.customerDisplayName}<small>{request.requestCode}</small></span></td>
                 <td>{request.serviceName.en}</td>
@@ -84,18 +62,5 @@ export function AdminEstimateInbox({
         </tbody>
       </table>
     </section>
-    {detail && openedRequest && <AdminEstimateDetail request={detail} />}
-    {openedRequest && !detail && <section aria-label={`ตัวอย่างแบบประเมิน ${openedRequest.requestCode}`} className={styles.dataPanel} role="region">
-      <div className={styles.toolbar}><strong>แบบประเมิน {openedRequest.requestCode}</strong><button onClick={closePreview} type="button">กลับไปรายการ</button></div>
-      <table>
-        <tbody>
-          <tr><th scope="row">ลูกค้า</th><td>{openedRequest.customerDisplayName}</td></tr>
-          <tr><th scope="row">ประเภทงาน</th><td>{openedRequest.serviceName.en}</td></tr>
-          <tr><th scope="row">งบที่แจ้ง</th><td>{formatBudget(openedRequest)}</td></tr>
-          <tr><th scope="row">วันที่ส่ง</th><td>{formatSubmittedAt(openedRequest.submittedAt)}</td></tr>
-          <tr><th scope="row">สถานะ</th><td><span className={styles.status} data-tone={statusPresentation[openedRequest.status].tone}>● {statusPresentation[openedRequest.status].label}</span></td></tr>
-        </tbody>
-      </table>
-    </section>}
   </>;
 }

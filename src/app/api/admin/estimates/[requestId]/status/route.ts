@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { adminEstimateRequestIdSchema } from "@/features/admin/estimates/domain/admin-estimate-request-id";
 import { createClient } from "@/shared/supabase/server";
 
 const bodySchema = z.object({
@@ -11,8 +12,6 @@ const bodySchema = z.object({
   }
 });
 
-const requestIdSchema = z.string().trim().min(1).max(120);
-
 type StatusClient = {
   auth: { getUser(): Promise<{ data: { user: { app_metadata?: { role?: unknown } } | null }; error: unknown }> };
   rpc(name: string, input: Record<string, unknown>): Promise<{ data: unknown; error: { message?: string } | null }>;
@@ -22,10 +21,35 @@ function firstRow(data: unknown) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+function safeHeaderValue(value: string | null) {
+  return value && !value.includes(",") ? value.trim() : null;
+}
+
+function hasSameOrigin(request: Request) {
+  const origin = safeHeaderValue(request.headers.get("origin"));
+  const forwardedHost = safeHeaderValue(request.headers.get("x-forwarded-host"));
+  const host = forwardedHost ?? safeHeaderValue(request.headers.get("host")) ?? new URL(request.url).host;
+  const forwardedProtocol = safeHeaderValue(request.headers.get("x-forwarded-proto"));
+  if (!origin || !host || (forwardedProtocol && !["http", "https"].includes(forwardedProtocol))) return false;
+
+  try {
+    const requestUrl = new URL(request.url);
+    const protocol = forwardedProtocol ?? requestUrl.protocol.slice(0, -1);
+    return new URL(origin).origin === new URL(`${protocol}://${host}`).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ requestId: string }> }) {
   const { requestId: rawRequestId } = await params;
-  const requestId = requestIdSchema.safeParse(rawRequestId);
+  const requestId = adminEstimateRequestIdSchema.safeParse(rawRequestId);
   if (!requestId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
+
+  if (!hasSameOrigin(request)) return Response.json({ error: "Invalid request origin" }, { status: 403 });
+  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    return Response.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  }
 
   let payload: unknown;
   try {

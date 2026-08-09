@@ -1,18 +1,21 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const navigation = vi.hoisted(() => ({ refresh: vi.fn() }));
+const controls = vi.hoisted(() => ({ render: vi.fn() }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
+vi.mock("@/features/admin/estimates/components/admin-estimate-status-controls", () => ({
+  AdminEstimateStatusControls: (props: { requestId: string; status: string }) => {
+    controls.render(props);
+    return <div data-testid="status-controls" />;
+  },
+}));
 
 import { AdminEstimateDetail } from "@/features/admin/estimates/components/admin-estimate-detail";
 import type { AdminEstimateDetail as AdminEstimateDetailModel } from "@/features/admin/estimates/domain/admin-estimate";
 
 afterEach(() => {
   cleanup();
-  navigation.refresh.mockReset();
-  vi.unstubAllGlobals();
+  controls.render.mockReset();
 });
 
 const request: AdminEstimateDetailModel = {
@@ -25,7 +28,7 @@ const request: AdminEstimateDetailModel = {
   customerDisplayName: "Mali",
   description: "A moonlit character carrying a lantern.",
   extraCharacterCount: 1,
-  id: "request-1",
+  id: "8c8b9d06-6619-471f-9b7f-ce1f619827f6",
   moodAndStyle: "Soft watercolor",
   propCount: 2,
   requestCode: "REQ-ABCDEF1234",
@@ -49,32 +52,6 @@ describe("AdminEstimateDetail", () => {
     expect(screen.getByText("1")).toBeVisible();
     expect(screen.getAllByText("2")).toHaveLength(2);
     expect(screen.getByText("Accepted policies")).toBeVisible();
-  });
-
-  it("reviews a submitted request through the server-only status endpoint", async () => {
-    const user = userEvent.setup();
-    const fetch = vi.fn(async () => new Response(JSON.stringify({ requestId: request.id, status: "reviewing" }), { status: 200 }));
-    vi.stubGlobal("fetch", fetch);
-    render(<AdminEstimateDetail request={request} />);
-
-    await user.click(screen.getByRole("button", { name: "Review request" }));
-
-    expect(fetch).toHaveBeenCalledWith("/api/admin/estimates/request-1/status", expect.objectContaining({
-      body: JSON.stringify({ status: "reviewing" }), method: "POST",
-    }));
-    expect(navigation.refresh).toHaveBeenCalledOnce();
-  });
-
-  it("does not submit a decline until a reason is supplied", async () => {
-    const user = userEvent.setup();
-    const fetch = vi.fn();
-    vi.stubGlobal("fetch", fetch);
-    render(<AdminEstimateDetail request={request} />);
-
-    await user.click(screen.getByRole("button", { name: "Decline request" }));
-    await user.click(screen.getByRole("button", { name: "Confirm decline" }));
-
-    expect(fetch).not.toHaveBeenCalled();
-    expect(screen.getByText("A decline reason is required.")).toBeVisible();
+    expect(controls.render).toHaveBeenCalledWith({ requestId: request.id, status: "submitted" });
   });
 });

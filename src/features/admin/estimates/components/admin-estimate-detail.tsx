@@ -1,9 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
+import { AdminEstimateStatusControls } from "@/features/admin/estimates/components/admin-estimate-status-controls";
 import type { AdminEstimateDetail as AdminEstimateDetailModel } from "@/features/admin/estimates/domain/admin-estimate";
+import { adminEstimateStatusPresentation } from "@/features/admin/estimates/domain/admin-estimate-status-presentation";
 import styles from "@/features/admin/components/admin-section-pages.module.css";
 
 function formatBudget(request: AdminEstimateDetailModel) {
@@ -20,44 +17,10 @@ function answerValue(value: unknown) {
 }
 
 export function AdminEstimateDetail({ request }: { request: AdminEstimateDetailModel }) {
-  const router = useRouter();
-  const [declineOpen, setDeclineOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [reason, setReason] = useState("");
-
-  async function changeStatus(status: "declined" | "reviewing") {
-    const trimmedReason = reason.trim();
-    if (status === "declined" && !trimmedReason) {
-      setError("A decline reason is required.");
-      return;
-    }
-    setError(null);
-    setIsSaving(true);
-    try {
-      const response = await fetch(`/api/admin/estimates/${request.id}/status`, {
-        body: JSON.stringify(status === "declined" ? { reason: trimmedReason, status } : { status }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => null) as { error?: string } | null;
-        setError(body?.error ?? "Unable to update request status.");
-        return;
-      }
-      router.refresh();
-    } catch {
-      setError("Unable to update request status.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  const canReview = request.status === "submitted";
-  const canDecline = request.status === "submitted" || request.status === "reviewing";
+  const status = adminEstimateStatusPresentation[request.status];
 
   return <section aria-label={`Estimate detail ${request.requestCode}`} className={styles.detailPanel}>
-    <header><div><small>{request.requestCode}</small><h2>{request.customerDisplayName}</h2><p>{request.requesterType === "member" ? "Member" : "Guest"} · {request.contact.kind}: {request.contact.value}</p></div><span className={styles.status} data-tone={request.status === "declined" ? "danger" : "warning"}>{request.status}</span></header>
+    <header><div><small>{request.requestCode}</small><h2>{request.customerDisplayName}</h2><p>{request.requesterType === "member" ? "Member" : "Guest"} · {request.contact.kind}: {request.contact.value}</p></div><span className={styles.status} data-tone={status.tone}>● {status.label}</span></header>
     <div className={styles.detailGrid}>
       <section><h3>Submitted brief</h3><dl>
         <div><dt>Category</dt><dd>{request.categoryName.en}</dd></div>
@@ -72,10 +35,6 @@ export function AdminEstimateDetail({ request }: { request: AdminEstimateDetailM
         <div><dt>Props</dt><dd>{request.propCount}</dd></div>
       </dl><h3>Request answers</h3><dl>{request.answers.map((answer) => <div key={answer.fieldKey}><dt>{answer.label.en}</dt><dd>{answerValue(answer.value)}</dd></div>)}</dl></section>
     </div>
-    {(canReview || canDecline) && <footer>
-      {canReview && <button className={styles.rowAction} disabled={isSaving} onClick={() => changeStatus("reviewing")} type="button">Review request</button>}
-      {canDecline && <button className={styles.dangerAction} disabled={isSaving} onClick={() => setDeclineOpen(true)} type="button">Decline request</button>}
-    </footer>}
-    {declineOpen && <section aria-label="Decline confirmation" className={styles.declineConfirm}><label>Decline reason<textarea onChange={(event) => setReason(event.target.value)} value={reason} /></label>{error && <p role="alert">{error}</p>}<div><button disabled={isSaving} onClick={() => changeStatus("declined")} type="button">Confirm decline</button><button disabled={isSaving} onClick={() => setDeclineOpen(false)} type="button">Cancel</button></div></section>}
+    <AdminEstimateStatusControls requestId={request.id} status={request.status} />
   </section>;
 }

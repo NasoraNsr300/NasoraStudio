@@ -69,20 +69,11 @@ describe("AdminEstimateInbox", () => {
     expect(navigation.push).toHaveBeenCalledWith("/admin/estimates?status=submitted&request=request-1");
   });
 
-  it("renders a meaningful read-only preview from a production deep-link selection", async () => {
-    const user = userEvent.setup();
+  it("keeps a deep-link selection in the inbox while the server renders its private detail", () => {
     navigation.searchParams = new URLSearchParams("request=request-1");
     render(<AdminEstimateInbox requests={requests} />);
 
-    const preview = screen.getByRole("region", { name: "ตัวอย่างแบบประเมิน REQ-ABCDEF1234" });
-    expect(within(preview).getByText("Mali")).toBeVisible();
-    expect(within(preview).getByText("Full Body")).toBeVisible();
-    expect(within(preview).getByText("฿3,000 – ฿4,500")).toBeVisible();
-    expect(within(preview).getByText("9 ส.ค. 2569")).toBeVisible();
-    expect(within(preview).getByText(/รอประเมิน/)).toBeVisible();
-
-    await user.click(within(preview).getByRole("button", { name: "กลับไปรายการ" }));
-
-    expect(navigation.push).toHaveBeenCalledWith("/admin/estimates");
+    expect(screen.getByRole("row", { selected: true })).toBeVisible();
+    expect(screen.queryByRole("region", { name: "ตัวอย่างแบบประเมิน REQ-ABCDEF1234" })).not.toBeInTheDocument();
   });
 });
