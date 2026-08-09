@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Bell, LayoutDashboard, LogOut } from "lucide-react";
+import { ArrowLeft, Bell, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -8,6 +8,7 @@ import type { Locale } from "@/shared/i18n/locales";
 import styles from "./public-shell.module.css";
 
 type AccountMenuProps = {
+  isAdmin: boolean;
   locale: Locale;
   nickname: string;
   onClose: () => void;
@@ -33,7 +34,7 @@ const notifications = {
   ],
 } as const;
 
-export function AccountMenu({ locale, nickname, onClose, onShowNotifications, onSignOut }: AccountMenuProps) {
+export function AccountMenu({ isAdmin, locale, nickname, onClose, onShowNotifications, onSignOut }: AccountMenuProps) {
   const th = locale === "th";
   return <section aria-label={th ? "เมนูบัญชี" : "Account menu"} className={styles.accountPanel}>
     <header className={styles.accountSummary}>
@@ -49,6 +50,9 @@ export function AccountMenu({ locale, nickname, onClose, onShowNotifications, on
       <Link className={styles.accountMenuItem} href={`/${locale}/member/requests`} onClick={onClose}>
         <LayoutDashboard size={19} /><span>{th ? "พื้นที่สมาชิก" : "Member area"}</span>
       </Link>
+      {isAdmin ? <Link className={styles.accountMenuItem} href="/admin" onClick={onClose}>
+        <ShieldCheck size={19} /><span>{th ? "พื้นที่แอดมิน" : "Admin area"}</span>
+      </Link> : null}
       <button className={styles.accountMenuItem} onClick={onSignOut} type="button"><LogOut size={19} /><span>{th ? "ออกจากระบบ" : "Sign out"}</span></button>
     </div>
   </section>;

@@ -8,6 +8,7 @@ import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
 import { useAuthDialog } from "@/shared/auth/auth-dialog-controller";
 import { useAuthSession } from "@/shared/auth/auth-session-provider";
+import { isNasoraAdmin } from "@/shared/auth/admin-access";
 
 import { AccountMenu, NotificationPanel } from "./account-menu";
 import styles from "./public-shell.module.css";
@@ -48,7 +49,7 @@ export function AccountButton({ locale }: { locale: Locale }) {
       >
         <UserRound size={22} />
       </IconButton>
-      {status === "signedIn" && panel === "menu" ? <AccountMenu locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => setPanel("notifications")} onSignOut={async () => { await signOut(); setPanel(null); }} /> : null}
+      {status === "signedIn" && panel === "menu" ? <AccountMenu isAdmin={isNasoraAdmin({ app_metadata: { role: user?.role }, email: user?.email })} locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => setPanel("notifications")} onSignOut={async () => { await signOut(); setPanel(null); }} /> : null}
       {status === "signedIn" && panel === "notifications" ? <NotificationPanel locale={locale} onBack={() => setPanel("menu")} /> : null}
     </div>
   );

@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 import type { AuthIdentity, AuthOperationResult, AuthStatus, SignUpInput } from "./auth-types";
 
 type AuthUserLike = {
+  app_metadata?: Record<string, unknown>;
   email?: string | null;
   id: string;
   user_metadata?: Record<string, unknown>;
@@ -42,7 +43,8 @@ function toIdentity(user: AuthUserLike | null): AuthIdentity | null {
   const nickname = typeof user.user_metadata?.nickname === "string" && user.user_metadata.nickname.trim()
     ? user.user_metadata.nickname.trim()
     : user.email?.split("@")[0] ?? "Member";
-  return { email: user.email ?? null, id: user.id, nickname };
+  const role = typeof user.app_metadata?.role === "string" ? user.app_metadata.role : null;
+  return { email: user.email ?? null, id: user.id, nickname, role };
 }
 
 export function AuthSessionProvider({ children, client }: { children: ReactNode; client?: AuthClientLike }) {

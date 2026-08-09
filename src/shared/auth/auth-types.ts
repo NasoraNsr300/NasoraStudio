@@ -2,6 +2,7 @@ export type AuthIdentity = {
   email: string | null;
   id: string;
   nickname: string;
+  role?: string | null;
 };
 
 export type AuthStatus = "loading" | "signedOut" | "signedIn";
