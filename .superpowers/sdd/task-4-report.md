@@ -48,3 +48,33 @@ Complete. Member request rows with a sent quote now link to a member-only quote 
 ## Commit
 
 `feat(member): show sent quote and deposit instructions`
+
+## Review follow-up — security boundary and route hardening
+
+### Changes
+
+- Added `supabase/migrations/20260809200000_harden_member_quote_visibility.sql`.
+  - Owners can select quote rows and quote items only when the parent quote is `sent`, `accepted`, `declined`, `expired`, or `closed`.
+  - Admin RLS access remains unrestricted across quote statuses.
+  - The migration revokes the inherited table-wide `SELECT` grant on `quotes` and `quote_items`, then grants only member/admin-summary snapshot columns. It excludes audit/authoring/replay/timestamp internals such as `created_by`, submission secrets, and validity/audit timestamps.
+  - Existing admin detail reads select only the retained `id`, `version`, `status`, and `total_satang` quote summary columns, so Task 3's repository contract remains available.
+- Added route-level UUID validation with `notFound()` before rendering the client quote page.
+- Added localized proposed-deadline display in the quote panel.
+- Added migration contract tests covering owner, other member, Guest, anonymous, and admin policy/privilege semantics; these supplement repository mocks with database-definition checks.
+
+### Follow-up TDD evidence
+
+1. RED: the new migration contract test failed because the hardening migration did not exist; the dynamic route test accepted malformed UUIDs; and the panel did not render a proposed deadline.
+2. GREEN: `npm test -- tests/unit/member-quote-security-migration.test.ts tests/unit/member-quote-route.test.tsx tests/components/member-quote-panel.test.tsx tests/unit/member-quote-repository.test.ts` passed with 4 files / 14 tests.
+
+### Follow-up verification
+
+- `npm test` — PASS, 64 files / 261 tests.
+- `npm run typecheck` — PASS.
+- Scoped `npx eslint` over changed production and test files — PASS.
+- `npm run build` — PASS.
+- `git diff --check` — PASS before commit.
+
+### Runtime-RLS note
+
+The Supabase CLI/runtime is not installed in this workspace, so role-switch integration execution was unavailable. The migration contract test records the SQL-enforced owner/other member/Guest/anon/admin boundary; deployed Supabase should run the same role matrix against this migration.

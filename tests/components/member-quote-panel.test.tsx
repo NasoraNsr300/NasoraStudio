@@ -20,6 +20,7 @@ describe("MemberQuotePanel", () => {
     expect(screen.getAllByText("฿500")).toHaveLength(2);
     expect(screen.getByText(/Approx\. USD \$28\.57/)).toBeVisible();
     expect(screen.getByText(/50% deposit/)).toBeVisible();
+    expect(screen.getByText(/Proposed deadline: Sep 20, 2026/)).toBeVisible();
   });
 
   it("calls the payment handoff without accepting the quote separately", async () => {

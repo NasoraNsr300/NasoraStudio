@@ -27,6 +27,7 @@ const copy = {
     outstanding: "Outstanding after deposit",
     paymentUnavailable: "Deposit payment will be available here shortly.",
     payDeposit: "Pay deposit",
+    proposedDeadline: "Proposed deadline",
     replaced: "This quote has been replaced by a newer version.",
     scope: "Scope",
     total: "Quote total",
@@ -39,6 +40,7 @@ const copy = {
     outstanding: "ยอดคงเหลือหลังชำระมัดจำ",
     paymentUnavailable: "จะสามารถชำระเงินมัดจำได้ที่นี่เร็ว ๆ นี้",
     payDeposit: "ชำระมัดจำ",
+    proposedDeadline: "กำหนดส่งงานที่เสนอ",
     replaced: "ใบเสนอราคานี้ถูกแทนที่ด้วยฉบับใหม่แล้ว",
     scope: "ขอบเขตงาน",
     total: "ราคารวม",
@@ -76,6 +78,7 @@ export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPay
       <small>Approx. USD {formatApproximateUsd(quote.totalSatang)} · THB is authoritative.</small>
     </section>
     {quote.expiresAt ? <p className={styles.quoteMeta}>{text.expires}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(quote.expiresAt))}</p> : null}
+    {quote.proposedDeadline ? <p className={styles.quoteMeta}>{text.proposedDeadline}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium" }).format(new Date(`${quote.proposedDeadline}T00:00:00`))}</p> : null}
     {canPay ? <div className={styles.quoteAction}><button aria-describedby={onPayDeposit ? undefined : "deposit-payment-unavailable"} className={styles.goldButton} disabled={!onPayDeposit} onClick={() => onPayDeposit?.({ depositSatang: quote.depositSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{text.payDeposit}</button>{!onPayDeposit ? <small id="deposit-payment-unavailable">{text.paymentUnavailable}</small> : null}</div> : null}
   </section>;
 }
