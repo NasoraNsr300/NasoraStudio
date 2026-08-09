@@ -48,7 +48,8 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 - `6e8b185` — `feat(payments): add PromptPay deposit and slip verification`
 - `f9c82d0` — `fix(payments): harden private slip verification flow`
 - `b150b0c` — `fix(payments): close verification trust gaps`
-- Final recovery/replay hardening: `fix(payments): recover rejected deposit uploads` (the commit containing this report).
+- `176ae47` — `fix(payments): recover rejected deposit uploads`
+- Concurrent-upload lease hardening: `fix(payments): fence concurrent slip upload attempts` (the commit containing this report).
 
 ## Self-review and remaining concerns
 
@@ -77,3 +78,24 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 6. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus all dynamic payment routes.
 7. No dependency or Cloudflare deployment change was made. Supabase runtime role-matrix/advisor checks and real R2/PromptPay acceptance remain deployment-environment checks.
 8. Independent final re-review verified the `authorized` orphan-crash path and returned **Ready: Yes** with no remaining blocker in scope.
+
+---
+
+## Concurrent-upload lease addendum — 2026-08-10
+
+- Member recovery now includes only the safe `slip_status` projection. A live `authorized` or `pending_review` slip renders a status-only state and omits PromptPay/upload controls; an expired authorization is projected as `failed`, so replacement remains reachable after a crashed lease. Object keys, ETags, and internal upload identifiers remain private.
+- Every upload attempt has a durable server-only row containing its independently generated R2 key and cleanup state. Reauthorization archives the expired attempt without overwriting its key or cleanup marker, then creates a new attempt/key. The attempt table has RLS enabled, no member policy/grant, and explicit base-table revocation.
+- Authorization is serialized and leased. Immediately before R2 PUT, a service-only DB CAS row-locks and validates the exact user, slip, upload key, attempt generation, `authorized` status, and live lease, then renews the lease. A losing request receives 409 and never PUTs. Finalize and fail remain attempt-fenced.
+- Replacement requests may best-effort delete a superseded key, but deliberately never clear its durable cleanup marker in the request path because the earlier producer might still be winding down. A losing attempt can update only its own attempt cleanup record; it cannot mutate or delete the canonical winner key. Private prefix lifecycle remains the final cleanup backstop.
+- The member payment state is a discriminated union, preventing active recovery responses that intentionally omit PromptPay data from being treated as uploadable in the UI.
+
+### Final TDD and verification evidence
+
+1. RED: focused recovery/route/migration tests produced three expected failures for active recovery payload suppression, lease-expired finalize replay, and ambiguous finalize cleanup. An additional RED regression reproduced expired-authorization recovery returning the raw active status.
+2. GREEN focused: `npm test -- --run tests/unit/payment-domain.test.ts tests/unit/payment-migration.test.ts tests/unit/payment-routes.test.ts tests/unit/payment-r2-storage.test.ts tests/components/member-payment-upload.test.tsx tests/components/admin-payment-review.test.tsx` — PASS, 6 files / 59 tests.
+3. Full suite: `npm test -- --maxWorkers=2` — PASS, 70 files / 320 tests in 56.73s.
+4. `npm run typecheck` — PASS.
+5. `npm run lint` — PASS.
+6. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus all dynamic payment routes.
+7. Independent third review returned **Ready** with no Critical, Important, or Minor findings after specifically auditing recovery SQL syntax, pre-PUT fencing, durable stale-key cleanup ownership, RLS/revokes, and the active member UI.
+8. No dependency, Cloudflare account, or deployed Supabase environment was changed. Runtime role-matrix/advisor checks and real R2/PromptPay acceptance remain deployment-environment checks.

@@ -58,7 +58,7 @@ describe("payment deposit workflow migration", () => {
   it("allocates private object keys in the trusted database and limits active/rate-limited slips", () => {
     const migration = sql();
     const authorize = privateFunction("authorize_payment_slip");
-    expect(authorize).not.toContain("p_object_key");
+    expect(authorize).not.toMatch(/\bp_object_key\b/);
     expect(authorize).toContain("v_slip_id uuid := gen_random_uuid()");
     expect(authorize).toContain("'payment-slips/' || gen_random_uuid()::text");
     expect(sql()).not.toMatch(/create function public\.member_authorize_payment_slip[^$]+object_key text/);
@@ -69,9 +69,44 @@ describe("payment deposit workflow migration", () => {
     expect(authorize).toContain("slip_upload_rate_limited");
     expect(authorize).toContain("created_at > now() - interval '1 hour'");
     expect(authorize).toContain("pg_advisory_xact_lock");
-    expect(authorize).toContain("created_at <= now() - interval '10 minutes'");
+    expect(authorize).toContain("lease_expires_at <= now()");
     expect(authorize).toContain("set status = 'failed'");
     expect(privateFunction("fail_payment_slip")).toContain("status in ('authorized', 'failed')");
+  });
+
+  it("leases one database upload attempt and fences PUT, finalize, and cleanup races", () => {
+    const migration = sql();
+    const authorize = privateFunction("authorize_payment_slip");
+    const finalize = privateFunction("finalize_payment_slip");
+    const fail = privateFunction("fail_payment_slip");
+    expect(migration).toContain("attempt_id uuid not null");
+    expect(migration).toContain("lease_expires_at timestamptz not null");
+    expect(authorize).toContain("p_attempt_id uuid");
+    expect(authorize).toContain("for update");
+    expect(authorize).toContain("raise exception 'payment_slip_upload_in_progress'");
+    expect(authorize).toContain("attempt_id = p_attempt_id");
+    expect(authorize).toContain("v_object_key := 'payment-slips/' || gen_random_uuid()::text");
+    expect(migration).toContain("create table public.payment_slip_upload_attempts");
+    expect(migration).toContain("status in ('authorized', 'pending_review', 'failed', 'superseded', 'deleted')");
+    expect(authorize).toContain("v_cleanup_attempt_id := v_slip.attempt_id");
+    expect(authorize).toContain("cleanup_required = true");
+    expect(authorize).toContain("insert into public.payment_slip_upload_attempts");
+    const beginPut = privateFunction("begin_payment_slip_put");
+    expect(beginPut).toContain("v_slip.attempt_id <> p_attempt_id");
+    expect(beginPut).toContain("v_slip.lease_expires_at <= now()");
+    expect(beginPut).toContain("raise exception 'payment_slip_attempt_lost'");
+    expect(beginPut).toContain("set lease_expires_at = now() + interval '10 minutes'");
+    const serviceGrant = migration.match(/grant execute on function public\.gateway_authorize_payment_slip[^;]+to service_role/)?.[0] ?? "";
+    expect(serviceGrant).toContain("public.gateway_begin_payment_slip_put(uuid, uuid, uuid, uuid)");
+    expect(migration).not.toMatch(/grant execute on function public\.gateway_begin_payment_slip_put[^;]+to authenticated/);
+    expect(finalize).toContain("p_attempt_id uuid");
+    expect(finalize).toContain("v_slip.attempt_id <> p_attempt_id");
+    expect(finalize).toContain("raise exception 'payment_slip_attempt_lost'");
+    expect(finalize.indexOf("v_slip.status = 'pending_review'")).toBeLessThan(finalize.indexOf("v_slip.lease_expires_at <= now()"));
+    expect(fail).toContain("p_attempt_id uuid");
+    expect(fail).toContain("attempt_id = p_attempt_id");
+    expect(fail).toContain("status in ('authorized', 'failed', 'superseded', 'deleted')");
+    expect(migration).toContain("public.gateway_finalize_payment_slip(uuid, uuid, uuid, text, text, bigint, uuid)");
   });
 
   it("exposes only a member-owned current pending intent for reload recovery", () => {
@@ -81,20 +116,25 @@ describe("payment deposit workflow migration", () => {
     expect(recovery).toContain("intent.status = 'pending'");
     expect(recovery).toContain("quote.status = 'sent'");
     expect(recovery).toContain("newer.version > quote.version");
+    expect(recovery).toContain("latest_slip.status");
+    expect(recovery).toContain("slip.status = 'authorized' and slip.lease_expires_at <= now()");
+    expect(recovery).toContain("then 'failed'::text");
+    expect(recovery).toContain("from public.payment_slips slip");
     expect(migration).toContain("create function public.member_get_pending_payment_intent");
     const memberGrant = migration.match(/grant execute on function public\.member_create_payment_intent[^;]+to authenticated/)?.[0] ?? "";
     expect(memberGrant).toContain("public.member_get_pending_payment_intent(uuid, uuid)");
     const exposed = migration.match(/create function public\.member_get_pending_payment_intent[^$]+returns table\(([^)]+)\)/)?.[1] ?? "";
     expect(exposed).toContain("intent_id uuid");
+    expect(exposed).toContain("slip_status text");
     expect(exposed).not.toMatch(/object_key|etag|fingerprint|idempotency/);
   });
 
   it("keeps public tables under RLS with explicit grants and no anonymous access", () => {
     const migration = sql();
-    for (const table of ["payment_intents", "payments", "payment_slips"]) {
+    for (const table of ["payment_intents", "payments", "payment_slips", "payment_slip_upload_attempts"]) {
       expect(migration).toContain(`alter table public.${table} enable row level security`);
     }
-    expect(migration).toContain("revoke all on public.payment_intents, public.payments, public.payment_slips from public, anon, authenticated, service_role");
+    expect(migration).toContain("revoke all on public.payment_intents, public.payments, public.payment_slips, public.payment_slip_upload_attempts from public, anon, authenticated, service_role");
     expect(migration).not.toMatch(/grant [^;]+ to anon/);
     expect(migration).toContain("user_id = (select auth.uid())");
     expect(migration).toContain("private.is_admin()");

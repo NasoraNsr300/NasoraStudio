@@ -25,6 +25,11 @@ type Props = {
   requestId: string;
 };
 
+type PaymentIntent = { amountSatang: number; paymentId: string } & (
+  | { promptPayPayload?: never; slipStatus: "authorized" | "pending_review" }
+  | { promptPayPayload: string; slipStatus: "rejected" | "failed" | null }
+);
+
 export function MemberRequestQuotePage({
   locale,
   repository,
@@ -36,11 +41,7 @@ export function MemberRequestQuotePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentPending, setPaymentPending] = useState(false);
-  const [paymentIntent, setPaymentIntent] = useState<{
-    amountSatang: number;
-    paymentId: string;
-    promptPayPayload: string;
-  } | null>(null);
+  const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
   const [slipStatus, setSlipStatus] = useState<string | null>(null);
   const intentRetryRef = useRef<{ fingerprint: string; key: string } | null>(
     null,
@@ -84,7 +85,7 @@ export function MemberRequestQuotePage({
     if (session?.status !== "signedIn" || !quote || paymentIntent) return;
     let active = true;
     void fetch(`/api/member/payments/${quote.id}/intent?requestId=${encodeURIComponent(requestId)}`)
-      .then(async (response) => response.ok ? response.json() as Promise<{ amountSatang: number; paymentId: string; promptPayPayload: string }> : null)
+      .then(async (response) => response.ok ? response.json() as Promise<PaymentIntent> : null)
       .then((recovered) => { if (active && recovered) setPaymentIntent(recovered); })
       .catch(() => undefined);
     return () => { active = false; };
@@ -110,13 +111,12 @@ export function MemberRequestQuotePage({
         },
       );
       if (!response.ok) throw new Error("intent_failed");
-      setPaymentIntent(
-        (await response.json()) as {
+      const created = (await response.json()) as {
           amountSatang: number;
           paymentId: string;
           promptPayPayload: string;
-        },
-      );
+        };
+      setPaymentIntent({ ...created, slipStatus: null });
       intentRetryRef.current = null;
     } catch {
       setError(
@@ -148,9 +148,9 @@ export function MemberRequestQuotePage({
       );
       if (!upload.ok) throw new Error("upload_failed");
       slipRetryRef.current = null;
-      setSlipStatus(
-        th ? "ส่งสลิปแล้ว กำลังรอตรวจสอบ" : "Slip submitted for review.",
-      );
+      const reviewMessage = th ? "ส่งสลิปแล้ว กำลังรอตรวจสอบ" : "Slip submitted for review.";
+      setSlipStatus(reviewMessage);
+      setPaymentIntent((current) => current ? { amountSatang: current.amountSatang, paymentId: current.paymentId, slipStatus: "pending_review" } : current);
     } catch {
       setError(
         th
@@ -162,6 +162,8 @@ export function MemberRequestQuotePage({
       setPaymentPending(false);
     }
   }
+
+  const activeSlip = paymentIntent?.slipStatus === "authorized" || paymentIntent?.slipStatus === "pending_review";
 
   return (
     <main className={styles.memberArea}>
@@ -201,32 +203,37 @@ export function MemberRequestQuotePage({
             className={styles.depositPanel}
           >
             <h2>
-              PromptPay ·{" "}
+              {activeSlip ? (th ? "สถานะเงินมัดจำ" : "Deposit status") : "PromptPay"} ·{" "}
               {new Intl.NumberFormat(th ? "th-TH" : "en-US", {
                 style: "currency",
                 currency: "THB",
               }).format(paymentIntent.amountSatang / 100)}
             </h2>
-            <p>
-              {th
-                ? "ใช้ข้อมูล QR ด้านล่างชำระยอดตามจำนวนที่ระบุ แล้วอัปโหลดสลิป"
-                : "Pay the exact amount using the QR data below, then upload your slip."}
-            </p>
-            <code>{paymentIntent.promptPayPayload}</code>
-            <label>
-              {th ? "อัปโหลดสลิป" : "Upload slip"}
-              <input
-                accept="image/png,image/jpeg,image/webp"
-                disabled={paymentPending}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void uploadSlip(file);
-                }}
-                ref={slipInputRef}
-                type="file"
-              />
-            </label>
-            {slipStatus ? <p role="status">{slipStatus}</p> : null}
+            {activeSlip ? (
+              <p role="status">{slipStatus ?? (paymentIntent.slipStatus === "pending_review"
+                ? (th ? "ส่งสลิปแล้ว กำลังรอตรวจสอบ" : "Slip submitted for review.")
+                : (th ? "กำลังดำเนินการอัปโหลดสลิป" : "Slip upload is in progress."))}</p>
+            ) : (
+              <>
+                <p>{th
+                  ? "ใช้ข้อมูล QR ด้านล่างชำระยอดตามจำนวนที่ระบุ แล้วอัปโหลดสลิป"
+                  : "Pay the exact amount using the QR data below, then upload your slip."}</p>
+                <code>{paymentIntent.promptPayPayload}</code>
+                <label>
+                  {th ? "อัปโหลดสลิป" : "Upload slip"}
+                  <input
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={paymentPending}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void uploadSlip(file);
+                    }}
+                    ref={slipInputRef}
+                    type="file"
+                  />
+                </label>
+              </>
+            )}
           </section>
         ) : null}
       </section>

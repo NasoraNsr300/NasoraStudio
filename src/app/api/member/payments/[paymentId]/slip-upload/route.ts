@@ -54,6 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
   const userId = user.id;
   const idempotencyKey = uploadKey.data;
+  const attemptId = crypto.randomUUID();
 
   let repository: ReturnType<typeof createPaymentRepository>;
   let storage: ReturnType<typeof createR2SlipStorage>;
@@ -65,13 +66,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
 
   let allocated: Awaited<ReturnType<ReturnType<typeof createPaymentRepository>["allocateSlip"]>>;
   try {
-    allocated = await repository.allocateSlip({ contentType: declaredType, idempotencyKey: uploadKey.data, paymentId: paymentId.data, sizeBytes: declaredSize, userId: user.id });
-    if (allocated.status === "pending_review") return Response.json({ status: allocated.status });
+    allocated = await repository.allocateSlip({ attemptId, contentType: declaredType, idempotencyKey, paymentId: paymentId.data, sizeBytes: declaredSize, userId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const status = message === "r2_not_configured" || message === "payment_gateway_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") ? 409 : 400;
+    const status = message === "r2_not_configured" || message === "payment_gateway_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") || message.includes("in_progress") ? 409 : 400;
     return Response.json({ error: status === 503 ? "Slip storage is not configured" : status === 429 ? "Too many slip uploads" : "Unable to process payment slip" }, { status });
   }
+  if (allocated.cleanupAttemptId && allocated.cleanupObjectKey) {
+    try {
+      await storage.deleteObject(allocated.cleanupObjectKey);
+    } catch {
+      // The superseded attempt remains durably marked cleanup_required for lifecycle/reaper retry.
+    }
+  }
+  if (allocated.status === "pending_review") return Response.json({ status: allocated.status });
   let orphanCleanupRequired = allocated.status === "failed";
   let orphanDeleteAttempted = false;
   async function deletePossibleOrphan() {
@@ -82,7 +90,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   }
   async function failInvalidAllocation() {
     await deletePossibleOrphan();
-    await repository.failSlip({ cleanupRequired: orphanCleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
+    await repository.failSlip({ attemptId, cleanupRequired: orphanCleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
   }
   if (allocated.status === "failed") await deletePossibleOrphan();
 
@@ -107,13 +115,35 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   }
 
   try {
-    const uploaded = await storage.putObject(allocated.objectKey, bytes, detectedType);
-    const finalized = await repository.finalizeSlip({ contentType: detectedType, etag: uploaded.etag, idempotencyKey: uploadKey.data, sizeBytes: bytes.byteLength, slipId: allocated.id, userId: user.id });
-    return Response.json({ status: finalized.status });
+    await repository.beginPut({ attemptId, idempotencyKey, slipId: allocated.id, userId });
+  } catch (error) {
+    let cleanupRequired = false;
+    try { await storage.deleteObject(allocated.objectKey); } catch { cleanupRequired = true; }
+    await repository.failSlip({ attemptId, cleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
+    const attemptLost = error instanceof Error && error.message.includes("attempt_lost");
+    return Response.json({ error: attemptLost ? "Payment slip upload was superseded" : "Unable to process payment slip" }, { status: attemptLost ? 409 : 400 });
+  }
+
+  let uploaded: Awaited<ReturnType<typeof storage.putObject>>;
+  try {
+    uploaded = await storage.putObject(allocated.objectKey, bytes, detectedType);
   } catch {
     let cleanupRequired = false;
     try { await storage.deleteObject(allocated.objectKey); } catch { cleanupRequired = true; }
-    await repository.failSlip({ cleanupRequired, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    await repository.failSlip({ attemptId, cleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
     return Response.json({ error: "Unable to process payment slip" }, { status: 400 });
+  }
+
+  try {
+    const finalized = await repository.finalizeSlip({ attemptId, contentType: detectedType, etag: uploaded.etag, idempotencyKey, sizeBytes: bytes.byteLength, slipId: allocated.id, userId });
+    return Response.json({ status: finalized.status });
+  } catch (error) {
+    const attemptLost = error instanceof Error && error.message.includes("attempt_lost");
+    let cleanupRequired = true;
+    if (attemptLost) {
+      try { await storage.deleteObject(allocated.objectKey); cleanupRequired = false; } catch { cleanupRequired = true; }
+    }
+    await repository.failSlip({ attemptId, cleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
+    return Response.json({ error: attemptLost ? "Payment slip upload was superseded" : "Unable to process payment slip" }, { status: attemptLost ? 409 : 400 });
   }
 }

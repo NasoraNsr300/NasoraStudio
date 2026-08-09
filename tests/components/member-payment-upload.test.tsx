@@ -58,7 +58,7 @@ describe("member payment slip upload", () => {
     const repository = { load: vi.fn(async () => ({ data: quote, ok: true as const })) };
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "POST") return Response.json({ status: "pending_review" });
-      return Response.json({ amountSatang: 50_000, kind: "deposit", paymentId, promptPayPayload: "recovered-qr", quoteId, status: "pending" });
+      return Response.json({ amountSatang: 50_000, kind: "deposit", paymentId, promptPayPayload: "recovered-qr", quoteId, slipStatus: "rejected", status: "pending" });
     });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
@@ -69,5 +69,14 @@ describe("member payment slip upload", () => {
     await user.upload(input, file);
     await screen.findByText("Slip submitted for review.");
     expect(fetchMock).toHaveBeenCalledWith(`/api/member/payments/${paymentId}/slip-upload`, expect.objectContaining({ method: "POST" }));
+  });
+
+  it("shows a recovered pending-review state without QR or replacement upload", async () => {
+    const repository = { load: vi.fn(async () => ({ data: quote, ok: true as const })) };
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ amountSatang: 50_000, kind: "deposit", paymentId, promptPayPayload: "must-not-render", quoteId, slipStatus: "pending_review", status: "pending" })));
+    render(<MemberRequestQuotePage locale="en" repository={repository as never} requestId={requestId} />);
+    expect(await screen.findByText("Slip submitted for review.")).toBeVisible();
+    expect(screen.queryByText("must-not-render")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Upload slip")).not.toBeInTheDocument();
   });
 });

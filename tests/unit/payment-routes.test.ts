@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   createPaymentGatewayClient: vi.fn(),
   createPaymentRepository: vi.fn(),
   createR2SlipStorage: vi.fn(),
-  paymentRepository: { allocateSlip: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn(), recoverIntent: vi.fn() },
+  paymentRepository: { allocateSlip: vi.fn(), beginPut: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn(), recoverIntent: vi.fn() },
   storage: { deleteObject: vi.fn(), headObject: vi.fn(), putObject: vi.fn() },
 }));
 
@@ -59,6 +59,7 @@ beforeEach(() => {
   mocks.createAdminPaymentRepository.mockReturnValue(mocks.adminRepository);
   mocks.createR2SlipStorage.mockReturnValue(mocks.storage);
   mocks.paymentRepository.failSlip.mockResolvedValue(undefined);
+  mocks.paymentRepository.beginPut.mockResolvedValue(undefined);
   mocks.paymentRepository.createIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", status: "pending" });
 });
 
@@ -119,11 +120,18 @@ describe("payment mutation routes", () => {
   });
 
   it("recovers a canonical pending intent with a regenerated PromptPay payload", async () => {
-    mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, status: "pending" });
+    mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, slipStatus: "rejected", status: "pending" });
     const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ quoteId }) });
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, promptPayPayload: expect.stringMatching(/6304[0-9A-F]{4}$/), status: "pending" });
+    expect(await response.json()).toMatchObject({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, promptPayPayload: expect.stringMatching(/6304[0-9A-F]{4}$/), slipStatus: "rejected", status: "pending" });
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
+  });
+
+  it("recovers active review state without returning obsolete PromptPay data", async () => {
+    mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, slipStatus: "pending_review", status: "pending" });
+    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, slipStatus: "pending_review", status: "pending" });
   });
 
   it("uploads a validated image once through the same-origin gateway without returning a bearer URL", async () => {
@@ -133,7 +141,9 @@ describe("payment mutation routes", () => {
     const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.storage.putObject).toHaveBeenCalledOnce();
-    expect(mocks.paymentRepository.finalizeSlip).toHaveBeenCalledWith({ contentType: "image/png", etag: "etag-1", idempotencyKey, sizeBytes: png.byteLength, slipId, userId: "user-1" });
+    expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String) }));
+    const attemptId = mocks.paymentRepository.allocateSlip.mock.calls[0][0].attemptId;
+    expect(mocks.paymentRepository.finalizeSlip).toHaveBeenCalledWith({ attemptId, contentType: "image/png", etag: "etag-1", idempotencyKey, sizeBytes: png.byteLength, slipId, userId: "user-1" });
     expect(await response.json()).toEqual({ status: "pending_review" });
   });
 
@@ -149,7 +159,7 @@ describe("payment mutation routes", () => {
     const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(415);
     expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledBefore(mocks.paymentRepository.failSlip);
-    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" });
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" }));
   });
 
   it("best-effort deletes an orphan before failing reused authorized rows with invalid bytes", async () => {
@@ -159,28 +169,83 @@ describe("payment mutation routes", () => {
     const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(415);
     expect(mocks.storage.deleteObject).toHaveBeenCalledWith(objectKey);
-    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" });
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
   });
 
-  it("deletes an object and marks the allocation failed when finalization fails", async () => {
+  it("best-effort deletes only the durable superseded-attempt key before reading a replacement", async () => {
+    const staleAttemptId = "e1a9d2cd-31d6-4d90-847f-f17efb90a86f";
+    const staleKey = "payment-slips/stale-attempt.png";
+    const winnerKey = "payment-slips/winner-attempt.png";
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ cleanupAttemptId: staleAttemptId, cleanupObjectKey: staleKey, id: slipId, objectKey: winnerKey, status: "authorized" });
+    mocks.storage.putObject.mockResolvedValue({ etag: "winner-etag" });
+    mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(200);
+    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(staleKey);
+    expect(mocks.storage.deleteObject).not.toHaveBeenCalledWith(winnerKey);
+    expect(mocks.storage.deleteObject).toHaveBeenCalledBefore(mocks.storage.putObject);
+  });
+
+  it("rechecks attempt ownership immediately before PUT and never writes after losing the lease", async () => {
+    const losingKey = "payment-slips/fenced-before-put.png";
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: losingKey, status: "authorized" });
+    mocks.paymentRepository.beginPut.mockRejectedValue(new Error("payment_slip_attempt_lost"));
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(409);
+    expect(mocks.storage.putObject).not.toHaveBeenCalled();
+    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(losingKey);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ cleanupRequired: false }));
+  });
+
+  it("does not delete a possible winner object after an ambiguous finalization failure", async () => {
     const objectKey = "payment-slips/025f6aa2-6227-4b74-a833-e9fca9db998a.png";
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey, status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
     mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("finalize_failed"));
     const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(400);
-    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(objectKey);
-    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" });
+    expect(mocks.storage.deleteObject).not.toHaveBeenCalledWith(objectKey);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
   });
 
-  it("persists a cleanup-required marker when immediate object deletion fails", async () => {
+  it("persists cleanup when a fenced losing-attempt object cannot be deleted", async () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/private.png", status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
-    mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("finalize_failed"));
+    mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("payment_slip_attempt_lost"));
     mocks.storage.deleteObject.mockRejectedValue(new Error("delete_failed"));
     const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
-    expect(response.status).toBe(400);
-    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" });
+    expect(response.status).toBe(409);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
+  });
+
+  it("allows only one same-key request to PUT while the database lease is active", async () => {
+    const winnerKey = "payment-slips/winner.png";
+    mocks.paymentRepository.allocateSlip
+      .mockResolvedValueOnce({ id: slipId, objectKey: winnerKey, status: "authorized" })
+      .mockRejectedValueOnce(new Error("payment_slip_upload_in_progress"));
+    mocks.storage.putObject.mockResolvedValue({ etag: "winner-etag" });
+    mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
+    const [winner, loser] = await Promise.all([
+      uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) }),
+      uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) }),
+    ]);
+    expect(winner.status).toBe(200);
+    expect(loser.status).toBe(409);
+    expect(mocks.storage.putObject).toHaveBeenCalledTimes(1);
+    expect(mocks.paymentRepository.beginPut).toHaveBeenCalledTimes(1);
+    expect(mocks.storage.deleteObject).not.toHaveBeenCalledWith(winnerKey);
+  });
+
+  it("cleans only its leased object when finalize loses to a newer attempt", async () => {
+    const losingKey = "payment-slips/losing-attempt.png";
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: losingKey, status: "authorized" });
+    mocks.storage.putObject.mockResolvedValue({ etag: "losing-etag" });
+    mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("payment_slip_attempt_lost"));
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const attemptId = mocks.paymentRepository.allocateSlip.mock.calls[0][0].attemptId;
+    expect(response.status).toBe(409);
+    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(losingKey);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId }));
   });
 
   it("requires admin app_metadata and revalidates object metadata before approval", async () => {

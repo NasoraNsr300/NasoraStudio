@@ -28,8 +28,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
   try {
     const intent = await createPaymentRepository(client as unknown as PaymentClient).recoverIntent({ quoteId: quoteId.data, requestId: requestId.data });
     if (!intent) return Response.json({ error: "Payment intent not found" }, { status: 404 });
+    if (intent.slipStatus === "authorized" || intent.slipStatus === "pending_review") {
+      return Response.json({ amountSatang: intent.amountSatang, kind: intent.kind, paymentId: intent.id, quoteId: intent.quoteId, slipStatus: intent.slipStatus, status: intent.status }, { headers: { "cache-control": "private, no-store" } });
+    }
     const promptPayPayload = paymentConfiguration(intent.amountSatang);
-    return Response.json({ amountSatang: intent.amountSatang, kind: intent.kind, paymentId: intent.id, promptPayPayload, quoteId: intent.quoteId, status: intent.status }, { headers: { "cache-control": "private, no-store" } });
+    return Response.json({ amountSatang: intent.amountSatang, kind: intent.kind, paymentId: intent.id, promptPayPayload, quoteId: intent.quoteId, slipStatus: intent.slipStatus, status: intent.status }, { headers: { "cache-control": "private, no-store" } });
   } catch {
     return Response.json({ error: "Payment service is not configured" }, { status: 503 });
   }
