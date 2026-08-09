@@ -2,6 +2,9 @@ import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, F
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
+import type { AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
+
 import styles from "./admin-section-pages.module.css";
 
 function PageHeader({ action, description, icon, title }: { action: string; description: string; icon: ReactNode; title: string }) {
@@ -16,18 +19,15 @@ function Status({ children, tone = "neutral" }: { children: ReactNode; tone?: "s
   return <span className={styles.status} data-tone={tone}>● {children}</span>;
 }
 
-const clients = [
-  ["Kirana", "Illustration / Full Body", "฿ 4,500", "รอประเมิน", "warning"],
-  ["ShiroNeko", "Illustration / Half Body", "฿ 3,200", "ส่งราคาแล้ว", "violet"],
-  ["Mildred", "Background", "฿ 6,800", "รอลูกค้าตอบ", "neutral"],
-  ["Tanmayo", "Chibi / Full Body", "฿ 2,400", "ยืนยันแล้ว", "success"],
-] as const;
+export function AdminEstimatesPage({ requests = [] }: { requests?: AdminEstimateSummary[] }) {
+  const submittedCount = requests.filter((request) => request.status === "submitted").length;
+  const quotedCount = requests.filter((request) => request.status === "quoted").length;
+  const convertedCount = requests.filter((request) => request.status === "converted").length;
 
-export function AdminEstimatesPage() {
   return <section className={styles.sectionPage}>
     <PageHeader action="สร้างใบเสนอราคา" description="ตรวจแบบประเมิน กำหนดราคาจริง และส่งข้อเสนอให้ลูกค้า" icon={<FileText size={25} />} title="แบบประเมิน" />
-    <div className={styles.metricRow}><article><small>รอประเมิน</small><strong>4</strong><span>ต้องตอบภายในวันนี้ 2 รายการ</span></article><article><small>ส่งราคาแล้ว</small><strong>7</strong><span>รอลูกค้าตอบรับ</span></article><article><small>ยืนยันเดือนนี้</small><strong>12</strong><span>มูลค่า ฿ 48,900</span></article></div>
-    <section className={styles.dataPanel}><Toolbar placeholder="ค้นหาชื่อลูกค้า หรือเลขแบบประเมิน..." /><table><thead><tr><th>ลูกค้า</th><th>ประเภทงาน</th><th>งบที่แจ้ง</th><th>วันที่ส่ง</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{clients.map(([name, type, budget, status, tone]) => <tr key={name}><td><UserRound size={17} />{name}</td><td>{type}</td><td>{budget}</td><td>24 พ.ค. 2567</td><td><Status tone={tone}>{status}</Status></td><td><button className={styles.rowAction} type="button"><PenLine size={15} />ประเมิน</button></td></tr>)}</tbody></table></section>
+    <div className={styles.metricRow}><article><small>รอประเมิน</small><strong>{submittedCount}</strong><span>จากแบบประเมินทั้งหมด {requests.length} รายการ</span></article><article><small>ส่งราคาแล้ว</small><strong>{quotedCount}</strong><span>รอลูกค้าตอบรับ</span></article><article><small>ยืนยันแล้ว</small><strong>{convertedCount}</strong><span>รายการที่เปลี่ยนเป็นงานแล้ว</span></article></div>
+    <AdminEstimateInbox requests={requests} />
   </section>;
 }
 
