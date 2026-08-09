@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
 import { createPaymentRepository, type PaymentClient } from "@/features/payments/data/payment-repository";
 import { createPromptPayPayload } from "@/features/payments/domain/payment";
 import { acceptsMutation, authenticatedUser } from "@/features/payments/http/payment-route-security";
@@ -23,6 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ quo
   try {
     promptPayPayload = createPromptPayPayload(promptPayId, input.data.depositSatang);
     createR2SlipStorage();
+    createPaymentGatewayClient();
   } catch {
     return Response.json({ error: "Payment service is not configured" }, { status: 503 });
   }
@@ -35,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ quo
     return Response.json({ amountSatang: intent.amountSatang, kind: intent.kind, paymentId: intent.id, promptPayPayload, status: intent.status });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const conflict = ["deposit_amount_mismatch", "quote_not_payable", "payment_exceeds_balance", "idempotency_payload_mismatch"].includes(message);
+    const conflict = ["deposit_already_verified_for_request", "deposit_amount_mismatch", "payment_intent_pending", "quote_not_payable", "payment_exceeds_balance", "idempotency_payload_mismatch"].includes(message);
     return Response.json({ error: conflict ? "Payment intent is no longer available" : "Unable to create payment intent" }, { status: conflict ? 409 : 400 });
   }
 }

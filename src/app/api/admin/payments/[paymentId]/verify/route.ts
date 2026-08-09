@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createAdminPaymentRepository, type AdminPaymentClient } from "@/features/payments/data/admin-payment-repository.server";
+import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
 import { acceptsMutation, authenticatedUser } from "@/features/payments/http/payment-route-security";
 import { createR2SlipStorage, normalizeEtag } from "@/features/payments/storage/r2-slip-storage.server";
 import { createClient } from "@/shared/supabase/server";
@@ -22,16 +23,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   const user = await authenticatedUser(client);
   if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
   if (user.app_metadata?.role !== "admin" || user.email?.toLowerCase() !== "nasora.nsr300@gmail.com") return Response.json({ error: "Admin access required" }, { status: 403 });
-  const repository = createAdminPaymentRepository(client as unknown as AdminPaymentClient);
+  const memberScopedRepository = createAdminPaymentRepository(client as unknown as AdminPaymentClient);
+  let gatewayRepository: ReturnType<typeof createAdminPaymentRepository>;
+  try { gatewayRepository = createAdminPaymentRepository(createPaymentGatewayClient() as unknown as AdminPaymentClient); }
+  catch { return Response.json({ error: "Payment service is not configured" }, { status: 503 }); }
   try {
-    const slip = await repository.findReviewSlip(paymentId.data);
+    const decision = input.data.decision;
+    const reason = input.data.reason ?? null;
+    const replay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
+    if (replay) return Response.json(replay);
+    const slip = await memberScopedRepository.findReviewSlip(paymentId.data);
     if (!slip) return Response.json({ error: "Payment slip not found" }, { status: 404 });
-    const actual = await createR2SlipStorage().headObject(slip.objectKey);
-    if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
-    return Response.json(await repository.verify({ decision: input.data.decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason: input.data.reason ?? null }));
+    if (decision === "approve") {
+      const actual = await createR2SlipStorage().headObject(slip.objectKey);
+      if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
+    }
+    const result = await gatewayRepository.verify({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
+    if (decision === "reject") {
+      try { await createR2SlipStorage().deleteObject(slip.objectKey); } catch { /* Lifecycle expiry remains the fallback. */ }
+    }
+    return Response.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const conflict = message.includes("not_reviewable") || message.includes("idempotency");
-    return Response.json({ error: conflict ? "Payment slip is no longer reviewable" : "Unable to verify payment slip" }, { status: conflict ? 409 : 400 });
+    const metadata = message.includes("r2_object_not_found") || message.includes("invalid_r2_object_metadata");
+    return Response.json({ error: conflict ? "Payment slip is no longer reviewable" : metadata ? "Uploaded file metadata does not match" : "Unable to verify payment slip" }, { status: conflict ? 409 : metadata ? 422 : 400 });
   }
 }

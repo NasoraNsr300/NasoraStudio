@@ -9,7 +9,8 @@ export type PendingPaymentReview = {
   amountSatang: number;
   id: string;
   kind: "deposit" | "final" | "installment";
-  previewUrl: string;
+  previewError?: string;
+  previewUrl: string | null;
   requestId: string;
   uploadedAt: string;
 };
@@ -49,10 +50,14 @@ function paymentKind(kind: PendingPaymentReview["kind"]) {
 }
 
 export function AdminPaymentReview({
+  loadError,
+  nextPageHref,
   onRefresh = () => window.location.reload(),
   onVerify = submitVerification,
   payments,
 }: {
+  loadError?: string;
+  nextPageHref?: string;
   onRefresh?: () => void;
   onVerify?: (input: Verification) => Promise<void>;
   payments: PendingPaymentReview[];
@@ -125,6 +130,7 @@ export function AdminPaymentReview({
           <span>สร้างงานในขั้นตอนถัดไป</span>
         </article>
       </div>
+      {loadError ? <p className={styles.loadError} role="alert">{loadError}</p> : null}
       <section className={styles.dataPanel} aria-label="รายการสลิปรอตรวจ">
         <table>
           <thead>
@@ -155,24 +161,25 @@ export function AdminPaymentReview({
                     <span className={styles.pending}>● รอตรวจ</span>
                   </td>
                   <td>
-                    <a
-                      aria-label={`ดูสลิป ${payment.requestId.slice(0, 8)}`}
-                      className={styles.iconAction}
-                      href={payment.previewUrl}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <Eye size={17} />
-                    </a>
+                    {payment.previewUrl ? <a
+                        aria-label={`ดูสลิป ${payment.requestId.slice(0, 8)}`}
+                        className={styles.iconAction}
+                        href={payment.previewUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        <Eye size={17} />
+                      </a> : null}
                     <button aria-label={`ต่ออายุลิงก์ ${payment.requestId.slice(0, 8)}`} className={styles.iconAction} onClick={onRefresh} type="button">
                       <RefreshCw size={15} />
                     </button>
+                    {payment.previewError ? <p className={styles.previewError} role="status">{payment.previewError}</p> : null}
                   </td>
                   <td>
                     <div className={styles.actions}>
                       <button
                         aria-label={`อนุมัติ ${payment.requestId.slice(0, 8)}`}
-                        disabled={busy === payment.id}
+                        disabled={busy === payment.id || Boolean(payment.previewError)}
                         onClick={() => void verify(payment.id, "approve")}
                         type="button"
                       >
@@ -226,6 +233,7 @@ export function AdminPaymentReview({
           </tbody>
         </table>
       </section>
+      {nextPageHref ? <a className={styles.nextPage} href={nextPageHref}>หน้าถัดไป / Next page</a> : null}
     </section>
   );
 }

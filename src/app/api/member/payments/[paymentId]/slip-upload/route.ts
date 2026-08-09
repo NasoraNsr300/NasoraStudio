@@ -43,44 +43,62 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   const uploadKey = z.uuid().safeParse(request.headers.get("idempotency-key"));
   if (!uploadKey.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   const contentLength = request.headers.get("content-length");
-  if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > PAYMENT_LIMITS.maxSlipBytes)) {
+  if (!contentLength) return Response.json({ error: "Content-Length is required" }, { status: 411 });
+  if (!/^\d+$/.test(contentLength) || Number(contentLength) < 1 || Number(contentLength) > PAYMENT_LIMITS.maxSlipBytes) {
     return Response.json({ error: "Slip exceeds 5 MiB" }, { status: 413 });
   }
+  const declaredSize = Number(contentLength);
 
   const client = await createClient();
   const user = await authenticatedUser(client);
   if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
-  let bytes: Uint8Array;
-  try {
-    bytes = await readBoundedBody(request);
-  } catch (error) {
-    return Response.json({ error: error instanceof Error && error.message === "slip_too_large" ? "Slip exceeds 5 MiB" : "Invalid slip image" }, { status: error instanceof Error && error.message === "slip_too_large" ? 413 : 415 });
-  }
-  let detectedType: string;
-  try { detectedType = detectSlipContentType(bytes); } catch { return Response.json({ error: "Invalid slip image" }, { status: 415 }); }
-  if (detectedType !== declaredType) return Response.json({ error: "Image bytes do not match Content-Type" }, { status: 415 });
 
   let repository: ReturnType<typeof createPaymentRepository>;
-  try { repository = createPaymentRepository(createPaymentGatewayClient() as unknown as PaymentClient); }
-  catch { return Response.json({ error: "Slip storage is not configured" }, { status: 503 }); }
-  let allocated: Awaited<ReturnType<ReturnType<typeof createPaymentRepository>["allocateSlip"]>> | undefined;
+  let storage: ReturnType<typeof createR2SlipStorage>;
   try {
-    const storage = createR2SlipStorage();
-    allocated = await repository.allocateSlip({ contentType: detectedType, idempotencyKey: uploadKey.data, paymentId: paymentId.data, sizeBytes: bytes.byteLength, userId: user.id });
+    repository = createPaymentRepository(createPaymentGatewayClient() as unknown as PaymentClient);
+    storage = createR2SlipStorage();
+  }
+  catch { return Response.json({ error: "Slip storage is not configured" }, { status: 503 }); }
+
+  let allocated: Awaited<ReturnType<ReturnType<typeof createPaymentRepository>["allocateSlip"]>>;
+  try {
+    allocated = await repository.allocateSlip({ contentType: declaredType, idempotencyKey: uploadKey.data, paymentId: paymentId.data, sizeBytes: declaredSize, userId: user.id });
     if (allocated.status === "pending_review") return Response.json({ status: allocated.status });
-    try {
-      const uploaded = await storage.putObject(allocated.objectKey, bytes, detectedType);
-      const finalized = await repository.finalizeSlip({ contentType: detectedType, etag: uploaded.etag, idempotencyKey: uploadKey.data, sizeBytes: bytes.byteLength, slipId: allocated.id, userId: user.id });
-      return Response.json({ status: finalized.status });
-    } catch (error) {
-      let cleanupRequired = false;
-      try { await storage.deleteObject(allocated.objectKey); } catch { cleanupRequired = true; }
-      await repository.failSlip({ cleanupRequired, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
-      throw error;
-    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const status = message === "r2_not_configured" || message === "payment_gateway_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") ? 409 : 400;
     return Response.json({ error: status === 503 ? "Slip storage is not configured" : status === 429 ? "Too many slip uploads" : "Unable to process payment slip" }, { status });
+  }
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await readBoundedBody(request);
+    if (bytes.byteLength !== declaredSize) throw new Error("slip_size_mismatch");
+  } catch (error) {
+    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    const tooLarge = error instanceof Error && error.message === "slip_too_large";
+    return Response.json({ error: tooLarge ? "Slip exceeds 5 MiB" : "Invalid slip image" }, { status: tooLarge ? 413 : 415 });
+  }
+  let detectedType: string;
+  try { detectedType = detectSlipContentType(bytes); }
+  catch {
+    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    return Response.json({ error: "Invalid slip image" }, { status: 415 });
+  }
+  if (detectedType !== declaredType) {
+    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    return Response.json({ error: "Image bytes do not match Content-Type" }, { status: 415 });
+  }
+
+  try {
+    const uploaded = await storage.putObject(allocated.objectKey, bytes, detectedType);
+    const finalized = await repository.finalizeSlip({ contentType: detectedType, etag: uploaded.etag, idempotencyKey: uploadKey.data, sizeBytes: bytes.byteLength, slipId: allocated.id, userId: user.id });
+    return Response.json({ status: finalized.status });
+  } catch {
+    let cleanupRequired = false;
+    try { await storage.deleteObject(allocated.objectKey); } catch { cleanupRequired = true; }
+    await repository.failSlip({ cleanupRequired, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    return Response.json({ error: "Unable to process payment slip" }, { status: 400 });
   }
 }

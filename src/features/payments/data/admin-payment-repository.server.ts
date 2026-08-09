@@ -23,6 +23,14 @@ function first(data: unknown) { return Array.isArray(data) ? data[0] : data; }
 
 export function createAdminPaymentRepository(client: AdminPaymentClient) {
   return {
+    async findVerificationResult(input: { adminUserId: string; decision: "approve" | "reject"; idempotencyKey: string; paymentId: string; reason: string | null }) {
+      const result = await client.rpc("gateway_get_payment_verification_result", { p_admin_user_id: input.adminUserId, p_decision: input.decision, p_payment_id: input.paymentId, p_reason: input.reason, p_verification_key: input.idempotencyKey });
+      if (result.error) throw new Error(result.error.message || "payment_repository_error");
+      const value = first(result.data);
+      if (value == null) return null;
+      const row = verificationSchema.parse(value);
+      return { intentId: row.intent_id, paymentId: row.payment_id, slipStatus: row.slip_status };
+    },
     async findReviewSlip(id: string) {
       const result = await client.rpc("admin_get_payment_slip_for_review", { p_slip_id: id });
       if (result.error) throw new Error(result.error.message || "payment_repository_error");
@@ -35,8 +43,8 @@ export function createAdminPaymentRepository(client: AdminPaymentClient) {
       if (result.error) throw new Error(result.error.message || "payment_repository_error");
       return z.array(pendingSchema).parse(result.data ?? []).map((row) => ({ amountSatang: row.amount_satang, contentType: row.content_type, etag: row.etag, id: row.slip_id, kind: row.kind, objectKey: row.object_key, requestId: row.request_id, sizeBytes: row.size_bytes, uploadedAt: row.uploaded_at }));
     },
-    async verify(input: { decision: "approve" | "reject"; idempotencyKey: string; paymentId: string; reason: string | null }) {
-      const result = await client.rpc("admin_verify_payment_slip", { p_decision: input.decision, p_payment_id: input.paymentId, p_reason: input.reason, p_verification_key: input.idempotencyKey });
+    async verify(input: { adminUserId: string; decision: "approve" | "reject"; idempotencyKey: string; paymentId: string; reason: string | null }) {
+      const result = await client.rpc("gateway_verify_payment_slip", { p_admin_user_id: input.adminUserId, p_decision: input.decision, p_payment_id: input.paymentId, p_reason: input.reason, p_verification_key: input.idempotencyKey });
       if (result.error) throw new Error(result.error.message || "payment_repository_error");
       const row = verificationSchema.parse(first(result.data));
       return { intentId: row.intent_id, paymentId: row.payment_id, slipStatus: row.slip_status };

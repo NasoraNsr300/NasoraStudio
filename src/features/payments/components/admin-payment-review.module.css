@@ -24,5 +24,8 @@
 .rejectBox input { background: var(--admin-input, #0a1629); border: 1px solid var(--admin-border, #253551); border-radius: 5px; color: inherit; min-height: 30px; padding: 0 7px; }
 .rejectBox p { color: #ef6675; margin: 0; }
 .empty { color: var(--admin-muted, #9aa7be); padding: 35px !important; text-align: center !important; }
+.loadError, .previewError { color: #ef6675; }
+.previewError { font-size: 10px; margin: 6px 0 0; max-width: 150px; }
+.nextPage { color: var(--brand-gold); display: inline-block; font-size: 12px; margin-top: 14px; }
 :global(html[data-theme="autumn"]) .rejectBox input { background: #fffdf8; color: #2b2118; }
 @media (max-width: 760px) { .metricRow { grid-template-columns: 1fr; } }

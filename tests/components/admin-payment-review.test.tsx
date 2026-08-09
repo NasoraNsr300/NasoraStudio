@@ -63,4 +63,11 @@ describe("AdminPaymentReview", () => {
     await user.click(screen.getByRole("button", { name: /ต่ออายุลิงก์|renew/i }));
     expect(onRefresh).toHaveBeenCalledOnce();
   });
+
+  it("shows an object validation failure without dropping the row and exposes the next page", () => {
+    render(<AdminPaymentReview nextPageHref="/admin/payments?beforeUploadedAt=next" payments={[{ ...payment, previewError: "ตรวจสอบไฟล์ไม่สำเร็จ", previewUrl: null }]} />);
+    expect(screen.getByText("ตรวจสอบไฟล์ไม่สำเร็จ")).toBeVisible();
+    expect(screen.getByText(payment.requestId.slice(0, 8))).toBeVisible();
+    expect(screen.getByRole("link", { name: /หน้าถัดไป|next page/i })).toHaveAttribute("href", "/admin/payments?beforeUploadedAt=next");
+  });
 });

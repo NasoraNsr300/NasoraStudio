@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  adminRepository: { findReviewSlip: vi.fn(), verify: vi.fn() },
+  adminRepository: { findReviewSlip: vi.fn(), findVerificationResult: vi.fn(), verify: vi.fn() },
   createAdminPaymentRepository: vi.fn(),
   createClient: vi.fn(),
   createPaymentGatewayClient: vi.fn(),
@@ -81,6 +81,13 @@ describe("payment mutation routes", () => {
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
   });
 
+  it("validates the server-only Supabase secret before creating an intent", async () => {
+    mocks.createPaymentGatewayClient.mockImplementationOnce(() => { throw new Error("payment_gateway_not_configured"); });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(503);
+    expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
+  });
+
   it("uses only the request URL for same-origin validation and requires exact JSON", async () => {
     const spoofed = post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }, { "x-forwarded-host": "attacker.example" });
     expect((await createIntent(spoofed, { params: Promise.resolve({ quoteId }) })).status).toBe(200);
@@ -93,6 +100,12 @@ describe("payment mutation routes", () => {
     const extra = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, extra: true, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
     expect(badId.status).toBe(400);
     expect(extra.status).toBe(400);
+  });
+
+  it("returns conflict when another idempotency key already owns the pending intent", async () => {
+    mocks.paymentRepository.createIntent.mockRejectedValueOnce(new Error("payment_intent_pending"));
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(409);
   });
 
   it("uploads a validated image once through the same-origin gateway without returning a bearer URL", async () => {
@@ -114,9 +127,11 @@ describe("payment mutation routes", () => {
   });
 
   it("rejects spoofed or truncated image bytes before allocating", async () => {
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/private.png", status: "authorized" });
     const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(415);
-    expect(mocks.paymentRepository.allocateSlip).not.toHaveBeenCalled();
+    expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledBefore(mocks.paymentRepository.failSlip);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" });
   });
 
   it("deletes an object and marks the allocation failed when finalization fails", async () => {
@@ -144,10 +159,42 @@ describe("payment mutation routes", () => {
     mocks.createClient.mockResolvedValue(authClient("admin"));
     mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
     mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "\"etag\"", sizeBytes: 123 });
+    mocks.adminRepository.findVerificationResult.mockResolvedValue(null);
     mocks.adminRepository.verify.mockResolvedValue({ intentId: paymentId, paymentId: "fed71710-0713-44e5-8712-6105a0cd57bc", slipStatus: "approved" });
     const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
-    expect(mocks.adminRepository.verify).toHaveBeenCalledWith({ decision: "approve", idempotencyKey, paymentId, reason: null });
+    expect(mocks.adminRepository.verify).toHaveBeenCalledWith({ adminUserId: "user-1", decision: "approve", idempotencyKey, paymentId, reason: null });
+  });
+
+  it("replays a terminal decision before HEAD after a lost response", async () => {
+    const terminal = { intentId: paymentId, paymentId: "fed71710-0713-44e5-8712-6105a0cd57bc", slipStatus: "approved" };
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findVerificationResult.mockResolvedValue(terminal);
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(terminal);
+    expect(mocks.storage.headObject).not.toHaveBeenCalled();
+    expect(mocks.adminRepository.verify).not.toHaveBeenCalled();
+  });
+
+  it("returns conflict when a terminal decision is retried with another key", async () => {
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findVerificationResult.mockRejectedValue(new Error("idempotency_key_mismatch"));
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(409);
+    expect(mocks.storage.headObject).not.toHaveBeenCalled();
+  });
+
+  it("rejects a pending slip even when its R2 object is missing", async () => {
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findVerificationResult.mockResolvedValue(null);
+    mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", id: paymentId, objectKey: "payment-slips/missing.jpg", sizeBytes: 123 });
+    mocks.adminRepository.verify.mockResolvedValue({ intentId: paymentId, paymentId: null, slipStatus: "rejected" });
+    mocks.storage.deleteObject.mockRejectedValue(new Error("r2_object_not_found"));
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "reject", idempotencyKey, reason: "Unreadable" }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(200);
+    expect(mocks.storage.headObject).not.toHaveBeenCalled();
+    expect(mocks.adminRepository.verify).toHaveBeenCalled();
   });
 
   it("requires the exact immutable admin identity", async () => {
@@ -160,6 +207,7 @@ describe("payment mutation routes", () => {
   it("does not approve when the persisted and current R2 ETags differ", async () => {
     mocks.createClient.mockResolvedValue(authClient("admin"));
     mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "expected", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
+    mocks.adminRepository.findVerificationResult.mockResolvedValue(null);
     mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "changed", sizeBytes: 123 });
     const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(422);

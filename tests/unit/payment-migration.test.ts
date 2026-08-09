@@ -32,6 +32,12 @@ describe("payment deposit workflow migration", () => {
     expect(migration).toContain("payments_prevent_mutation");
     expect(migration).toContain("raise exception 'verified_payments_are_append_only'");
     expect(migration).toMatch(/unique index payments_one_deposit_per_request[^;]+request_id[^;]+where kind = 'deposit'/);
+    expect(privateFunction("create_payment_intent")).toContain("raise exception 'payment_intent_pending'");
+    const createIntent = privateFunction("create_payment_intent");
+    expect(createIntent).toContain("idempotency_key = p_idempotency_key");
+    expect(createIntent.indexOf("idempotency_key = p_idempotency_key")).toBeLessThan(createIntent.indexOf("update public.payment_intents intent set status = 'closed'"));
+    expect(createIntent).not.toContain("intent.payload_fingerprint = v_fingerprint and intent.kind = 'deposit'");
+    expect(createIntent).toContain("payment.request_id = p_request_id and payment.kind = 'deposit'");
   });
 
   it("locks and revalidates the current sent non-expired quote when creating and approving", () => {
@@ -55,12 +61,15 @@ describe("payment deposit workflow migration", () => {
     expect(authorize).toContain("v_slip_id uuid := gen_random_uuid()");
     expect(authorize).toContain("'payment-slips/' || gen_random_uuid()::text");
     expect(sql()).not.toMatch(/create function public\.member_authorize_payment_slip[^$]+object_key text/);
-    expect(sql()).toContain("auth.role() <> 'service_role'");
+    expect(sql()).toContain("auth.jwt()) ->> 'role', '') <> 'service_role'");
     expect(sql()).toMatch(/grant execute on function public\.gateway_authorize_payment_slip[^;]+to service_role/);
     expect(migration).toMatch(/object_key[^,]+check[^,]+payment-slips\/\[0-9a-f\]/);
     expect(migration).toMatch(/unique index payment_slips_one_active_per_intent[^;]+status in \('authorized', 'pending_review'\)/);
     expect(authorize).toContain("slip_upload_rate_limited");
     expect(authorize).toContain("created_at > now() - interval '1 hour'");
+    expect(authorize).toContain("pg_advisory_xact_lock");
+    expect(authorize).toContain("created_at <= now() - interval '10 minutes'");
+    expect(authorize).toContain("set status = 'failed'");
   });
 
   it("keeps public tables under RLS with explicit grants and no anonymous access", () => {
@@ -68,7 +77,7 @@ describe("payment deposit workflow migration", () => {
     for (const table of ["payment_intents", "payments", "payment_slips"]) {
       expect(migration).toContain(`alter table public.${table} enable row level security`);
     }
-    expect(migration).toContain("revoke all on public.payment_intents, public.payments, public.payment_slips from public, anon, authenticated");
+    expect(migration).toContain("revoke all on public.payment_intents, public.payments, public.payment_slips from public, anon, authenticated, service_role");
     expect(migration).not.toMatch(/grant [^;]+ to anon/);
     expect(migration).toContain("user_id = (select auth.uid())");
     expect(migration).toContain("private.is_admin()");
@@ -92,11 +101,20 @@ describe("payment deposit workflow migration", () => {
     expect(migration).toContain("set status = 'pending'");
     expect(migration).toContain("set status = 'verified'");
     expect(migration).not.toContain("insert into public.jobs");
+    expect(migration).not.toContain("create function public.admin_verify_payment_slip");
+    expect(migration).toContain("create function public.gateway_verify_payment_slip");
+    expect(migration).toContain("gateway_get_payment_verification_result");
+    expect(privateFunction("get_payment_verification_result")).toContain("raise exception 'idempotency_key_mismatch'");
+    const serviceGrant = migration.match(/grant execute on function public\.gateway_authorize_payment_slip[^;]+to service_role/)?.[0] ?? "";
+    expect(serviceGrant).toContain("public.gateway_verify_payment_slip");
+    expect(migration).not.toMatch(/grant execute on function public\.gateway_verify_payment_slip[^;]+to authenticated/);
+    expect(privateFunction("verify_payment_slip")).toContain("from auth.users");
   });
 
   it("requires a non-empty persisted ETag before review and exposes bounded admin RPC pages", () => {
     const migration = sql();
     expect(privateFunction("finalize_payment_slip")).toContain("nullif(btrim(p_etag), '')");
+    expect(privateFunction("finalize_payment_slip")).toContain("cleanup_required = false");
     expect(migration).toContain("etag_required_for_review");
     expect(migration).toContain("admin_list_pending_payment_slips");
     expect(migration).toContain("least(greatest(p_limit, 1), 50)");
