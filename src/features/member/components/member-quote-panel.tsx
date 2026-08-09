@@ -15,6 +15,7 @@ type Props = {
   locale: Locale;
   now?: string;
   onPayDeposit?: (handoff: DepositPaymentHandoff) => void;
+  paymentBlocked?: boolean;
   paymentPending?: boolean;
   quote: MemberQuote;
 };
@@ -58,11 +59,11 @@ function formatApproximateUsd(satang: number) {
   return new Intl.NumberFormat("en-US", { currency: "USD", maximumFractionDigits: 2, minimumFractionDigits: 2, style: "currency" }).format(satang / 100 / 35);
 }
 
-export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPayDeposit, paymentPending = false, quote }: Props) {
+export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPayDeposit, paymentBlocked = false, paymentPending = false, quote }: Props) {
   const text = copy[locale];
   const isExpired = quote.status === "expired" || (quote.expiresAt !== null && new Date(quote.expiresAt).getTime() <= new Date(now).getTime());
   const isReplaced = quote.status === "superseded";
-  const canPay = !isExpired && !isReplaced && quote.status === "sent";
+  const canPay = !paymentBlocked && !isExpired && !isReplaced && quote.status === "sent";
   const unavailableMessage = isReplaced ? text.replaced : isExpired ? text.expired : null;
 
   return <section aria-label="Quote and deposit" className={styles.quotePanel}>

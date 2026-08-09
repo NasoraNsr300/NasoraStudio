@@ -41,6 +41,7 @@ export function MemberRequestQuotePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentPending, setPaymentPending] = useState(false);
+  const [paymentRecoveryPending, setPaymentRecoveryPending] = useState(true);
   const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
   const [slipStatus, setSlipStatus] = useState<string | null>(null);
   const intentRetryRef = useRef<{ fingerprint: string; key: string } | null>(
@@ -87,7 +88,8 @@ export function MemberRequestQuotePage({
     void fetch(`/api/member/payments/${quote.id}/intent?requestId=${encodeURIComponent(requestId)}`)
       .then(async (response) => response.ok ? response.json() as Promise<PaymentIntent> : null)
       .then((recovered) => { if (active && recovered) setPaymentIntent(recovered); })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => { if (active) setPaymentRecoveryPending(false); });
     return () => { active = false; };
   }, [paymentIntent, quote, requestId, session?.status]);
 
@@ -193,6 +195,7 @@ export function MemberRequestQuotePage({
           <MemberQuotePanel
             locale={locale}
             onPayDeposit={(handoff) => void startDeposit(handoff)}
+            paymentBlocked={activeSlip || paymentRecoveryPending}
             paymentPending={paymentPending}
             quote={quote}
           />

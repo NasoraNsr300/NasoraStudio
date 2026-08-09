@@ -109,6 +109,27 @@ describe("payment deposit workflow migration", () => {
     expect(migration).toContain("public.gateway_finalize_payment_slip(uuid, uuid, uuid, text, text, bigint, uuid)");
   });
 
+  it("charges quota before every newly generated attempt key and uses one lock order for upload and review", () => {
+    const authorize = privateFunction("authorize_payment_slip");
+    const verify = privateFunction("verify_payment_slip");
+    const quotaChecks = [...authorize.matchAll(/from public\.payment_slip_upload_attempts attempt/g)].map((match) => match.index ?? -1);
+    const generations = [...authorize.matchAll(/v_object_key := 'payment-slips\/' \|\| gen_random_uuid\(\)::text/g)].map((match) => match.index ?? -1);
+    expect(quotaChecks).toHaveLength(2);
+    expect(generations).toHaveLength(2);
+    expect(quotaChecks[0]).toBeLessThan(generations[0]);
+    expect(quotaChecks[1]).toBeLessThan(generations[1]);
+    expect(authorize).toContain("attempt.created_at > now() - interval '1 hour'");
+    expect(authorize).toContain(">= 5 then raise exception 'slip_upload_rate_limited'");
+    expect(authorize.indexOf("select * into v_slip")).toBeLessThan(authorize.indexOf("select * into v_intent"));
+    expect(authorize.indexOf("select * into v_intent")).toBeLessThan(authorize.indexOf("select * into v_quote"));
+    expect(verify.indexOf("select * into v_slip")).toBeLessThan(verify.indexOf("select * into v_intent"));
+    expect(verify.indexOf("select * into v_intent")).toBeLessThan(verify.indexOf("select * into v_quote"));
+    const foundKeyBranch = authorize.slice(authorize.indexOf("if v_slip_found then"), authorize.indexOf("if exists (select 1 from public.payment_slips slip where slip.intent_id = p_intent_id"));
+    expect(foundKeyBranch).toContain("other_slip.id <> v_slip.id");
+    expect(foundKeyBranch).toContain("other_slip.status in ('authorized', 'pending_review')");
+    expect(foundKeyBranch.indexOf("raise exception 'payment_slip_active'")).toBeLessThan(foundKeyBranch.indexOf("object_key = v_object_key"));
+  });
+
   it("exposes only a member-owned current pending intent for reload recovery", () => {
     const migration = sql();
     const recovery = privateFunction("get_member_pending_payment_intent");

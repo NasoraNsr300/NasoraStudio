@@ -268,6 +268,7 @@ declare
   v_object_key text;
   v_cleanup_attempt_id uuid;
   v_cleanup_object_key text;
+  v_slip_found boolean;
 begin
   if p_user_id is null then raise exception 'authentication_required' using errcode = '42501'; end if;
   if p_attempt_id is null then raise exception 'invalid_upload_attempt'; end if;
@@ -283,6 +284,9 @@ begin
   )
   update public.payment_slip_upload_attempts attempt set status = 'superseded', cleanup_required = true
     where attempt.attempt_id in (select expired.attempt_id from expired);
+  select * into v_slip from public.payment_slips slip
+    where slip.user_id = p_user_id and slip.upload_key = p_upload_key for update;
+  v_slip_found := found;
   select * into v_intent from public.payment_intents
     where id = p_intent_id and user_id = p_user_id and status = 'pending' for update;
   if not found then raise exception 'payment_intent_not_found'; end if;
@@ -296,9 +300,7 @@ begin
     return;
   end if;
 
-  select * into v_slip from public.payment_slips slip
-    where slip.user_id = p_user_id and slip.upload_key = p_upload_key for update;
-  if found then
+  if v_slip_found then
     if v_slip.intent_id <> p_intent_id or v_slip.content_type <> p_content_type or v_slip.size_bytes <> p_size_bytes then
       raise exception 'idempotency_payload_mismatch';
     end if;
@@ -311,10 +313,19 @@ begin
     end if;
     if v_slip.status not in ('authorized', 'failed') then raise exception 'payment_slip_not_uploadable'; end if;
     if v_slip.status = 'failed' or v_slip.lease_expires_at <= now() then
+      if exists (
+        select 1 from public.payment_slips other_slip
+        where other_slip.intent_id = p_intent_id and other_slip.id <> v_slip.id
+          and other_slip.status in ('authorized', 'pending_review')
+      ) then raise exception 'payment_slip_active'; end if;
       v_cleanup_attempt_id := v_slip.attempt_id;
       v_cleanup_object_key := v_slip.object_key;
       update public.payment_slip_upload_attempts set status = 'superseded', cleanup_required = true
         where attempt_id = v_cleanup_attempt_id;
+      if (select count(*) from public.payment_slip_upload_attempts attempt
+          where attempt.user_id = p_user_id and attempt.created_at > now() - interval '1 hour') >= 5 then
+        raise exception 'slip_upload_rate_limited';
+      end if;
       v_object_key := 'payment-slips/' || gen_random_uuid()::text || '.' || v_extension;
       update public.payment_slips set status = 'authorized',
         object_key = v_object_key,
@@ -331,7 +342,8 @@ begin
   if exists (select 1 from public.payment_slips slip where slip.intent_id = p_intent_id and slip.status in ('authorized', 'pending_review')) then
     raise exception 'payment_slip_active';
   end if;
-  if (select count(*) from public.payment_slips slip where slip.user_id = p_user_id and slip.created_at > now() - interval '1 hour') >= 5 then
+  if (select count(*) from public.payment_slip_upload_attempts attempt
+      where attempt.user_id = p_user_id and attempt.created_at > now() - interval '1 hour') >= 5 then
     raise exception 'slip_upload_rate_limited';
   end if;
   v_object_key := 'payment-slips/' || gen_random_uuid()::text || '.' || v_extension;

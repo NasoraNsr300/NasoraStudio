@@ -24,6 +24,19 @@ const quote: MemberQuote = {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("member payment slip upload", () => {
+  it("keeps the deposit CTA hidden until canonical payment recovery finishes", async () => {
+    const repository = { load: vi.fn(async () => ({ data: quote, ok: true as const })) };
+    let finishRecovery!: () => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => {
+      finishRecovery = () => resolve(new Response(null, { status: 404 }));
+    })));
+    render(<MemberRequestQuotePage locale="en" repository={repository as never} requestId={requestId} />);
+    expect(await screen.findByText("One illustration")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Pay deposit" })).not.toBeInTheDocument();
+    finishRecovery();
+    expect(await screen.findByRole("button", { name: "Pay deposit" })).toBeEnabled();
+  });
+
   it("uses one same-origin raw upload and reuses its key after a failed retry", async () => {
     const repository = { load: vi.fn(async () => ({ data: quote, ok: true as const })) };
     const requests: Array<[RequestInfo | URL, RequestInit | undefined]> = [];
@@ -78,5 +91,6 @@ describe("member payment slip upload", () => {
     expect(await screen.findByText("Slip submitted for review.")).toBeVisible();
     expect(screen.queryByText("must-not-render")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Upload slip")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pay deposit" })).not.toBeInTheDocument();
   });
 });

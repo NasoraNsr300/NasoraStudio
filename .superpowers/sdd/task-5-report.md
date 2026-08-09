@@ -49,7 +49,8 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 - `f9c82d0` — `fix(payments): harden private slip verification flow`
 - `b150b0c` — `fix(payments): close verification trust gaps`
 - `176ae47` — `fix(payments): recover rejected deposit uploads`
-- Concurrent-upload lease hardening: `fix(payments): fence concurrent slip upload attempts` (the commit containing this report).
+- `1cbc407` — `fix(payments): fence concurrent slip upload attempts`
+- Attempt-quota/lock-order hardening: `fix(payments): enforce upload attempt quota` (the commit containing this report).
 
 ## Self-review and remaining concerns
 
@@ -99,3 +100,22 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 6. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus all dynamic payment routes.
 7. Independent third review returned **Ready** with no Critical, Important, or Minor findings after specifically auditing recovery SQL syntax, pre-PUT fencing, durable stale-key cleanup ownership, RLS/revokes, and the active member UI.
 8. No dependency, Cloudflare account, or deployed Supabase environment was changed. Runtime role-matrix/advisor checks and real R2/PromptPay acceptance remain deployment-environment checks.
+
+---
+
+## Attempt-quota and lock-order addendum — 2026-08-10
+
+- The five-per-hour upload quota now counts `payment_slip_upload_attempts`, not canonical slip rows. Both a new upload key and every failed/expired same-key regeneration check the attempt count before generating a new R2 object key. The existing per-user transaction advisory lock serializes count plus insert, so attempt six fails inside authorization before the route reads the body or calls R2; the exception also rolls back stale-cleanup mutations in that transaction.
+- Upload authorization and admin verification now share the row-lock order `payment_slips` → `payment_intents` → `quotes`. A failed old-key retry additionally checks for another active slip on the intent before attempt mutation/key generation/partial-index update. This returns `payment_slip_active` without waiting on that other slip and removes the S1/S2 partial-index deadlock path.
+- The member quote page begins with payment recovery blocked and hides the Pay deposit CTA until canonical recovery settles. It remains hidden for recovered `authorized` and `pending_review` states, preventing duplicate intent requests and avoidable 409 responses.
+
+### TDD and verification evidence
+
+1. RED: migration and member-payment focused tests failed on missing per-attempt quota checks/lock ordering and a visible Pay deposit CTA after active recovery. A deferred-recovery RED test separately reproduced the CTA timing window before GET completion.
+2. GREEN focused: `npm test -- --run tests/unit/payment-domain.test.ts tests/unit/payment-migration.test.ts tests/unit/payment-routes.test.ts tests/unit/payment-r2-storage.test.ts tests/components/member-payment-upload.test.tsx tests/components/member-quote-panel.test.tsx tests/components/admin-payment-review.test.tsx` — PASS, 7 files / 65 tests.
+3. Full suite: `npm test -- --maxWorkers=2` — PASS, 70 files / 322 tests in 55.30s.
+4. `npm run typecheck` — PASS.
+5. `npm run lint` — PASS.
+6. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus all dynamic payment routes.
+7. Independent re-review returned **Ready** with no Critical, Important, or Minor findings after auditing quota rollback/concurrency, FOUND preservation, S1/S2 lock behavior, and recovery timing.
+8. Current Supabase changelog/function-security guidance was rechecked; no relevant breaking change alters this design. No dependency or external deployment mutation was made.
