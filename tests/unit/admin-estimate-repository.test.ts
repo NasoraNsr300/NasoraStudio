@@ -4,11 +4,12 @@ const supabase = vi.hoisted(() => ({ createClient: vi.fn() }));
 
 vi.mock("@/shared/supabase/server", () => supabase);
 
-import { listAdminEstimateRequests } from "@/features/admin/estimates/data/admin-estimate-repository.server";
+import { getAdminEstimateRequest, listAdminEstimateRequests } from "@/features/admin/estimates/data/admin-estimate-repository.server";
 
 function queryResult(data: unknown, error: { message?: string } | null = null) {
   const query = {
     eq: vi.fn(() => query),
+    maybeSingle: vi.fn(async () => ({ data: Array.isArray(data) ? data[0] : data, error })),
     order: vi.fn(async () => ({ data, error })),
     select: vi.fn(() => query),
   };
@@ -106,5 +107,46 @@ describe("listAdminEstimateRequests", () => {
     });
 
     await expect(listAdminEstimateRequests()).rejects.toThrow("Admin access required");
+  });
+});
+
+describe("getAdminEstimateRequest", () => {
+  it("loads the full admin-only brief, private contact, and ordered answers", async () => {
+    const query = queryResult([{
+      background_level: 2,
+      budget_max_satang: 450000,
+      budget_min_satang: 300000,
+      category_name_snapshot: { en: "Illustration", th: "ภาพประกอบ" },
+      contact_snapshot: { kind: "discord", value: "@mali" },
+      description: "Moonlit character",
+      extra_character_count: 1,
+      guest_display_name: null,
+      id: "request-detail",
+      member_display_name_snapshot: "Mali",
+      mood_and_style: "Soft watercolor",
+      prop_count: 2,
+      request_answers: [
+        { display_order: 2, field_key: "late", field_label_snapshot: { en: "Late", th: "หลัง" }, value: "second" },
+        { display_order: 1, field_key: "early", field_label_snapshot: { en: "Early", th: "ก่อน" }, value: "first" },
+      ],
+      request_code: "REQ-ABCDEF1234",
+      requested_deadline: "2026-09-01",
+      requester_type: "member",
+      service_type_name_snapshot: { en: "Full Body", th: "เต็มตัว" },
+      status: "submitted",
+      submitted_at: "2026-08-09T10:00:00.000Z",
+      usage_type: "personal",
+    }]);
+    supabase.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "admin" } } }, error: null })) },
+      from: vi.fn(() => query),
+    });
+
+    const request = await getAdminEstimateRequest("request-detail");
+
+    expect(query.select).toHaveBeenCalledWith(expect.stringContaining("contact_snapshot"));
+    expect(query.select).toHaveBeenCalledWith(expect.stringContaining("request_answers"));
+    expect(request).toMatchObject({ contact: { kind: "discord", value: "@mali" }, customerDisplayName: "Mali", description: "Moonlit character" });
+    expect(request.answers.map((answer) => answer.fieldKey)).toEqual(["early", "late"]);
   });
 });

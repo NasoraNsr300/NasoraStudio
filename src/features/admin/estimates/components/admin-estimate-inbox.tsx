@@ -3,7 +3,9 @@
 import { ChevronDown, Filter, PenLine, Search, UserRound } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { AdminEstimateDetail } from "@/features/admin/estimates/components/admin-estimate-detail";
 import type { AdminEstimateStatus, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
+import type { AdminEstimateDetail as AdminEstimateDetailModel } from "@/features/admin/estimates/domain/admin-estimate";
 import styles from "@/features/admin/components/admin-section-pages.module.css";
 
 type StatusPresentation = { label: string; tone: "danger" | "neutral" | "success" | "violet" | "warning" };
@@ -31,8 +33,10 @@ function formatSubmittedAt(submittedAt: string) {
 }
 
 export function AdminEstimateInbox({
+  detail,
   requests,
 }: {
+  detail?: AdminEstimateDetailModel | null;
   requests: AdminEstimateSummary[];
 }) {
   const pathname = usePathname();
@@ -80,7 +84,8 @@ export function AdminEstimateInbox({
         </tbody>
       </table>
     </section>
-    {openedRequest && <section aria-label={`ตัวอย่างแบบประเมิน ${openedRequest.requestCode}`} className={styles.dataPanel} role="region">
+    {detail && openedRequest && <AdminEstimateDetail request={detail} />}
+    {openedRequest && !detail && <section aria-label={`ตัวอย่างแบบประเมิน ${openedRequest.requestCode}`} className={styles.dataPanel} role="region">
       <div className={styles.toolbar}><strong>แบบประเมิน {openedRequest.requestCode}</strong><button onClick={closePreview} type="button">กลับไปรายการ</button></div>
       <table>
         <tbody>

@@ -17,3 +17,22 @@ export type AdminEstimateSummary = {
 export type AdminEstimateFilters = {
   status?: AdminEstimateStatus;
 };
+
+export type AdminEstimateAnswer = {
+  fieldKey: string;
+  label: { en: string; th: string };
+  value: unknown;
+};
+
+export type AdminEstimateDetail = AdminEstimateSummary & {
+  answers: AdminEstimateAnswer[];
+  backgroundLevel: number;
+  categoryName: { en: string; th: string };
+  contact: { kind: string; value: string };
+  description: string;
+  extraCharacterCount: number;
+  moodAndStyle: string | null;
+  propCount: number;
+  requestedDeadline: string | null;
+  usageType: "commercial" | "personal";
+};

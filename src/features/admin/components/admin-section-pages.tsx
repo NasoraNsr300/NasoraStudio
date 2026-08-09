@@ -3,7 +3,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
-import type { AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
+import type { AdminEstimateDetail, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
 
 import styles from "./admin-section-pages.module.css";
 
@@ -19,7 +19,7 @@ function Status({ children, tone = "neutral" }: { children: ReactNode; tone?: "s
   return <span className={styles.status} data-tone={tone}>● {children}</span>;
 }
 
-export function AdminEstimatesPage({ requests = [] }: { requests?: AdminEstimateSummary[] }) {
+export function AdminEstimatesPage({ detail, requests = [] }: { detail?: AdminEstimateDetail | null; requests?: AdminEstimateSummary[] }) {
   const submittedCount = requests.filter((request) => request.status === "submitted").length;
   const quotedCount = requests.filter((request) => request.status === "quoted").length;
   const convertedCount = requests.filter((request) => request.status === "converted").length;
@@ -27,7 +27,7 @@ export function AdminEstimatesPage({ requests = [] }: { requests?: AdminEstimate
   return <section className={styles.sectionPage}>
     <PageHeader action="สร้างใบเสนอราคา" description="ตรวจแบบประเมิน กำหนดราคาจริง และส่งข้อเสนอให้ลูกค้า" icon={<FileText size={25} />} title="แบบประเมิน" />
     <div className={styles.metricRow}><article><small>รอประเมิน</small><strong>{submittedCount}</strong><span>จากแบบประเมินทั้งหมด {requests.length} รายการ</span></article><article><small>ส่งราคาแล้ว</small><strong>{quotedCount}</strong><span>รอลูกค้าตอบรับ</span></article><article><small>ยืนยันแล้ว</small><strong>{convertedCount}</strong><span>รายการที่เปลี่ยนเป็นงานแล้ว</span></article></div>
-    <AdminEstimateInbox requests={requests} />
+    <AdminEstimateInbox detail={detail} requests={requests} />
   </section>;
 }
 
