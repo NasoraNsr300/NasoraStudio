@@ -33,7 +33,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     const replay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
     if (replay) return Response.json(replay);
     const slip = await memberScopedRepository.findReviewSlip(paymentId.data);
-    if (!slip) return Response.json({ error: "Payment slip not found" }, { status: 404 });
+    if (!slip) {
+      const concurrentReplay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
+      return concurrentReplay ? Response.json(concurrentReplay) : Response.json({ error: "Payment slip not found" }, { status: 404 });
+    }
     if (decision === "approve") {
       const actual = await createR2SlipStorage().headObject(slip.objectKey);
       if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });

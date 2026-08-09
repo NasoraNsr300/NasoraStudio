@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   createPaymentGatewayClient: vi.fn(),
   createPaymentRepository: vi.fn(),
   createR2SlipStorage: vi.fn(),
-  paymentRepository: { allocateSlip: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn() },
+  paymentRepository: { allocateSlip: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn(), recoverIntent: vi.fn() },
   storage: { deleteObject: vi.fn(), headObject: vi.fn(), putObject: vi.fn() },
 }));
 
@@ -17,7 +17,7 @@ vi.mock("@/features/payments/data/payment-repository", () => ({ createPaymentRep
 vi.mock("@/features/payments/data/admin-payment-repository.server", () => ({ createAdminPaymentRepository: mocks.createAdminPaymentRepository }));
 vi.mock("@/features/payments/storage/r2-slip-storage.server", () => ({ createR2SlipStorage: mocks.createR2SlipStorage, normalizeEtag: (value: string) => value.replace(/^W\//, "").replace(/^\"|\"$/g, "").trim() }));
 
-import { POST as createIntent } from "@/app/api/member/payments/[quoteId]/intent/route";
+import { GET as recoverIntent, POST as createIntent } from "@/app/api/member/payments/[quoteId]/intent/route";
 import { POST as uploadSlip } from "@/app/api/member/payments/[paymentId]/slip-upload/route";
 import { POST as verifySlip } from "@/app/api/admin/payments/[paymentId]/verify/route";
 
@@ -48,13 +48,16 @@ function authClient(role = "member", email = role === "admin" ? "nasora.nsr300@g
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.adminRepository.findVerificationResult.mockReset().mockResolvedValue(null);
+  mocks.paymentRepository.createIntent.mockReset();
+  mocks.paymentRepository.recoverIntent.mockReset();
+  mocks.storage.deleteObject.mockReset().mockResolvedValue(undefined);
   process.env.PROMPTPAY_ID = "0812345678";
   mocks.createClient.mockResolvedValue(authClient());
   mocks.createPaymentGatewayClient.mockReturnValue({ rpc: vi.fn() });
   mocks.createPaymentRepository.mockReturnValue(mocks.paymentRepository);
   mocks.createAdminPaymentRepository.mockReturnValue(mocks.adminRepository);
   mocks.createR2SlipStorage.mockReturnValue(mocks.storage);
-  mocks.storage.deleteObject.mockResolvedValue(undefined);
   mocks.paymentRepository.failSlip.mockResolvedValue(undefined);
   mocks.paymentRepository.createIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", status: "pending" });
 });
@@ -108,6 +111,21 @@ describe("payment mutation routes", () => {
     expect(response.status).toBe(409);
   });
 
+  it("does not return PromptPay data when an exact-key replay is already closed", async () => {
+    mocks.paymentRepository.createIntent.mockResolvedValueOnce({ amountSatang: 50_000, id: paymentId, kind: "deposit", status: "closed" });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(409);
+    expect(await response.json()).not.toHaveProperty("promptPayPayload");
+  });
+
+  it("recovers a canonical pending intent with a regenerated PromptPay payload", async () => {
+    mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, status: "pending" });
+    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, promptPayPayload: expect.stringMatching(/6304[0-9A-F]{4}$/), status: "pending" });
+    expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
+  });
+
   it("uploads a validated image once through the same-origin gateway without returning a bearer URL", async () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/025f6aa2-6227-4b74-a833-e9fca9db998a.png", status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
@@ -132,6 +150,16 @@ describe("payment mutation routes", () => {
     expect(response.status).toBe(415);
     expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledBefore(mocks.paymentRepository.failSlip);
     expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" });
+  });
+
+  it("best-effort deletes an orphan before failing reused authorized rows with invalid bytes", async () => {
+    const objectKey = "payment-slips/orphan.png";
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey, status: "authorized" });
+    mocks.storage.deleteObject.mockRejectedValueOnce(new Error("r2_delete_failed"));
+    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(415);
+    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(objectKey);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" });
   });
 
   it("deletes an object and marks the allocation failed when finalization fails", async () => {
@@ -175,6 +203,17 @@ describe("payment mutation routes", () => {
     expect(await response.json()).toEqual(terminal);
     expect(mocks.storage.headObject).not.toHaveBeenCalled();
     expect(mocks.adminRepository.verify).not.toHaveBeenCalled();
+  });
+
+  it("rechecks terminal replay before returning 404 after a concurrent commit", async () => {
+    const terminal = { intentId: paymentId, paymentId: "fed71710-0713-44e5-8712-6105a0cd57bc", slipStatus: "approved" };
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findVerificationResult.mockResolvedValueOnce(null).mockResolvedValueOnce(terminal);
+    mocks.adminRepository.findReviewSlip.mockResolvedValue(null);
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(terminal);
+    expect(mocks.adminRepository.findVerificationResult).toHaveBeenCalledTimes(2);
   });
 
   it("returns conflict when a terminal decision is retried with another key", async () => {

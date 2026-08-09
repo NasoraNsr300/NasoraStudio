@@ -9,22 +9,44 @@ import { createClient } from "@/shared/supabase/server";
 
 const bodySchema = z.object({ depositSatang: z.number().int().positive(), idempotencyKey: z.uuid(), requestId: z.uuid() }).strict();
 
+function paymentConfiguration(amountSatang: number) {
+  const promptPayId = process.env.PROMPTPAY_ID?.trim();
+  if (!promptPayId) throw new Error("payment_not_configured");
+  const promptPayPayload = createPromptPayPayload(promptPayId, amountSatang);
+  createR2SlipStorage();
+  createPaymentGatewayClient();
+  return promptPayPayload;
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ quoteId: string }> }) {
+  const quoteId = z.uuid().safeParse((await params).quoteId);
+  const requestId = z.uuid().safeParse(new URL(request.url).searchParams.get("requestId"));
+  if (!quoteId.success || !requestId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
+  const client = await createClient();
+  const user = await authenticatedUser(client);
+  if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
+  try {
+    const intent = await createPaymentRepository(client as unknown as PaymentClient).recoverIntent({ quoteId: quoteId.data, requestId: requestId.data });
+    if (!intent) return Response.json({ error: "Payment intent not found" }, { status: 404 });
+    const promptPayPayload = paymentConfiguration(intent.amountSatang);
+    return Response.json({ amountSatang: intent.amountSatang, kind: intent.kind, paymentId: intent.id, promptPayPayload, quoteId: intent.quoteId, status: intent.status }, { headers: { "cache-control": "private, no-store" } });
+  } catch {
+    return Response.json({ error: "Payment service is not configured" }, { status: 503 });
+  }
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ quoteId: string }> }) {
   const quoteId = z.uuid().safeParse((await params).quoteId);
   if (!quoteId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   const rejected = acceptsMutation(request);
   if (rejected) return Response.json({ error: rejected.error }, { status: rejected.status });
-  const promptPayId = process.env.PROMPTPAY_ID?.trim();
-  if (!promptPayId) return Response.json({ error: "Payment service is not configured" }, { status: 503 });
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "Invalid request" }, { status: 400 }); }
   const input = bodySchema.safeParse(body);
   if (!input.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   let promptPayPayload: string;
   try {
-    promptPayPayload = createPromptPayPayload(promptPayId, input.data.depositSatang);
-    createR2SlipStorage();
-    createPaymentGatewayClient();
+    promptPayPayload = paymentConfiguration(input.data.depositSatang);
   } catch {
     return Response.json({ error: "Payment service is not configured" }, { status: 503 });
   }

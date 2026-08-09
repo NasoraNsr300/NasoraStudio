@@ -80,6 +80,16 @@ export function MemberRequestQuotePage({
     };
   }, [getRepository, requestId, session?.status]);
 
+  useEffect(() => {
+    if (session?.status !== "signedIn" || !quote || paymentIntent) return;
+    let active = true;
+    void fetch(`/api/member/payments/${quote.id}/intent?requestId=${encodeURIComponent(requestId)}`)
+      .then(async (response) => response.ok ? response.json() as Promise<{ amountSatang: number; paymentId: string; promptPayPayload: string }> : null)
+      .then((recovered) => { if (active && recovered) setPaymentIntent(recovered); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [paymentIntent, quote, requestId, session?.status]);
+
   async function startDeposit(handoff: DepositPaymentHandoff) {
     setPaymentPending(true);
     setError(null);

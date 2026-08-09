@@ -17,7 +17,7 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 
 ## Security and behavior evidence
 
-- Exact intent idempotency is checked before stale closure/revalidation, so a retry returns the original logical result. A different key cannot alias an existing pending intent. Intent creation and approval lock and revalidate the latest `sent`, non-expired quote; deposit uniqueness spans quote versions for the request.
+- Exact intent idempotency returns terminal results immediately, while a still-pending exact-key retry first closes stale intents and revalidates the latest `sent`, non-expired quote before returning it. A different key cannot alias an existing pending intent. Intent creation and approval lock and revalidate the payable quote; deposit uniqueness spans quote versions for the request.
 - PromptPay, R2, and `SUPABASE_SECRET_KEY` configuration are all validated before the intent mutation. PromptPay has official/golden CRC vectors, exact 15-digit e-wallet validation, and integer-satang amount handling.
 - Browser clients receive neither R2 bearer URLs for upload nor object keys/ETags. Only the server gateway can execute authorize/finalize/fail/verification wrappers. Direct private functions and the verification mutation are revoked from `public`, `anon`, `authenticated`, and `service_role`; only the minimum public wrappers are granted back to the needed role. Base payment-table privileges are also revoked from all four roles before narrow member reads are granted.
 - Upload authorization is serialized per user with a transaction advisory lock, expires abandoned `authorized` reservations after 10 minutes, enforces one active slip per intent and five reservations per hour, and occurs before reading the request body. Failed validation releases the active reservation; failed/partial object writes are deleted immediately when possible and recorded for cleanup otherwise. Retrying a reclaimed reservation clears `cleanup_required` on successful finalization.
@@ -47,7 +47,8 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 
 - `6e8b185` — `feat(payments): add PromptPay deposit and slip verification`
 - `f9c82d0` — `fix(payments): harden private slip verification flow`
-- Final security re-review hardening: `fix(payments): close verification trust gaps` (the commit containing this report).
+- `b150b0c` — `fix(payments): close verification trust gaps`
+- Final recovery/replay hardening: `fix(payments): recover rejected deposit uploads` (the commit containing this report).
 
 ## Self-review and remaining concerns
 
@@ -55,3 +56,24 @@ Complete locally. Members create an idempotent exact-deposit intent from the cur
 - Independent re-review confirmed both final edge-case fixes and returned **Ready: Yes**, with no remaining blocker in scope.
 - Supabase runtime role-matrix tests, database advisors, real R2 operations/lifecycle deployment, and a banking-app PromptPay scan still require deployment credentials/environment and were not executed locally.
 - R2 lifecycle deletion may occur after the nominal 30-day timestamp; permanent ledger/slip metadata intentionally remains.
+
+---
+
+## Final recovery/replay addendum — 2026-08-10
+
+- A pending exact-key intent replay no longer bypasses payable-quote validation. Terminal rows can replay early, but pending rows pass stale closure and current latest-version, `sent`, non-expired quote checks; a stale row closes and the route returns a safe conflict without PromptPay data.
+- Added authenticated `member_get_pending_payment_intent(quote_id, request_id)`. Its private implementation requires `auth.uid()` ownership and a current payable quote, and the exposed row contains only `intent_id`, `quote_id`, amount, kind, and status. Object keys, ETags, idempotency keys, and fingerprints remain private.
+- The member quote screen recovers this canonical pending intent after reload and obtains a newly generated PromptPay payload from fully validated server configuration, without creating another intent. A rejected slip can therefore be replaced using the same payment intent after navigation/reload.
+- Admin verification performs a second terminal replay lookup before returning 404 when the pending-review read loses a race with a concurrent commit.
+- Reused upload authorizations may still be `authorized` after a crash following R2 PUT, so every invalid body/magic/MIME exit performs best-effort orphan deletion for both `authorized` and `failed` allocations. Failed/expired rows are also cleaned before a valid retry PUT. Invalid replacement bytes persist `cleanup_required = true` when deletion fails; the fail RPC can safely update both states.
+
+### TDD and final evidence
+
+1. RED: the focused migration/route/member-upload run failed on all four requested regressions before production changes.
+2. GREEN focused: `npm test -- --run tests/unit/payment-domain.test.ts tests/unit/payment-migration.test.ts tests/unit/payment-routes.test.ts tests/unit/payment-r2-storage.test.ts tests/components/member-payment-upload.test.tsx tests/components/admin-payment-review.test.tsx` — PASS, 6 files / 52 tests.
+3. Full suite: `npm test -- --maxWorkers=2` — PASS, 70 files / 313 tests in 56.02s.
+4. `npm run typecheck` — PASS.
+5. `npm run lint` — PASS.
+6. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus all dynamic payment routes.
+7. No dependency or Cloudflare deployment change was made. Supabase runtime role-matrix/advisor checks and real R2/PromptPay acceptance remain deployment-environment checks.
+8. Independent final re-review verified the `authorized` orphan-crash path and returned **Ready: Yes** with no remaining blocker in scope.

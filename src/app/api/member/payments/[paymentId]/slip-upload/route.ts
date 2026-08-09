@@ -52,6 +52,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   const client = await createClient();
   const user = await authenticatedUser(client);
   if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
+  const userId = user.id;
+  const idempotencyKey = uploadKey.data;
 
   let repository: ReturnType<typeof createPaymentRepository>;
   let storage: ReturnType<typeof createR2SlipStorage>;
@@ -70,24 +72,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     const status = message === "r2_not_configured" || message === "payment_gateway_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") ? 409 : 400;
     return Response.json({ error: status === 503 ? "Slip storage is not configured" : status === 429 ? "Too many slip uploads" : "Unable to process payment slip" }, { status });
   }
+  let orphanCleanupRequired = allocated.status === "failed";
+  let orphanDeleteAttempted = false;
+  async function deletePossibleOrphan() {
+    if (orphanDeleteAttempted) return;
+    orphanDeleteAttempted = true;
+    try { await storage.deleteObject(allocated.objectKey); orphanCleanupRequired = false; }
+    catch { orphanCleanupRequired = true; }
+  }
+  async function failInvalidAllocation() {
+    await deletePossibleOrphan();
+    await repository.failSlip({ cleanupRequired: orphanCleanupRequired, idempotencyKey, slipId: allocated.id, userId }).catch(() => undefined);
+  }
+  if (allocated.status === "failed") await deletePossibleOrphan();
 
   let bytes: Uint8Array;
   try {
     bytes = await readBoundedBody(request);
     if (bytes.byteLength !== declaredSize) throw new Error("slip_size_mismatch");
   } catch (error) {
-    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    await failInvalidAllocation();
     const tooLarge = error instanceof Error && error.message === "slip_too_large";
     return Response.json({ error: tooLarge ? "Slip exceeds 5 MiB" : "Invalid slip image" }, { status: tooLarge ? 413 : 415 });
   }
   let detectedType: string;
   try { detectedType = detectSlipContentType(bytes); }
   catch {
-    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    await failInvalidAllocation();
     return Response.json({ error: "Invalid slip image" }, { status: 415 });
   }
   if (detectedType !== declaredType) {
-    await repository.failSlip({ cleanupRequired: false, idempotencyKey: uploadKey.data, slipId: allocated.id, userId: user.id }).catch(() => undefined);
+    await failInvalidAllocation();
     return Response.json({ error: "Image bytes do not match Content-Type" }, { status: 415 });
   }
 

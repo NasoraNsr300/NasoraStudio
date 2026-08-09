@@ -7,6 +7,7 @@ export type PaymentClient = {
 };
 
 const intentSchema = z.object({ amount_satang: z.coerce.number().int().positive(), intent_id: z.uuid(), kind: z.enum(["deposit", "installment", "final"]), status: z.enum(["pending", "verified", "closed"]) });
+const recoveredIntentSchema = intentSchema.extend({ quote_id: z.uuid() });
 const authorizationSchema = z.object({ object_key: z.string().startsWith("payment-slips/"), slip_id: z.uuid(), slip_status: z.enum(["authorized", "pending_review", "failed"]) });
 const finalizationSchema = z.object({ slip_id: z.uuid(), slip_status: z.literal("pending_review") });
 
@@ -25,6 +26,14 @@ export function createPaymentRepository(client: PaymentClient) {
       if (!result.error && first(result.data) == null) throw new Error("quote_not_payable");
       const row = requireResult(result, intentSchema);
       return { amountSatang: row.amount_satang, id: row.intent_id, kind: row.kind, status: row.status };
+    },
+    async recoverIntent(input: { quoteId: string; requestId: string }) {
+      const result = await client.rpc("member_get_pending_payment_intent", { p_quote_id: input.quoteId, p_request_id: input.requestId });
+      if (result.error) throw new Error(result.error.message || "payment_repository_error");
+      const value = first(result.data);
+      if (value == null) return null;
+      const row = recoveredIntentSchema.parse(value);
+      return { amountSatang: row.amount_satang, id: row.intent_id, kind: row.kind, quoteId: row.quote_id, status: row.status };
     },
     async allocateSlip(input: { contentType: string; idempotencyKey: string; paymentId: string; sizeBytes: number; userId: string }) {
       const result = await client.rpc("gateway_authorize_payment_slip", { p_content_type: input.contentType, p_intent_id: input.paymentId, p_size_bytes: input.sizeBytes, p_upload_key: input.idempotencyKey, p_user_id: input.userId });

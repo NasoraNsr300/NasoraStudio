@@ -35,7 +35,8 @@ describe("payment deposit workflow migration", () => {
     expect(privateFunction("create_payment_intent")).toContain("raise exception 'payment_intent_pending'");
     const createIntent = privateFunction("create_payment_intent");
     expect(createIntent).toContain("idempotency_key = p_idempotency_key");
-    expect(createIntent.indexOf("idempotency_key = p_idempotency_key")).toBeLessThan(createIntent.indexOf("update public.payment_intents intent set status = 'closed'"));
+    expect(createIntent).toContain("if v_existing.status <> 'pending' then");
+    expect(createIntent.indexOf("update public.payment_intents intent set status = 'closed'")).toBeLessThan(createIntent.indexOf("if v_existing.id is not null then"));
     expect(createIntent).not.toContain("intent.payload_fingerprint = v_fingerprint and intent.kind = 'deposit'");
     expect(createIntent).toContain("payment.request_id = p_request_id and payment.kind = 'deposit'");
   });
@@ -70,6 +71,22 @@ describe("payment deposit workflow migration", () => {
     expect(authorize).toContain("pg_advisory_xact_lock");
     expect(authorize).toContain("created_at <= now() - interval '10 minutes'");
     expect(authorize).toContain("set status = 'failed'");
+    expect(privateFunction("fail_payment_slip")).toContain("status in ('authorized', 'failed')");
+  });
+
+  it("exposes only a member-owned current pending intent for reload recovery", () => {
+    const migration = sql();
+    const recovery = privateFunction("get_member_pending_payment_intent");
+    expect(recovery).toContain("request.user_id = auth.uid()");
+    expect(recovery).toContain("intent.status = 'pending'");
+    expect(recovery).toContain("quote.status = 'sent'");
+    expect(recovery).toContain("newer.version > quote.version");
+    expect(migration).toContain("create function public.member_get_pending_payment_intent");
+    const memberGrant = migration.match(/grant execute on function public\.member_create_payment_intent[^;]+to authenticated/)?.[0] ?? "";
+    expect(memberGrant).toContain("public.member_get_pending_payment_intent(uuid, uuid)");
+    const exposed = migration.match(/create function public\.member_get_pending_payment_intent[^$]+returns table\(([^)]+)\)/)?.[1] ?? "";
+    expect(exposed).toContain("intent_id uuid");
+    expect(exposed).not.toMatch(/object_key|etag|fingerprint|idempotency/);
   });
 
   it("keeps public tables under RLS with explicit grants and no anonymous access", () => {

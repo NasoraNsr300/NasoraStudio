@@ -30,6 +30,7 @@ describe("member payment slip upload", () => {
     let uploadAttempts = 0;
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       requests.push([input, init]);
+      if (init?.method !== "POST") return new Response(null, { status: 404 });
       if (String(input).endsWith("/intent")) return Response.json({ amountSatang: 50_000, paymentId, promptPayPayload: "qr" });
       uploadAttempts += 1;
       return uploadAttempts === 1 ? new Response(null, { status: 503 }) : Response.json({ slipId: "a2eae2d8-f2ed-47bd-8335-43a79e33e4b7", status: "pending_review" });
@@ -51,5 +52,22 @@ describe("member payment slip upload", () => {
     expect(uploads[0][1]?.method).toBe("POST");
     expect(uploads[0][1]?.body).toBe(file);
     expect((uploads[0][1]?.headers as Record<string, string>)["idempotency-key"]).toBe((uploads[1][1]?.headers as Record<string, string>)["idempotency-key"]);
+  });
+
+  it("hydrates a rejected intent after reload so a replacement slip can be uploaded", async () => {
+    const repository = { load: vi.fn(async () => ({ data: quote, ok: true as const })) };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return Response.json({ status: "pending_review" });
+      return Response.json({ amountSatang: 50_000, kind: "deposit", paymentId, promptPayPayload: "recovered-qr", quoteId, status: "pending" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<MemberRequestQuotePage locale="en" repository={repository as never} requestId={requestId} />);
+    expect(await screen.findByText("recovered-qr")).toBeVisible();
+    const input = screen.getByLabelText("Upload slip") as HTMLInputElement;
+    const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], "replacement.png", { type: "image/png" });
+    await user.upload(input, file);
+    await screen.findByText("Slip submitted for review.");
+    expect(fetchMock).toHaveBeenCalledWith(`/api/member/payments/${paymentId}/slip-upload`, expect.objectContaining({ method: "POST" }));
   });
 });

@@ -137,8 +137,10 @@ begin
     where intent.user_id = auth.uid() and intent.idempotency_key = p_idempotency_key;
   if found then
     if v_existing.payload_fingerprint <> v_fingerprint then raise exception 'idempotency_payload_mismatch'; end if;
-    return query select v_existing.id, v_existing.amount_satang, v_existing.kind, v_existing.status;
-    return;
+    if v_existing.status <> 'pending' then
+      return query select v_existing.id, v_existing.amount_satang, v_existing.kind, v_existing.status;
+      return;
+    end if;
   end if;
 
   update public.payment_intents intent set status = 'closed'
@@ -162,6 +164,11 @@ begin
       )
     for update;
   if not found then
+    return;
+  end if;
+
+  if v_existing.id is not null then
+    return query select v_existing.id, v_existing.amount_satang, v_existing.kind, v_existing.status;
     return;
   end if;
 
@@ -198,6 +205,25 @@ begin
   into intent_id, amount_satang, kind, status;
   return next;
 end;
+$$;
+
+create function private.get_member_pending_payment_intent(p_quote_id uuid, p_request_id uuid)
+returns table(intent_id uuid, quote_id uuid, amount_satang bigint, kind text, status text)
+language sql stable security definer set search_path = '' as $$
+  select intent.id, intent.quote_id, intent.amount_satang, intent.kind, intent.status
+  from public.payment_intents intent
+  join public.commission_requests request on request.id = intent.request_id
+  join public.quotes quote on quote.id = intent.quote_id and quote.request_id = request.id
+  where intent.quote_id = p_quote_id and intent.request_id = p_request_id
+    and intent.user_id = auth.uid() and request.user_id = auth.uid()
+    and intent.status = 'pending' and quote.status = 'sent'
+    and (quote.expires_at is null or quote.expires_at > now())
+    and not exists (
+      select 1 from public.quotes newer
+      where newer.request_id = quote.request_id and newer.version > quote.version
+    )
+  order by intent.created_at desc
+  limit 1;
 $$;
 
 create function private.authorize_payment_slip(
@@ -285,7 +311,7 @@ returns void language plpgsql security definer set search_path = '' as $$
 begin
   if p_user_id is null then raise exception 'authentication_required' using errcode = '42501'; end if;
   update public.payment_slips set status = 'failed', etag = null, cleanup_required = p_cleanup_required
-    where id = p_slip_id and user_id = p_user_id and upload_key = p_upload_key and status = 'authorized';
+    where id = p_slip_id and user_id = p_user_id and upload_key = p_upload_key and status in ('authorized', 'failed');
 end;
 $$;
 
@@ -413,6 +439,11 @@ returns table(intent_id uuid, amount_satang bigint, kind text, status text)
 language plpgsql security definer set search_path = '' as $$
 begin if auth.uid() is null then raise exception 'authentication_required' using errcode = '42501'; end if;
 return query select * from private.create_payment_intent(p_quote_id, p_request_id, p_amount_satang, p_idempotency_key); end; $$;
+create function public.member_get_pending_payment_intent(p_quote_id uuid, p_request_id uuid)
+returns table(intent_id uuid, quote_id uuid, amount_satang bigint, kind text, status text)
+language plpgsql security definer set search_path = '' as $$
+begin if auth.uid() is null then raise exception 'authentication_required' using errcode = '42501'; end if;
+return query select * from private.get_member_pending_payment_intent(p_quote_id, p_request_id); end; $$;
 create function public.gateway_authorize_payment_slip(p_user_id uuid, p_intent_id uuid, p_content_type text, p_size_bytes bigint, p_upload_key uuid)
 returns table(slip_id uuid, object_key text, content_type text, size_bytes bigint, slip_status text, delete_after timestamptz)
 language plpgsql security definer set search_path = '' as $$
@@ -449,18 +480,19 @@ begin if coalesce((select auth.jwt()) ->> 'role', '') <> 'service_role' then rai
 return query select * from private.verify_payment_slip(p_admin_user_id, p_payment_id, p_decision, p_reason, p_verification_key); end; $$;
 
 revoke all on function private.payments_prevent_mutation(), private.create_payment_intent(uuid, uuid, bigint, uuid),
+  private.get_member_pending_payment_intent(uuid, uuid),
   private.authorize_payment_slip(uuid, uuid, text, bigint, uuid), private.finalize_payment_slip(uuid, uuid, text, text, bigint, uuid),
   private.fail_payment_slip(uuid, uuid, uuid, boolean), private.admin_list_pending_payment_slips(integer, timestamptz, uuid),
   private.admin_get_payment_slip_for_review(uuid), private.get_payment_verification_result(uuid, uuid, text, text, uuid),
   private.verify_payment_slip(uuid, uuid, text, text, uuid)
   from public, anon, authenticated, service_role;
-revoke all on function public.member_create_payment_intent(uuid, uuid, bigint, uuid),
+revoke all on function public.member_create_payment_intent(uuid, uuid, bigint, uuid), public.member_get_pending_payment_intent(uuid, uuid),
   public.gateway_authorize_payment_slip(uuid, uuid, text, bigint, uuid), public.gateway_finalize_payment_slip(uuid, uuid, text, text, bigint, uuid),
   public.gateway_fail_payment_slip(uuid, uuid, uuid, boolean), public.admin_list_pending_payment_slips(integer, timestamptz, uuid),
   public.admin_get_payment_slip_for_review(uuid), public.gateway_get_payment_verification_result(uuid, uuid, text, text, uuid),
   public.gateway_verify_payment_slip(uuid, uuid, text, text, uuid)
   from public, anon, authenticated, service_role;
-grant execute on function public.member_create_payment_intent(uuid, uuid, bigint, uuid),
+grant execute on function public.member_create_payment_intent(uuid, uuid, bigint, uuid), public.member_get_pending_payment_intent(uuid, uuid),
   public.admin_list_pending_payment_slips(integer, timestamptz, uuid),
   public.admin_get_payment_slip_for_review(uuid)
   to authenticated;
