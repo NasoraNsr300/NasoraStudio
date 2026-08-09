@@ -68,6 +68,26 @@ describe("listAdminEstimateRequests", () => {
     expect(selectedColumns).not.toContain("contact_snapshot");
   });
 
+  it("fails closed with a safe server error when Supabase does not return an inbox array", async () => {
+    const query = queryResult(null);
+    supabase.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "admin" } } }, error: null })) },
+      from: vi.fn(() => query),
+    });
+
+    await expect(listAdminEstimateRequests()).rejects.toThrow("Admin estimate inbox data is unavailable");
+  });
+
+  it("fails closed with the same safe error when an inbox row fails validation", async () => {
+    const query = queryResult([{ id: "request-unsafe", requester_type: "guest" }]);
+    supabase.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "admin" } } }, error: null })) },
+      from: vi.fn(() => query),
+    });
+
+    await expect(listAdminEstimateRequests()).rejects.toThrow("Admin estimate inbox data is unavailable");
+  });
+
   it("rejects a session that is not an admin", async () => {
     supabase.createClient.mockResolvedValue({
       auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "member" } } }, error: null })) },

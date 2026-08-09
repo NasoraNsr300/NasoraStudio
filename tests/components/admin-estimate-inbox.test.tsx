@@ -2,10 +2,27 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const navigation = vi.hoisted(() => ({
+  pathname: "/admin/estimates",
+  push: vi.fn(),
+  searchParams: new URLSearchParams(),
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => navigation.pathname,
+  useRouter: () => ({ push: navigation.push }),
+  useSearchParams: () => navigation.searchParams,
+}));
+
 import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
 import type { AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  navigation.pathname = "/admin/estimates";
+  navigation.push.mockReset();
+  navigation.searchParams = new URLSearchParams();
+});
 
 const requests: AdminEstimateSummary[] = [{
   budgetMaxSatang: 450000,
@@ -42,14 +59,13 @@ describe("AdminEstimateInbox", () => {
     expect(screen.getByText(/ส่งราคาแล้ว/)).toHaveAttribute("data-tone", "violet");
   });
 
-  it("opens the selected request from its row action", async () => {
-    const onOpenRequest = vi.fn();
+  it("opens the selected request on the current production route without an injected callback", async () => {
     const user = userEvent.setup();
-    render(<AdminEstimateInbox onOpenRequest={onOpenRequest} requests={requests} />);
+    navigation.searchParams = new URLSearchParams("status=submitted");
+    render(<AdminEstimateInbox requests={requests} />);
 
     await user.click(screen.getByRole("button", { name: "ประเมิน REQ-ABCDEF1234" }));
 
-    expect(onOpenRequest).toHaveBeenCalledWith(requests[0]);
-    expect(screen.getByRole("row", { name: /Mali.*REQ-ABCDEF1234/ })).toHaveAttribute("aria-selected", "true");
+    expect(navigation.push).toHaveBeenCalledWith("/admin/estimates?status=submitted&request=request-1");
   });
 });

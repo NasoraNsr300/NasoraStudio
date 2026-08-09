@@ -59,8 +59,9 @@ export async function listAdminEstimateRequests(filters: AdminEstimateFilters = 
   const { data, error } = await query.order("submitted_at", { ascending: false });
   if (error) throw new Error(failureMessage(error));
 
-  const parsed = z.array(rowSchema).safeParse(Array.isArray(data) ? data : []);
-  if (!parsed.success) throw new Error("Unable to load estimate requests");
+  if (!Array.isArray(data)) throw new Error("Admin estimate inbox data is unavailable");
+  const parsed = z.array(rowSchema).safeParse(data);
+  if (!parsed.success) throw new Error("Admin estimate inbox data is unavailable");
 
   return parsed.data.map((row) => ({
     budgetMaxSatang: row.budget_max_satang,

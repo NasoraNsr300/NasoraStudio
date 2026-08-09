@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, Filter, PenLine, Search, UserRound } from "lucide-react";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { AdminEstimateStatus, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
 import styles from "@/features/admin/components/admin-section-pages.module.css";
@@ -31,17 +31,19 @@ function formatSubmittedAt(submittedAt: string) {
 }
 
 export function AdminEstimateInbox({
-  onOpenRequest,
   requests,
 }: {
-  onOpenRequest?: (request: AdminEstimateSummary) => void;
   requests: AdminEstimateSummary[];
 }) {
-  const [openedRequestId, setOpenedRequestId] = useState<string | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const openedRequestId = searchParams.get("request");
 
   function openRequest(request: AdminEstimateSummary) {
-    setOpenedRequestId(request.id);
-    onOpenRequest?.(request);
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.set("request", request.id);
+    router.push(`${pathname}?${nextSearchParams.toString()}`);
   }
 
   return <section className={styles.dataPanel}>
