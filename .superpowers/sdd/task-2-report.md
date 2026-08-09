@@ -24,7 +24,7 @@ Status mutations are guarded by `public.admin_transition_commission_request`. Th
 
 ## Commits
 
-- `feat(admin): add estimate review and decline workflow` (created after this report is written)
+- `fc2de42 feat(admin): add estimate review and decline workflow`
 
 ## TDD evidence
 
