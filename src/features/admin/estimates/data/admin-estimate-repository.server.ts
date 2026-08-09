@@ -43,7 +43,7 @@ const rowSchema = z.object({
 });
 
 const inboxColumns = "id,request_code,requester_type,member_display_name_snapshot,guest_display_name,service_type_name_snapshot,budget_min_satang,budget_max_satang,submitted_at,status";
-const detailColumns = "id,request_code,requester_type,member_display_name_snapshot,guest_display_name,contact_snapshot,category_name_snapshot,service_type_name_snapshot,usage_type,budget_min_satang,budget_max_satang,requested_deadline,description,mood_and_style,extra_character_count,background_level,prop_count,submitted_at,status,request_answers(field_key,field_label_snapshot,value,display_order)";
+const detailColumns = "id,request_code,requester_type,member_display_name_snapshot,guest_display_name,contact_snapshot,category_name_snapshot,service_type_name_snapshot,usage_type,budget_min_satang,budget_max_satang,requested_deadline,description,mood_and_style,extra_character_count,background_level,prop_count,submitted_at,status,request_answers(field_key,field_label_snapshot,value,display_order),quotes(id,version,status,total_satang)";
 
 const detailRowSchema = rowSchema.extend({
   background_level: z.number().int().nonnegative(),
@@ -53,6 +53,12 @@ const detailRowSchema = rowSchema.extend({
   extra_character_count: z.number().int().nonnegative(),
   mood_and_style: z.string().nullable(),
   prop_count: z.number().int().nonnegative(),
+  quotes: z.array(z.object({
+    id: z.string().uuid().or(z.string().min(1)),
+    status: z.enum(["draft", "sent", "accepted", "declined", "expired", "closed", "superseded"]),
+    total_satang: z.number().int().nonnegative(),
+    version: z.number().int().positive(),
+  })).default([]),
   request_answers: z.array(z.object({
     display_order: z.number().int().nonnegative(),
     field_key: z.string().trim().min(1),
@@ -105,6 +111,7 @@ export async function getAdminEstimateRequest(requestId: string): Promise<AdminE
   if (!parsed.success) throw new Error("Admin estimate request is unavailable");
 
   const row = parsed.data;
+  const latestQuote = row.quotes.reduce<(typeof row.quotes)[number] | null>((latest, quote) => !latest || quote.version > latest.version ? quote : latest, null);
   return {
     answers: [...row.request_answers]
       .sort((left, right) => left.display_order - right.display_order)
@@ -118,6 +125,7 @@ export async function getAdminEstimateRequest(requestId: string): Promise<AdminE
     description: row.description,
     extraCharacterCount: row.extra_character_count,
     id: row.id,
+    latestQuote: latestQuote ? { id: latestQuote.id, status: latestQuote.status, totalSatang: latestQuote.total_satang, version: latestQuote.version } : null,
     moodAndStyle: row.mood_and_style,
     propCount: row.prop_count,
     requestCode: row.request_code,

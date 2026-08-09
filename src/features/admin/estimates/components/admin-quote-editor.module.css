@@ -1,0 +1,22 @@
+.editor { border-top: 1px solid var(--admin-border, #253551); display: grid; gap: 14px; padding: 17px; }
+.editor > header, .editor > footer { align-items: center; display: flex; gap: 14px; justify-content: space-between; }
+.editor h3, .editor p { margin: 0; }
+.editor small { color: var(--admin-muted, #9aa7be); display: block; font-size: 10px; }
+.editor > header > strong { color: var(--brand-gold); font-size: 21px; }
+.fields { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.editor label { color: var(--admin-muted, #9aa7be); display: grid; font-size: 10px; gap: 5px; }
+.editor input, .editor select, .editor textarea { background: var(--admin-input, #0a1629); border: 1px solid var(--admin-border, #253551); border-radius: 6px; color: inherit; font: inherit; min-height: 38px; padding: 7px 9px; }
+.editor textarea { min-height: 70px; resize: vertical; }
+.items { display: grid; gap: 10px; }
+.items fieldset { border: 1px solid rgb(37 53 81 / 70%); border-radius: 8px; display: grid; gap: 9px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 12px; }
+.items legend { color: var(--brand-violet); font-size: 11px; padding: 0 5px; }
+.items fieldset label:nth-of-type(4), .items fieldset label:nth-of-type(5) { grid-column: span 2; }
+.items output { align-self: end; color: var(--brand-gold); font-size: 12px; min-height: 38px; padding: 10px 0; }
+.items button, .editor footer button { background: transparent; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; font: inherit; font-size: 10px; min-height: 34px; padding: 0 11px; }
+.addItem { justify-self: start; }
+.editor footer > div { display: grid; gap: 3px; }
+.editor footer > div strong { font-size: 12px; }
+.editor footer p { color: #ef6675; font-size: 10px; margin-left: auto; }
+.editor footer > button { background: var(--brand-gold); border-color: var(--brand-gold); color: #2b210e; font-weight: 700; }
+:global(html[data-theme="autumn"]) .editor input, :global(html[data-theme="autumn"]) .editor select, :global(html[data-theme="autumn"]) .editor textarea { background: #fffdf8; color: #2b2118; }
+@media (max-width: 760px) { .fields, .items fieldset { grid-template-columns: 1fr; }.items fieldset label:nth-of-type(4), .items fieldset label:nth-of-type(5) { grid-column: auto; }.editor > footer { align-items: stretch; flex-direction: column; }.editor footer p { margin-left: 0; } }

@@ -1,4 +1,5 @@
 import { AdminEstimateStatusControls } from "@/features/admin/estimates/components/admin-estimate-status-controls";
+import { AdminQuoteEditor } from "@/features/admin/estimates/components/admin-quote-editor";
 import type { AdminEstimateDetail as AdminEstimateDetailModel } from "@/features/admin/estimates/domain/admin-estimate";
 import { adminEstimateStatusPresentation } from "@/features/admin/estimates/domain/admin-estimate-status-presentation";
 import styles from "@/features/admin/components/admin-section-pages.module.css";
@@ -14,6 +15,10 @@ function formatBudget(request: AdminEstimateDetailModel) {
 function answerValue(value: unknown) {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
   return JSON.stringify(value);
+}
+
+function formatQuoteTotal(satang: number) {
+  return `฿${new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2 }).format(satang / 100)}`;
 }
 
 export function AdminEstimateDetail({ request }: { request: AdminEstimateDetailModel }) {
@@ -35,6 +40,12 @@ export function AdminEstimateDetail({ request }: { request: AdminEstimateDetailM
         <div><dt>Props</dt><dd>{request.propCount}</dd></div>
       </dl><h3>Request answers</h3><dl>{request.answers.map((answer) => <div key={answer.fieldKey}><dt>{answer.label.en}</dt><dd>{answerValue(answer.value)}</dd></div>)}</dl></section>
     </div>
+    {request.latestQuote && <aside className={styles.quoteSummary}>Latest quote v{request.latestQuote.version} · {request.latestQuote.status} · {formatQuoteTotal(request.latestQuote.totalSatang)}</aside>}
     <AdminEstimateStatusControls requestId={request.id} status={request.status} />
+    {(request.status === "submitted" || request.status === "reviewing" || request.status === "quoted") && <AdminQuoteEditor
+      requestId={request.id}
+      requestedDeadline={request.requestedDeadline}
+      serviceName={request.serviceName}
+    />}
   </section>;
 }

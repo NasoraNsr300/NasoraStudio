@@ -125,6 +125,10 @@ describe("getAdminEstimateRequest", () => {
       member_display_name_snapshot: "Mali",
       mood_and_style: "Soft watercolor",
       prop_count: 2,
+      quotes: [
+        { id: "quote-v1", status: "superseded", total_satang: 250000, version: 1 },
+        { id: "quote-v2", status: "sent", total_satang: 300000, version: 2 },
+      ],
       request_answers: [
         { display_order: 2, field_key: "late", field_label_snapshot: { en: "Late", th: "หลัง" }, value: "second" },
         { display_order: 1, field_key: "early", field_label_snapshot: { en: "Early", th: "ก่อน" }, value: "first" },
@@ -146,7 +150,9 @@ describe("getAdminEstimateRequest", () => {
 
     expect(query.select).toHaveBeenCalledWith(expect.stringContaining("contact_snapshot"));
     expect(query.select).toHaveBeenCalledWith(expect.stringContaining("request_answers"));
+    expect(query.select).toHaveBeenCalledWith(expect.stringContaining("quotes"));
     expect(request).toMatchObject({ contact: { kind: "discord", value: "@mali" }, customerDisplayName: "Mali", description: "Moonlit character" });
+    expect(request.latestQuote).toEqual({ id: "quote-v2", status: "sent", totalSatang: 300000, version: 2 });
     expect(request.answers.map((answer) => answer.fieldKey)).toEqual(["early", "late"]);
   });
 });
