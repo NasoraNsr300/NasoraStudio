@@ -14,7 +14,7 @@
 .dataPanel th, .dataPanel td { border-top: 1px solid rgb(37 53 81 / 70%); font-size: 11px; padding: 13px 15px; text-align: left; vertical-align: top; }
 .dataPanel th { color: var(--admin-muted, #9aa7be); font-weight: 500; }
 .pending { border: 1px solid #936c1c; border-radius: 999px; color: #f0b94a; display: inline-block; font-size: 10px; padding: 4px 9px; white-space: nowrap; }
-.iconAction { align-items: center; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; display: inline-flex; height: 31px; justify-content: center; width: 31px; }
+.iconAction { align-items: center; background: transparent; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; cursor: pointer; display: inline-flex; height: 31px; justify-content: center; margin-right: 4px; width: 31px; }
 .actions { display: flex; gap: 6px; }
 .actions button, .rejectBox button { align-items: center; background: transparent; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; display: inline-flex; font: inherit; font-size: 10px; gap: 5px; min-height: 30px; padding: 0 10px; }
 .actions button:first-child { border-color: #2d8150; color: #58d17a; }

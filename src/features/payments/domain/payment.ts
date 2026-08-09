@@ -51,7 +51,7 @@ function promptPayTarget(identifier: string) {
   const normalized = identifier.replace(/[\s-]/g, "");
   if (/^0\d{9}$/.test(normalized)) return field("01", `0066${normalized.slice(1)}`);
   if (/^\d{13}$/.test(normalized)) return field("02", normalized);
-  if (/^[A-Za-z0-9]{15}$/.test(normalized)) return field("03", normalized);
+  if (/^\d{15}$/.test(normalized)) return field("03", normalized);
   throw new PaymentDomainError("invalid_promptpay_identifier");
 }
 
@@ -67,8 +67,29 @@ function crc16(payload: string) {
 export function createPromptPayPayload(identifier: string, amountSatang: number) {
   if (!isSatang(amountSatang) || amountSatang === 0) throw new PaymentDomainError("invalid_satang");
   const merchantAccount = field("00", "A000000677010111") + promptPayTarget(identifier);
-  const withoutCrc = field("00", "01") + field("01", "12") + field("29", merchantAccount) + field("53", "764") + field("54", (amountSatang / 100).toFixed(2)) + field("58", "TH") + "6304";
+  const withoutCrc = field("00", "01") + field("01", "12") + field("29", merchantAccount) + field("58", "TH") + field("53", "764") + field("54", (amountSatang / 100).toFixed(2)) + "6304";
   return `${withoutCrc}${crc16(withoutCrc)}`;
+}
+
+function startsWith(bytes: Uint8Array, signature: readonly number[]) {
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+function endsWith(bytes: Uint8Array, signature: readonly number[]) {
+  return bytes.length >= signature.length && signature.every((byte, index) => bytes[bytes.length - signature.length + index] === byte);
+}
+
+export type SlipContentType = (typeof PAYMENT_LIMITS.allowedSlipContentTypes)[number];
+
+export function detectSlipContentType(bytes: Uint8Array): SlipContentType {
+  const pngEnd = [0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82] as const;
+  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) && endsWith(bytes, pngEnd)) return "image/png";
+  if (bytes.length >= 5 && startsWith(bytes, [0xff, 0xd8, 0xff]) && endsWith(bytes, [0xff, 0xd9])) return "image/jpeg";
+  if (bytes.length >= 12 && startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWith(bytes.slice(8), [0x57, 0x45, 0x42, 0x50])) {
+    const declaredSize = new DataView(bytes.buffer, bytes.byteOffset + 4, 4).getUint32(0, true) + 8;
+    if (declaredSize === bytes.length) return "image/webp";
+  }
+  throw new Error("invalid_slip_image");
 }
 
 export const PAYMENT_LIMITS = {

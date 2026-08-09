@@ -54,3 +54,42 @@ Complete. A member can create an idempotent exact-deposit intent from the typed 
 ## Commit
 
 `feat(payments): add PromptPay deposit and slip verification`
+
+---
+
+## Review hardening addendum — 2026-08-10
+
+This addendum supersedes the direct-presigned-PUT and browser-CORS descriptions above. Status: complete. Member slips now travel through one same-origin raw-image POST; the Worker/OpenNext-compatible server validates the declared length, enforces a 5 MiB streaming hard cap, verifies PNG/JPEG/WebP magic bytes, allocates the UUID/key in the database, writes the private R2 object once, requires a non-empty ETag, and finalizes the row. Failed or partial writes are deleted immediately and the allocation is marked failed. The browser receives neither an R2 bearer URL nor an object key.
+
+### Review fixes and files
+
+- Hardened `supabase/migrations/20260809200000_payment_deposit_workflow.sql` with current sent/non-expired/latest-version quote locks, stale intent closure, one verified deposit per request across quote versions, upload quota/one-active-slip constraints, database-generated key shape, persisted upload/admin idempotency binding, ETag-required review, stale approval handling, composite bounded admin RPC pagination, minimal slip column grants, exact admin email plus immutable role checks, service-role-only gateway wrappers, and revocation of direct private-function execution. Approval remains ledger-only.
+- Replaced the member authorize/browser-PUT/confirm route with the same-origin upload gateway and changed the member UI to one raw POST, stable retry keys, input reset, and replacement-capable file selection.
+- Added method-specific short-lived R2 PUT/GET/HEAD/DELETE signing, normalized ETags, server PUT/delete operations, and admin HEAD comparison against persisted MIME/size/ETag. Admin listing is limited to 25 and HEAD checks are sequential.
+- Added full PromptPay/R2 preflight before intent mutation, PromptPay golden CRC vectors, exact 15-digit e-wallet validation, image magic tests, deterministic SigV4 tests, migration/security contracts, gateway cleanup tests, member retry/reset tests, and admin row-local retry/error/preview-renew tests.
+- Updated `docs/deployment/r2-payment-slips.md`: payment slips do not need browser R2 CORS; the private prefix lifecycle remains an explicit 30-day Cloudflare deployment step.
+
+### TDD and exact verification evidence
+
+1. RED domain run: 4 expected failures for golden payload ordering, non-digit e-wallet IDs, and missing image-byte detection. GREEN: `tests/unit/payment-domain.test.ts` passed 11/11.
+2. RED migration run: 6 expected failures for current quote/deposit uniqueness, trusted key allocation, grants, decision fingerprint, ETag, and bounded admin RPC contracts. GREEN: `tests/unit/payment-migration.test.ts` passed 8/8.
+3. RED gateway run: 6 expected failures while the old presigned flow remained. GREEN after gateway/HEAD hardening: `tests/unit/payment-routes.test.ts` passed 11/11.
+4. Final focused run: `npm test -- --run tests/unit/payment-migration.test.ts tests/unit/payment-routes.test.ts tests/components/member-payment-upload.test.tsx tests/components/admin-payment-review.test.tsx tests/unit/payment-r2-storage.test.ts tests/unit/payment-domain.test.ts` — PASS, 6 files / 40 tests.
+5. Full suite: `npm test -- --maxWorkers=2` — PASS, 70 files / 301 tests in 54.99s.
+6. `npm run typecheck` — PASS.
+7. `npm run lint` — PASS.
+8. `npm run build` — PASS; Next.js 16.3.0 compiled/typechecked and generated 41 static pages plus the dynamic payment routes.
+9. `git diff --check` on Task 5 files — PASS (only the repository's LF-to-CRLF checkout notices).
+
+### Self-review and remaining concerns
+
+- The member browser cannot invoke the gateway RPC that returns `object_key`: it requires the server-only Supabase secret/service role, while the route first independently authenticates the member and passes the verified user UUID. The database generates a separate random object UUID, and route responses expose only review status.
+- Failed immediate R2 deletion is retained as an indexed `cleanup_required` state for operational cleanup; weak and strong ETags remain distinct during normalized comparison.
+- Approval/rejection retries bind a persisted UUID to normalized decision/reason. Same-payload retries return the prior result; changed payloads conflict. Stale/non-current quotes close the intent and cannot append a payment.
+- No new dependency was added and no Cloudflare account was mutated. Real R2 integration, lifecycle deployment, Supabase role-matrix execution, and database advisors still require deployment credentials/environment.
+- PromptPay is covered by established golden payload/CRC vectors locally, but a real banking-app scan remains a deployment acceptance check.
+- Independent reviewer recheck resolved all four Important and two Minor findings and returned **Ready**.
+
+### Hardening commit
+
+`fix(payments): harden private slip verification flow`

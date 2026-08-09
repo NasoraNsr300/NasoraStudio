@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculatePaymentAmount, createPromptPayPayload, PaymentDomainError } from "@/features/payments/domain/payment";
+import { calculatePaymentAmount, createPromptPayPayload, detectSlipContentType, PaymentDomainError } from "@/features/payments/domain/payment";
 
 describe("payment domain", () => {
   it("requires the first payment to equal the quote deposit exactly", () => {
@@ -28,5 +28,30 @@ describe("payment domain", () => {
     expect(payload).toContain("5406500.25");
     expect(payload).toMatch(/6304[0-9A-F]{4}$/);
     expect(payload).not.toContain("0812345678");
+  });
+
+  it("matches a golden PromptPay amount payload and CRC used by established Thai banking implementations", () => {
+    expect(createPromptPayPayload("000-000-0000", 422)).toBe("00020101021229370016A000000677010111011300660000000005802TH530376454044.226304E469");
+  });
+
+  it("accepts only a 15-digit e-wallet identifier", () => {
+    expect(createPromptPayPayload("012345678901234", 422)).toContain("0315012345678901234");
+    expect(() => createPromptPayPayload("ABC456789012345", 422)).toThrowError(new PaymentDomainError("invalid_promptpay_identifier"));
+    expect(() => createPromptPayPayload("1234567890123456", 422)).toThrowError(new PaymentDomainError("invalid_promptpay_identifier"));
+  });
+
+  it("recognizes complete PNG, JPEG, and WebP files from magic bytes instead of trusting MIME", () => {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
+    const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 2, 0xff, 0xd9]);
+    const webp = Uint8Array.from([0x52, 0x49, 0x46, 0x46, 0x04, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+    expect(detectSlipContentType(png)).toBe("image/png");
+    expect(detectSlipContentType(jpeg)).toBe("image/jpeg");
+    expect(detectSlipContentType(webp)).toBe("image/webp");
+  });
+
+  it("rejects spoofed or truncated image bodies", () => {
+    expect(() => detectSlipContentType(new TextEncoder().encode("not an image"))).toThrowError("invalid_slip_image");
+    expect(() => detectSlipContentType(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toThrowError("invalid_slip_image");
+    expect(() => detectSlipContentType(Uint8Array.from([0xff, 0xd8, 0xff]))).toThrowError("invalid_slip_image");
   });
 });

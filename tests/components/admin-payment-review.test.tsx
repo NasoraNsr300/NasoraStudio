@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -40,5 +40,27 @@ describe("AdminPaymentReview", () => {
     await user.click(screen.getByRole("button", { name: /ยืนยันการปฏิเสธ|confirm rejection/i }));
     expect(screen.getByRole("alert")).toBeVisible();
     expect(onVerify).not.toHaveBeenCalled();
+  });
+
+  it("reuses the same decision key on retry and keeps errors local to the row", async () => {
+    const second = { ...payment, id: "c605fb13-d781-4a67-8fa1-6ef597421880", requestId: "175adfe3-e5e6-4f93-b057-f610db6a5467" };
+    const onVerify = vi.fn().mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(undefined);
+    const user = userEvent.setup();
+    render(<AdminPaymentReview onVerify={onVerify} payments={[payment, second]} />);
+    const firstRow = screen.getByText(payment.requestId.slice(0, 8)).closest("tr")!;
+    await user.click(within(firstRow).getByRole("button", { name: /อนุมัติ|approve/i }));
+    expect(within(firstRow).getByRole("alert")).toBeVisible();
+    const secondRow = screen.getByText(second.requestId.slice(0, 8)).closest("tr")!;
+    expect(within(secondRow).queryByRole("alert")).toBeNull();
+    await user.click(within(firstRow).getByRole("button", { name: /อนุมัติ|approve/i }));
+    expect(onVerify.mock.calls[0][0].idempotencyKey).toBe(onVerify.mock.calls[1][0].idempotencyKey);
+  });
+
+  it("renews an expired preview through the supplied refresh action", async () => {
+    const onRefresh = vi.fn();
+    const user = userEvent.setup();
+    render(<AdminPaymentReview onRefresh={onRefresh} payments={[payment]} />);
+    await user.click(screen.getByRole("button", { name: /ต่ออายุลิงก์|renew/i }));
+    expect(onRefresh).toHaveBeenCalledOnce();
   });
 });

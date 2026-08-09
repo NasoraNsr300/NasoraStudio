@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { createAdminPaymentRepository, type AdminPaymentClient } from "@/features/payments/data/admin-payment-repository.server";
 import { acceptsMutation, authenticatedUser } from "@/features/payments/http/payment-route-security";
-import { createR2SlipStorage } from "@/features/payments/storage/r2-slip-storage.server";
+import { createR2SlipStorage, normalizeEtag } from "@/features/payments/storage/r2-slip-storage.server";
 import { createClient } from "@/shared/supabase/server";
 
 const bodySchema = z.object({ decision: z.enum(["approve", "reject"]), idempotencyKey: z.uuid(), reason: z.string().trim().min(1).max(1000).optional() }).strict().superRefine((value, context) => {
@@ -21,13 +21,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   const client = await createClient();
   const user = await authenticatedUser(client);
   if (!user) return Response.json({ error: "Authentication required" }, { status: 401 });
-  if (user.app_metadata?.role !== "admin") return Response.json({ error: "Admin access required" }, { status: 403 });
+  if (user.app_metadata?.role !== "admin" || user.email?.toLowerCase() !== "nasora.nsr300@gmail.com") return Response.json({ error: "Admin access required" }, { status: 403 });
   const repository = createAdminPaymentRepository(client as unknown as AdminPaymentClient);
   try {
     const slip = await repository.findReviewSlip(paymentId.data);
     if (!slip) return Response.json({ error: "Payment slip not found" }, { status: 404 });
     const actual = await createR2SlipStorage().headObject(slip.objectKey);
-    if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
+    if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
     return Response.json(await repository.verify({ decision: input.data.decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason: input.data.reason ?? null }));
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

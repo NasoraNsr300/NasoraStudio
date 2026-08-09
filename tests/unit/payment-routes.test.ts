@@ -4,15 +4,18 @@ const mocks = vi.hoisted(() => ({
   adminRepository: { findReviewSlip: vi.fn(), verify: vi.fn() },
   createAdminPaymentRepository: vi.fn(),
   createClient: vi.fn(),
+  createPaymentGatewayClient: vi.fn(),
   createPaymentRepository: vi.fn(),
-  paymentRepository: { authorizeSlip: vi.fn(), confirmSlip: vi.fn(), createIntent: vi.fn(), findOwnedSlip: vi.fn() },
-  storage: { createObjectKey: vi.fn(), createUploadUrl: vi.fn(), headObject: vi.fn() },
+  createR2SlipStorage: vi.fn(),
+  paymentRepository: { allocateSlip: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn() },
+  storage: { deleteObject: vi.fn(), headObject: vi.fn(), putObject: vi.fn() },
 }));
 
 vi.mock("@/shared/supabase/server", () => ({ createClient: mocks.createClient }));
+vi.mock("@/features/payments/data/payment-gateway-client.server", () => ({ createPaymentGatewayClient: mocks.createPaymentGatewayClient }));
 vi.mock("@/features/payments/data/payment-repository", () => ({ createPaymentRepository: mocks.createPaymentRepository }));
 vi.mock("@/features/payments/data/admin-payment-repository.server", () => ({ createAdminPaymentRepository: mocks.createAdminPaymentRepository }));
-vi.mock("@/features/payments/storage/r2-slip-storage.server", () => ({ createR2SlipStorage: () => mocks.storage }));
+vi.mock("@/features/payments/storage/r2-slip-storage.server", () => ({ createR2SlipStorage: mocks.createR2SlipStorage, normalizeEtag: (value: string) => value.replace(/^W\//, "").replace(/^\"|\"$/g, "").trim() }));
 
 import { POST as createIntent } from "@/app/api/member/payments/[quoteId]/intent/route";
 import { POST as uploadSlip } from "@/app/api/member/payments/[paymentId]/slip-upload/route";
@@ -28,16 +31,31 @@ function post(path: string, body: unknown, headers: HeadersInit = {}) {
   return new Request(`https://nasora.example${path}`, { body: JSON.stringify(body), headers: { "content-type": "application/json", origin: "https://nasora.example", ...headers }, method: "POST" });
 }
 
-function authClient(role = "member") {
-  return { auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role }, id: "user-1" } }, error: null })) } };
+const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
+function upload(body: Uint8Array, headers: HeadersInit = {}) {
+  const requestBody = new ArrayBuffer(body.byteLength);
+  new Uint8Array(requestBody).set(body);
+  return new Request(`https://nasora.example/api/member/payments/${paymentId}/slip-upload`, {
+    body: requestBody,
+    headers: { "content-length": String(body.byteLength), "content-type": "image/png", "idempotency-key": idempotencyKey, origin: "https://nasora.example", ...headers },
+    method: "POST",
+  });
+}
+
+function authClient(role = "member", email = role === "admin" ? "nasora.nsr300@gmail.com" : "member@example.com") {
+  return { auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role }, email, id: "user-1" } }, error: null })) } };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.PROMPTPAY_ID = "0812345678";
   mocks.createClient.mockResolvedValue(authClient());
+  mocks.createPaymentGatewayClient.mockReturnValue({ rpc: vi.fn() });
   mocks.createPaymentRepository.mockReturnValue(mocks.paymentRepository);
   mocks.createAdminPaymentRepository.mockReturnValue(mocks.adminRepository);
+  mocks.createR2SlipStorage.mockReturnValue(mocks.storage);
+  mocks.storage.deleteObject.mockResolvedValue(undefined);
+  mocks.paymentRepository.failSlip.mockResolvedValue(undefined);
   mocks.paymentRepository.createIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", status: "pending" });
 });
 
@@ -51,6 +69,13 @@ describe("payment mutation routes", () => {
 
   it("fails safely when PromptPay is not configured", async () => {
     delete process.env.PROMPTPAY_ID;
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    expect(response.status).toBe(503);
+    expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
+  });
+
+  it("validates private R2 configuration before creating an intent", async () => {
+    mocks.createR2SlipStorage.mockImplementationOnce(() => { throw new Error("r2_not_configured"); });
     const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
     expect(response.status).toBe(503);
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
@@ -70,39 +95,74 @@ describe("payment mutation routes", () => {
     expect(extra.status).toBe(400);
   });
 
-  it("authorizes only bounded image uploads with an unpredictable private key", async () => {
-    mocks.storage.createObjectKey.mockReturnValue("payment-slips/random.webp");
-    mocks.storage.createUploadUrl.mockResolvedValue("https://account.r2.cloudflarestorage.com/signed");
-    mocks.paymentRepository.authorizeSlip.mockResolvedValue({ deleteAfter: "2026-09-08T00:00:00.000Z", id: slipId, objectKey: "payment-slips/random.webp" });
-    const response = await uploadSlip(post(`/api/member/payments/${paymentId}/slip-upload`, { action: "authorize", contentType: "image/webp", idempotencyKey, sizeBytes: 5 * 1024 * 1024 }), { params: Promise.resolve({ paymentId }) });
+  it("uploads a validated image once through the same-origin gateway without returning a bearer URL", async () => {
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/025f6aa2-6227-4b74-a833-e9fca9db998a.png", status: "authorized" });
+    mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
+    mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
-    expect(mocks.storage.createUploadUrl).toHaveBeenCalledWith("payment-slips/random.webp", "image/webp");
+    expect(mocks.storage.putObject).toHaveBeenCalledOnce();
+    expect(mocks.paymentRepository.finalizeSlip).toHaveBeenCalledWith({ contentType: "image/png", etag: "etag-1", idempotencyKey, sizeBytes: png.byteLength, slipId, userId: "user-1" });
+    expect(await response.json()).toEqual({ status: "pending_review" });
   });
 
-  it("HEAD-validates R2 metadata before submitting a slip for review", async () => {
-    mocks.paymentRepository.findOwnedSlip.mockResolvedValue({ contentType: "image/png", id: slipId, objectKey: "payment-slips/random.png", sizeBytes: 400 });
-    mocks.storage.headObject.mockResolvedValue({ contentType: "image/png", etag: "etag-1", sizeBytes: 400 });
-    mocks.paymentRepository.confirmSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
-    const response = await uploadSlip(post(`/api/member/payments/${paymentId}/slip-upload`, { action: "confirm", slipId }), { params: Promise.resolve({ paymentId }) });
-    expect(response.status).toBe(200);
-    expect(mocks.paymentRepository.confirmSlip).toHaveBeenCalledWith(slipId, "etag-1");
+  it("rejects an oversized declared body before allocating or writing", async () => {
+    const response = await uploadSlip(upload(png, { "content-length": String(5 * 1024 * 1024 + 1) }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(413);
+    expect(mocks.paymentRepository.allocateSlip).not.toHaveBeenCalled();
+    expect(mocks.storage.putObject).not.toHaveBeenCalled();
   });
 
-  it("does not submit a slip whose actual R2 metadata differs", async () => {
-    mocks.paymentRepository.findOwnedSlip.mockResolvedValue({ contentType: "image/png", id: slipId, objectKey: "payment-slips/random.png", sizeBytes: 400 });
-    mocks.storage.headObject.mockResolvedValue({ contentType: "text/html", etag: "etag-1", sizeBytes: 400 });
-    const response = await uploadSlip(post(`/api/member/payments/${paymentId}/slip-upload`, { action: "confirm", slipId }), { params: Promise.resolve({ paymentId }) });
-    expect(response.status).toBe(422);
-    expect(mocks.paymentRepository.confirmSlip).not.toHaveBeenCalled();
+  it("rejects spoofed or truncated image bytes before allocating", async () => {
+    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(415);
+    expect(mocks.paymentRepository.allocateSlip).not.toHaveBeenCalled();
+  });
+
+  it("deletes an object and marks the allocation failed when finalization fails", async () => {
+    const objectKey = "payment-slips/025f6aa2-6227-4b74-a833-e9fca9db998a.png";
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey, status: "authorized" });
+    mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
+    mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("finalize_failed"));
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(400);
+    expect(mocks.storage.deleteObject).toHaveBeenCalledWith(objectKey);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" });
+  });
+
+  it("persists a cleanup-required marker when immediate object deletion fails", async () => {
+    mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/private.png", status: "authorized" });
+    mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
+    mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("finalize_failed"));
+    mocks.storage.deleteObject.mockRejectedValue(new Error("delete_failed"));
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(400);
+    expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith({ cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" });
   });
 
   it("requires admin app_metadata and revalidates object metadata before approval", async () => {
     mocks.createClient.mockResolvedValue(authClient("admin"));
-    mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
-    mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", sizeBytes: 123 });
+    mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
+    mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "\"etag\"", sizeBytes: 123 });
     mocks.adminRepository.verify.mockResolvedValue({ intentId: paymentId, paymentId: "fed71710-0713-44e5-8712-6105a0cd57bc", slipStatus: "approved" });
     const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.adminRepository.verify).toHaveBeenCalledWith({ decision: "approve", idempotencyKey, paymentId, reason: null });
+  });
+
+  it("requires the exact immutable admin identity", async () => {
+    mocks.createClient.mockResolvedValue(authClient("admin", "other-admin@example.com"));
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(403);
+    expect(mocks.adminRepository.findReviewSlip).not.toHaveBeenCalled();
+  });
+
+  it("does not approve when the persisted and current R2 ETags differ", async () => {
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "expected", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
+    mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "changed", sizeBytes: 123 });
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(422);
+    expect(mocks.adminRepository.verify).not.toHaveBeenCalled();
   });
 });
