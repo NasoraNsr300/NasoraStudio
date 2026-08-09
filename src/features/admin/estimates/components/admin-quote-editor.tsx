@@ -15,6 +15,10 @@ type EditableItem = {
 };
 
 const approximateThbPerUsd = 35;
+const bigintMin = BigInt("-9223372036854775808");
+const bigintMax = BigInt("9223372036854775807");
+const zero = BigInt(0);
+const oneHundred = BigInt(100);
 
 function futureExpiryValue() {
   const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
@@ -23,12 +27,28 @@ function futureExpiryValue() {
 }
 
 function toSatang(amountThb: string) {
-  const amount = Number(amountThb);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+  const match = amountThb.trim().match(/^(-?)(\d+)(?:\.(\d{1,2}))?$/);
+  if (!match) return null;
+  const magnitude = BigInt(match[2]!) * oneHundred + BigInt((match[3] ?? "").padEnd(2, "0") || "0");
+  const amount = match[1] ? -magnitude : magnitude;
+  return amount >= bigintMin && amount <= bigintMax ? amount : null;
 }
 
-function formatThb(satang: number) {
-  return `฿${new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2, minimumFractionDigits: satang % 100 === 0 ? 0 : 2 }).format(satang / 100)}`;
+function formatDecimalMinorUnits(amount: bigint, currencySymbol: string) {
+  const sign = amount < zero ? "-" : "";
+  const absolute = amount < zero ? -amount : amount;
+  const whole = absolute / oneHundred;
+  const fraction = absolute % oneHundred;
+  return `${sign}${currencySymbol}${new Intl.NumberFormat("en-US").format(whole)}${fraction === zero ? "" : `.${fraction.toString().padStart(2, "0")}`}`;
+}
+
+function formatThb(satang: bigint) {
+  return formatDecimalMinorUnits(satang, "฿");
+}
+
+function formatApproximateUsd(satang: bigint) {
+  const usdCents = (satang + BigInt(Math.floor(approximateThbPerUsd / 2))) / BigInt(approximateThbPerUsd);
+  return formatDecimalMinorUnits(usdCents, "$");
 }
 
 function newAddition(): EditableItem {
@@ -57,16 +77,16 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
   const [items, setItems] = useState<EditableItem[]>([{ description: serviceName, itemType: "base", label: serviceName, quantity: 1, unitAmountThb: "0" }]);
   const [proposedDeadline, setProposedDeadline] = useState(requestedDeadline ?? "");
   const [scope, setScope] = useState(serviceName);
-  const [submissionKey] = useState(() => crypto.randomUUID());
+  const [submissionKey, setSubmissionKey] = useState(() => crypto.randomUUID());
   const [termsSlug, setTermsSlug] = useState("commission-terms");
   const [termsVersion, setTermsVersion] = useState(1);
 
   const itemSnapshots = items.map((item) => {
     const unitAmountSatang = toSatang(item.unitAmountThb);
-    return { ...item, lineTotalSatang: unitAmountSatang * item.quantity, unitAmountSatang };
+    const lineTotalSatang = unitAmountSatang === null ? null : unitAmountSatang * BigInt(item.quantity);
+    return { ...item, lineTotalSatang, unitAmountSatang };
   });
-  const totalSatang = itemSnapshots.reduce((total, item) => total + item.lineTotalSatang, 0);
-  const approximateUsd = totalSatang / 100 / approximateThbPerUsd;
+  const totalSatang = itemSnapshots.reduce<bigint | null>((total, item) => total === null || item.lineTotalSatang === null ? null : total + item.lineTotalSatang, zero);
 
   function updateItem(index: number, update: Partial<EditableItem>) {
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...update } : item));
@@ -81,14 +101,17 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
   async function sendQuote() {
     setError(null);
     const expiry = new Date(expiresAt);
-    const hasInvalidItem = itemSnapshots.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || !Number.isSafeInteger(item.unitAmountSatang) || !Number.isSafeInteger(item.lineTotalSatang) || !item.label.en.trim() || !item.label.th.trim() || !item.description.en.trim() || !item.description.th.trim());
+    const hasInvalidItem = itemSnapshots.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 1_000
+      || item.unitAmountSatang === null || item.lineTotalSatang === null
+      || item.lineTotalSatang < bigintMin || item.lineTotalSatang > bigintMax
+      || !item.label.en.trim() || !item.label.th.trim() || !item.description.en.trim() || !item.description.th.trim());
     if (!scope.en.trim() || !scope.th.trim()
       || !expiresAt || Number.isNaN(expiry.getTime())
       || !Number.isInteger(durationMinDays) || !Number.isInteger(durationMaxDays) || durationMinDays <= 0 || durationMaxDays < durationMinDays
       || !Number.isInteger(depositPercent) || depositPercent < 0 || depositPercent > 100
       || !Number.isInteger(freeRevisions) || freeRevisions < 0
       || !termsSlug.trim() || !Number.isInteger(termsVersion) || termsVersion <= 0
-      || !Number.isSafeInteger(totalSatang) || totalSatang < 0 || hasInvalidItem) {
+      || totalSatang === null || totalSatang < zero || totalSatang > bigintMax || hasInvalidItem) {
       setError("Complete a valid quote before sending.");
       return;
     }
@@ -100,11 +123,15 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
       expiresAt: expiry.toISOString(),
       freeRevisions,
       idempotencyKey: submissionKey,
-      items: itemSnapshots.map(({ unitAmountThb: _unitAmountThb, ...item }) => item),
+      items: itemSnapshots.map(({ unitAmountThb: _unitAmountThb, lineTotalSatang, unitAmountSatang, ...item }) => ({
+        ...item,
+        lineTotalSatang: lineTotalSatang!.toString(),
+        unitAmountSatang: unitAmountSatang!.toString(),
+      })),
       proposedDeadline: proposedDeadline || null,
       scope,
       termsDocument: { slug: termsSlug, version: termsVersion },
-      totalSatang,
+      totalSatang: totalSatang.toString(),
     };
 
     try {
@@ -118,6 +145,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
         setError(body?.error ?? "Unable to send quote.");
         return;
       }
+      setSubmissionKey(crypto.randomUUID());
       router.refresh();
     } catch {
       setError("Unable to send quote.");
@@ -127,7 +155,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
   }
 
   return <section aria-label="Manual quote editor" className={styles.editor}>
-    <header><div><small>Immutable price snapshot</small><h3>Manual quote</h3></div><strong data-testid="quote-total-thb">{formatThb(totalSatang)}</strong></header>
+    <header><div><small>Immutable price snapshot</small><h3>Manual quote</h3></div><strong data-testid="quote-total-thb">{formatThb(totalSatang ?? zero)}</strong></header>
     <div className={styles.fields}>
       <label>Scope (English)<textarea onChange={(event) => setScope((value) => ({ ...value, en: event.target.value }))} value={scope.en} /></label>
       <label>Scope (Thai)<textarea onChange={(event) => setScope((value) => ({ ...value, th: event.target.value }))} value={scope.th} /></label>
@@ -143,8 +171,8 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
         <label>Description (English)<input onChange={(event) => updateLocalizedItem(index, "description", "en", event.target.value)} value={item.description.en} /></label>
         <label>Description (Thai)<input onChange={(event) => updateLocalizedItem(index, "description", "th", event.target.value)} value={item.description.th} /></label>
         <label>Quantity<input aria-label="Quantity" min="1" onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} step="1" type="number" value={item.quantity} /></label>
-        <label>Unit price THB<input aria-label="Unit price THB" onChange={(event) => updateItem(index, { unitAmountThb: event.target.value })} step="0.01" type="number" value={item.unitAmountThb} /></label>
-        <output>{formatThb(itemSnapshots[index]!.lineTotalSatang)}</output>
+        <label>Unit price THB<input aria-label="Unit price THB" inputMode="decimal" onChange={(event) => updateItem(index, { unitAmountThb: event.target.value })} pattern="-?[0-9]+(?:\.[0-9]{1,2})?" type="text" value={item.unitAmountThb} /></label>
+        <output>{formatThb(itemSnapshots[index]!.lineTotalSatang ?? zero)}</output>
         {items.length > 1 && <button onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))} type="button">Remove item {index + 1}</button>}
       </fieldset>)}
       <button className={styles.addItem} onClick={() => setItems((current) => [...current, newAddition()])} type="button">Add quote item</button>
@@ -160,7 +188,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
       <label>Terms document version<input min="1" onChange={(event) => setTermsVersion(Number(event.target.value))} type="number" value={termsVersion} /></label>
     </div>
     <footer>
-      <div><strong data-testid="quote-total-usd">Approx. USD {new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(approximateUsd)}</strong><small>Display estimate only; THB satang is authoritative.</small></div>
+      <div><strong data-testid="quote-total-usd">Approx. USD {formatApproximateUsd(totalSatang ?? zero)}</strong><small>Display estimate only; THB satang is authoritative.</small></div>
       {error && <p role="alert">{error}</p>}
       <button disabled={isSaving} onClick={sendQuote} type="button">{isSaving ? "Sending…" : "Save and send quote"}</button>
     </footer>

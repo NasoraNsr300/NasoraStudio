@@ -4,7 +4,20 @@ import { adminQuoteItemTypes, type AdminQuoteDraftInput } from "@/features/admin
 import { adminEstimateRequestIdSchema } from "@/features/admin/estimates/domain/admin-estimate-request-id";
 import { createClient } from "@/shared/supabase/server";
 
-const safeSatang = z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER);
+const bigintMin = BigInt("-9223372036854775808");
+const bigintMax = BigInt("9223372036854775807");
+const zero = BigInt(0);
+const signedSatangPattern = /^-?(?:0|[1-9]\d*)$/;
+const totalSatangPattern = /^(?:0|[1-9]\d*)$/;
+
+function isSatangInRange(value: string, minimum: bigint, maximum: bigint, pattern: RegExp) {
+  if (!pattern.test(value)) return false;
+  const amount = BigInt(value);
+  return amount >= minimum && amount <= maximum;
+}
+
+const signedSatangSchema = z.string().max(20).refine((value) => isSatangInRange(value, bigintMin, bigintMax, signedSatangPattern));
+const totalSatangSchema = z.string().max(19).refine((value) => isSatangInRange(value, zero, bigintMax, totalSatangPattern));
 const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   th: z.string().trim().min(1).max(2_000),
@@ -13,11 +26,12 @@ const quoteItemSchema = z.object({
   description: localizedTextSchema,
   itemType: z.enum(adminQuoteItemTypes),
   label: localizedTextSchema,
-  lineTotalSatang: safeSatang,
+  lineTotalSatang: signedSatangSchema,
   quantity: z.number().int().positive().max(1_000),
-  unitAmountSatang: safeSatang,
+  unitAmountSatang: signedSatangSchema,
 }).strict().superRefine((item, context) => {
-  if (item.unitAmountSatang * item.quantity !== item.lineTotalSatang) {
+  if (!signedSatangPattern.test(item.unitAmountSatang) || !signedSatangPattern.test(item.lineTotalSatang)) return;
+  if (BigInt(item.unitAmountSatang) * BigInt(item.quantity) !== BigInt(item.lineTotalSatang)) {
     context.addIssue({ code: "custom", message: "Line total is invalid", path: ["lineTotalSatang"] });
   }
 });
@@ -36,16 +50,18 @@ const bodySchema = z.object({
     slug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     version: z.number().int().positive(),
   }).strict(),
-  totalSatang: safeSatang.nonnegative(),
+  totalSatang: totalSatangSchema,
 }).strict().superRefine((quote, context) => {
   if (quote.durationMaxDays < quote.durationMinDays) {
     context.addIssue({ code: "custom", message: "Duration range is invalid", path: ["durationMaxDays"] });
   }
-  if (quote.items.reduce((total, item) => total + item.lineTotalSatang, 0) !== quote.totalSatang) {
-    context.addIssue({ code: "custom", message: "Quote total is invalid", path: ["totalSatang"] });
+  if (!totalSatangPattern.test(quote.totalSatang)
+    || quote.items.some((item) => !signedSatangPattern.test(item.lineTotalSatang) || !signedSatangPattern.test(item.unitAmountSatang))) {
+    return;
   }
-  if (new Date(quote.expiresAt).getTime() <= Date.now()) {
-    context.addIssue({ code: "custom", message: "Quote expiry must be in the future", path: ["expiresAt"] });
+  const itemTotal = quote.items.reduce((total, item) => total + BigInt(item.lineTotalSatang), zero);
+  if (itemTotal < zero || itemTotal > bigintMax || itemTotal !== BigInt(quote.totalSatang)) {
+    context.addIssue({ code: "custom", message: "Quote total is invalid", path: ["totalSatang"] });
   }
 });
 
@@ -64,15 +80,10 @@ function safeHeaderValue(value: string | null) {
 
 function hasSameOrigin(request: Request) {
   const origin = safeHeaderValue(request.headers.get("origin"));
-  const forwardedHost = safeHeaderValue(request.headers.get("x-forwarded-host"));
-  const host = forwardedHost ?? safeHeaderValue(request.headers.get("host")) ?? new URL(request.url).host;
-  const forwardedProtocol = safeHeaderValue(request.headers.get("x-forwarded-proto"));
-  if (!origin || !host || (forwardedProtocol && !["http", "https"].includes(forwardedProtocol))) return false;
+  if (!origin) return false;
 
   try {
-    const requestUrl = new URL(request.url);
-    const protocol = forwardedProtocol ?? requestUrl.protocol.slice(0, -1);
-    return new URL(origin).origin === new URL(`${protocol}://${host}`).origin;
+    return new URL(origin).origin === new URL(request.url).origin;
   } catch {
     return false;
   }
@@ -109,6 +120,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ req
   });
   if (error) {
     if (error.message === "admin_required") return Response.json({ error: "Admin access required" }, { status: 403 });
+    if (error.message === "idempotency_payload_mismatch") {
+      return Response.json({ error: "Submission key was already used for a different quote" }, { status: 409 });
+    }
     if (error.message === "request_not_found" || error.message === "invalid_request_transition") {
       return Response.json({ error: "Request can no longer be quoted" }, { status: 409 });
     }
@@ -117,8 +131,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ req
 
   const result = firstRow(data);
   const parsed = z.object({
-    quote_id: z.string().min(1),
-    status: z.literal("sent"),
+    quote_id: z.string().uuid(),
+    status: z.enum(["draft", "sent", "accepted", "declined", "expired", "closed", "superseded"]),
     version: z.number().int().positive(),
   }).safeParse(result);
   if (!parsed.success) return Response.json({ error: "Unable to send quote" }, { status: 400 });

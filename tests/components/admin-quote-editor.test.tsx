@@ -11,6 +11,7 @@ import { AdminQuoteEditor } from "@/features/admin/estimates/components/admin-qu
 afterEach(() => {
   cleanup();
   navigation.refresh.mockReset();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -37,14 +38,14 @@ describe("AdminQuoteEditor", () => {
     render(<AdminQuoteEditor {...props} />);
 
     const baseLine = screen.getByRole("group", { name: "Quote item 1" });
-    await user.clear(within(baseLine).getByRole("spinbutton", { name: "Unit price THB" }));
-    await user.type(within(baseLine).getByRole("spinbutton", { name: "Unit price THB" }), "2500");
+    await user.clear(within(baseLine).getByRole("textbox", { name: "Unit price THB" }));
+    await user.type(within(baseLine).getByRole("textbox", { name: "Unit price THB" }), "2500");
     await user.click(screen.getByRole("button", { name: "Add quote item" }));
     const addition = screen.getByRole("group", { name: "Quote item 2" });
     await user.clear(within(addition).getByRole("spinbutton", { name: "Quantity" }));
     await user.type(within(addition).getByRole("spinbutton", { name: "Quantity" }), "2");
-    await user.clear(within(addition).getByRole("spinbutton", { name: "Unit price THB" }));
-    await user.type(within(addition).getByRole("spinbutton", { name: "Unit price THB" }), "500");
+    await user.clear(within(addition).getByRole("textbox", { name: "Unit price THB" }));
+    await user.type(within(addition).getByRole("textbox", { name: "Unit price THB" }), "500");
 
     expect(screen.getByTestId("quote-total-thb")).toHaveTextContent("฿3,500");
     expect(screen.getByTestId("quote-total-usd")).toHaveTextContent("Approx. USD");
@@ -57,8 +58,8 @@ describe("AdminQuoteEditor", () => {
     render(<AdminQuoteEditor {...props} />);
 
     const baseLine = screen.getByRole("group", { name: "Quote item 1" });
-    await user.clear(within(baseLine).getByRole("spinbutton", { name: "Unit price THB" }));
-    await user.type(within(baseLine).getByRole("spinbutton", { name: "Unit price THB" }), "2500.50");
+    await user.clear(within(baseLine).getByRole("textbox", { name: "Unit price THB" }));
+    await user.type(within(baseLine).getByRole("textbox", { name: "Unit price THB" }), "2500.50");
     await user.click(screen.getByRole("button", { name: "Save and send quote" }));
 
     expect(fetch).toHaveBeenCalledOnce();
@@ -69,7 +70,7 @@ describe("AdminQuoteEditor", () => {
     expect(body).toEqual(expect.objectContaining({
       depositPercent: 50,
       freeRevisions: 4,
-      totalSatang: 250_050,
+      totalSatang: "250050",
     }));
     expect(body.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
     expect(JSON.stringify(body)).not.toContain("contact");
@@ -89,5 +90,62 @@ describe("AdminQuoteEditor", () => {
 
     expect(fetch).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent("Complete a valid quote before sending.");
+  });
+
+  it("preserves exact satang above the JavaScript safe integer boundary", async () => {
+    const user = userEvent.setup();
+    const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetch);
+    render(<AdminQuoteEditor {...props} />);
+
+    const amount = screen.getByRole("textbox", { name: "Unit price THB" });
+    await user.clear(amount);
+    await user.type(amount, "90071992547409.93");
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+
+    const body = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body));
+    expect(body.items[0].unitAmountSatang).toBe("9007199254740993");
+    expect(body.items[0].lineTotalSatang).toBe("9007199254740993");
+    expect(body.totalSatang).toBe("9007199254740993");
+    expect(screen.getByTestId("quote-total-thb")).toHaveTextContent("฿90,071,992,547,409.93");
+  });
+
+  it("reuses the same submission key after an ambiguous network failure", async () => {
+    const user = userEvent.setup();
+    const firstKey = "69c36e90-b095-438a-b267-1df2052045ee" as ReturnType<Crypto["randomUUID"]>;
+    const nextKey = "b77cc03c-8b83-4ff5-9c97-bb305b5538ef" as ReturnType<Crypto["randomUUID"]>;
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValueOnce(firstKey).mockReturnValueOnce(nextKey);
+    const fetch = vi.fn()
+      .mockRejectedValueOnce(new Error("connection closed after send"))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetch);
+    render(<AdminQuoteEditor {...props} />);
+
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to send quote.");
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+
+    const keys = fetch.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).idempotencyKey);
+    expect(keys).toEqual([firstKey, firstKey]);
+  });
+
+  it("rotates the submission key only after success so a second intentional send creates v2", async () => {
+    const user = userEvent.setup();
+    const firstKey = "69c36e90-b095-438a-b267-1df2052045ee" as ReturnType<Crypto["randomUUID"]>;
+    const secondKey = "b77cc03c-8b83-4ff5-9c97-bb305b5538ef" as ReturnType<Crypto["randomUUID"]>;
+    const thirdKey = "c46f218a-bba4-4d47-b9d2-470ad289fc55" as ReturnType<Crypto["randomUUID"]>;
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValueOnce(firstKey).mockReturnValueOnce(secondKey).mockReturnValueOnce(thirdKey);
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ quoteId: "9bc1c392-2b24-4df8-b971-b2320c51555c", status: "sent", version: 1 }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ quoteId: "2b50ea28-ef92-43de-8d43-e34d3e457a90", status: "sent", version: 2 }), { status: 201 }));
+    vi.stubGlobal("fetch", fetch);
+    render(<AdminQuoteEditor {...props} />);
+
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+    await user.click(screen.getByRole("button", { name: "Save and send quote" }));
+
+    const keys = fetch.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).idempotencyKey);
+    expect(keys).toEqual([firstKey, secondKey]);
+    expect(navigation.refresh).toHaveBeenCalledTimes(2);
   });
 });

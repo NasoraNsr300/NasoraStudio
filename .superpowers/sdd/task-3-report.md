@@ -94,3 +94,48 @@ One full-suite verification run correctly caught a stale contract regex after th
 - This environment has no Docker command and no callable local Supabase CLI/runtime, so the migration was validated by contract tests and SQL review but was not applied to a live local Postgres instance. Applying/resetting the Supabase database should be the first integration check in an environment with the runtime available.
 - USD uses a deliberately fixed approximate rate of 35 THB/USD and is labeled display-only. THB satang remains the only submitted and persisted amount.
 - Browser visual QA was not run; component tests and the production build cover structure/behavior, but a manual admin-page pass is still useful once seeded Supabase data is available.
+
+## Re-review changes (2026-08-09)
+
+Status: all requested Important and Minor findings are addressed.
+
+### Corrections
+
+- Stable replay now locks the request and looks up `(request_id, submission_key)` before lifecycle gating or time-sensitive quote validation. The exact persisted quote ID, version, and current persisted status are returned even if the request is now converted, the quote is superseded/accepted, or the original expiry is in the past.
+- Each submission key is bound to `(payload - idempotencyKey)::jsonb::text`, PostgreSQL's canonical JSONB text representation. A replay with different canonical payload content raises `idempotency_payload_mismatch`; the route returns HTTP 409. The schema constraint requires submission key and fingerprint to be present or absent together.
+- New quote creation is limited to `reviewing` and `quoted` requests. The editor is hidden for `submitted` requests.
+- The client retains its submission key across non-2xx and network-ambiguous failures. It rotates the key only after a confirmed successful response, so a second intentional send allocates the next quote version.
+- Same-origin checks now compare `Origin` only with the framework-normalized `request.url` origin. Caller-supplied `Host`, `X-Forwarded-Host`, and `X-Forwarded-Proto` do not influence the decision.
+- Satang crosses the editor/route boundary as canonical decimal strings. The editor parses THB decimal text and calculates line/quote totals using `BigInt`; the money input is text with decimal input mode so the browser cannot round it through `Number` first.
+- The route uses `BigInt` for multiplication, sum, cancellation, and PostgreSQL bigint-bound validation. Malformed strings return 400 rather than throwing.
+- SQL verifies JSON type, decimal syntax, length, and arbitrary-precision `numeric` bounds before every `::bigint` cast. Item multiplication, total summation, and deposit calculation use `numeric`, preventing bigint intermediate overflow and cancellation errors.
+- Route output now requires a UUID quote ID and accepts every persisted quote status in the stable replay envelope.
+
+### Re-review TDD evidence
+
+RED runs observed before implementation:
+
+1. Migration review contracts: 2/6 failed because fingerprint/order and numeric prechecks were absent.
+2. Route review contracts: 7/11 failed because forwarded headers were trusted, satang strings were rejected, replay statuses/UUID/error mapping were unsupported, and the route still used Number schemas.
+3. Editor/detail review contracts: 4/9 failed because submitted requests still rendered the editor, satang remained numeric, and the key did not rotate after success.
+4. Exact large THB input: 1/7 editor tests failed because `<input type="number">` rounded `.93` to `.94` before BigInt parsing; changing the money field to decimal text preserved the source string.
+5. Malformed total and line strings reproduced uncaught `BigInt` conversion errors before guarded refinements were added.
+6. Expired stable replay: 1/12 route tests failed because route-level future-expiry validation blocked the database replay lookup; time-sensitive validation now occurs after replay detection in SQL.
+7. Fingerprint schema binding: 1/6 migration tests failed until the key/fingerprint pairing constraint was added.
+
+GREEN/final runs:
+
+- `npm test -- --run tests/unit/admin-quote-migration.test.ts tests/unit/admin-quote-route.test.ts tests/components/admin-quote-editor.test.tsx tests/components/admin-estimate-detail.test.tsx tests/unit/admin-estimate-repository.test.ts`
+  - Exit 0; 5/5 files and 34/34 tests passed.
+- `npm test -- --run --maxWorkers=2`
+  - Exit 0; 60/60 files and 245/245 tests passed.
+- `npm run typecheck`
+  - Exit 0; no TypeScript errors.
+- `npm run lint`
+  - Exit 0; no ESLint errors or warnings.
+- `npm run build`
+  - Exit 0; Next.js production build compiled, typechecked, generated 41 static pages, and registered the quote route.
+
+### Remaining concern
+
+- The environment still has no Docker/Supabase runtime, so these SQL corrections have contract coverage and manual SQL review but have not been applied to a live local Postgres database. No new external dependency was added.

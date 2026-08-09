@@ -1,5 +1,6 @@
 alter table public.quotes
   add column submission_key uuid,
+  add column submission_payload_fingerprint text,
   add column estimated_duration_min_days integer,
   add column estimated_duration_max_days integer,
   add constraint quote_duration_range_check check (
@@ -10,6 +11,10 @@ alter table public.quotes
       and estimated_duration_min_days > 0
       and estimated_duration_max_days >= estimated_duration_min_days
     )
+  ),
+  add constraint quote_submission_fingerprint_check check (
+    (submission_key is null and submission_payload_fingerprint is null)
+    or (submission_key is not null and submission_payload_fingerprint is not null)
   ),
   add constraint quote_request_submission_unique unique (request_id, submission_key);
 
@@ -27,10 +32,11 @@ declare
   v_existing public.quotes%rowtype;
   v_item jsonb;
   v_submission_key uuid;
+  v_payload_fingerprint text;
   v_scope jsonb;
   v_items jsonb;
   v_total_satang bigint;
-  v_item_total bigint := 0;
+  v_item_total numeric := 0;
   v_deposit_percent integer;
   v_free_revisions integer;
   v_duration_min integer;
@@ -44,6 +50,11 @@ declare
   v_quantity integer;
   v_unit_amount_satang bigint;
   v_line_total_satang bigint;
+  v_quantity_text text;
+  v_unit_amount_text text;
+  v_line_total_text text;
+  v_bigint_min constant numeric := -9223372036854775808;
+  v_bigint_max constant numeric := 9223372036854775807;
 begin
   if not private.is_admin() then
     raise exception 'admin_required' using errcode = '42501';
@@ -53,10 +64,77 @@ begin
     raise exception 'invalid_quote_payload';
   end if;
 
+  if (p_payload ->> 'idempotencyKey') is null
+    or (p_payload ->> 'idempotencyKey') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  then
+    raise exception 'invalid_quote_payload';
+  end if;
+
+  v_submission_key := (p_payload ->> 'idempotencyKey')::uuid;
+  v_payload_fingerprint := (p_payload - 'idempotencyKey')::text;
+
+  select * into v_request
+  from public.commission_requests
+  where id = p_request_id
+  for update;
+
+  if not found then
+    raise exception 'request_not_found';
+  end if;
+
+  select * into v_existing
+  from public.quotes
+  where request_id = p_request_id
+    and submission_key = v_submission_key;
+
+  if found then
+    if v_existing.submission_payload_fingerprint is distinct from v_payload_fingerprint then
+      raise exception 'idempotency_payload_mismatch';
+    end if;
+    return query select v_existing.id, v_existing.version, v_existing.status;
+    return;
+  end if;
+
+  if v_request.status not in ('reviewing', 'quoted') then
+    raise exception 'invalid_request_transition';
+  end if;
+
+  v_scope := p_payload -> 'scope';
+  v_items := p_payload -> 'items';
+
+  if jsonb_typeof(v_scope) <> 'object'
+    or nullif(btrim(v_scope ->> 'th'), '') is null
+    or nullif(btrim(v_scope ->> 'en'), '') is null
+    or jsonb_typeof(v_items) <> 'array'
+    or jsonb_array_length(v_items) = 0
+    or jsonb_typeof(p_payload -> 'totalSatang') <> 'string'
+    or char_length(p_payload ->> 'totalSatang') > 19
+    or (p_payload ->> 'totalSatang') !~ '^(0|[1-9][0-9]*)$'
+    or char_length(p_payload ->> 'depositPercent') > 3
+    or (p_payload ->> 'depositPercent') !~ '^(0|[1-9][0-9]*)$'
+    or char_length(p_payload ->> 'freeRevisions') > 4
+    or (p_payload ->> 'freeRevisions') !~ '^(0|[1-9][0-9]*)$'
+    or char_length(p_payload ->> 'durationMinDays') > 4
+    or (p_payload ->> 'durationMinDays') !~ '^(0|[1-9][0-9]*)$'
+    or char_length(p_payload ->> 'durationMaxDays') > 4
+    or (p_payload ->> 'durationMaxDays') !~ '^(0|[1-9][0-9]*)$'
+    or char_length(p_payload #>> '{termsDocument,version}') > 10
+    or (p_payload #>> '{termsDocument,version}') !~ '^(0|[1-9][0-9]*)$'
+  then
+    raise exception 'invalid_quote_payload';
+  end if;
+
+  if (p_payload ->> 'totalSatang')::numeric > v_bigint_max
+    or (p_payload ->> 'depositPercent')::numeric > 100
+    or (p_payload ->> 'freeRevisions')::numeric > 1000
+    or (p_payload ->> 'durationMinDays')::numeric not between 1 and 3650
+    or (p_payload ->> 'durationMaxDays')::numeric not between 1 and 3650
+    or (p_payload #>> '{termsDocument,version}')::numeric not between 1 and 2147483647
+  then
+    raise exception 'invalid_quote_payload';
+  end if;
+
   begin
-    v_submission_key := (p_payload ->> 'idempotencyKey')::uuid;
-    v_scope := p_payload -> 'scope';
-    v_items := p_payload -> 'items';
     v_total_satang := (p_payload ->> 'totalSatang')::bigint;
     v_deposit_percent := (p_payload ->> 'depositPercent')::integer;
     v_free_revisions := (p_payload ->> 'freeRevisions')::integer;
@@ -70,56 +148,18 @@ begin
     raise exception 'invalid_quote_payload';
   end;
 
-  if v_submission_key is null
-    or jsonb_typeof(v_scope) <> 'object'
-    or nullif(btrim(v_scope ->> 'th'), '') is null
-    or nullif(btrim(v_scope ->> 'en'), '') is null
-    or jsonb_typeof(v_items) <> 'array'
-    or jsonb_array_length(v_items) = 0
-    or v_total_satang is null or v_total_satang < 0
-    or v_deposit_percent is null or v_deposit_percent not between 0 and 100
-    or v_free_revisions is null or v_free_revisions < 0
-    or v_duration_min is null or v_duration_min <= 0
-    or v_duration_max is null or v_duration_max < v_duration_min
+  if v_duration_max < v_duration_min
     or v_expires_at is null or v_expires_at <= now()
     or v_terms_slug is null
-    or v_terms_version is null or v_terms_version <= 0
   then
     raise exception 'invalid_quote_payload';
   end if;
 
-  select * into v_request
-  from public.commission_requests
-  where id = p_request_id
-  for update;
-
-  if not found then
-    raise exception 'request_not_found';
-  end if;
-
-  if v_request.status not in ('submitted', 'reviewing', 'quoted') then
-    raise exception 'invalid_request_transition';
-  end if;
-
-  select * into v_existing
-  from public.quotes
-  where request_id = p_request_id
-    and submission_key = v_submission_key;
-
-  if found then
-    return query select v_existing.id, v_existing.version, v_existing.status;
-    return;
-  end if;
-
   for v_item in select value from jsonb_array_elements(v_items)
   loop
-    begin
-      v_quantity := (v_item ->> 'quantity')::integer;
-      v_unit_amount_satang := (v_item ->> 'unitAmountSatang')::bigint;
-      v_line_total_satang := (v_item ->> 'lineTotalSatang')::bigint;
-    exception when others then
-      raise exception 'invalid_quote_item';
-    end;
+    v_quantity_text := v_item ->> 'quantity';
+    v_unit_amount_text := v_item ->> 'unitAmountSatang';
+    v_line_total_text := v_item ->> 'lineTotalSatang';
 
     if (v_item ->> 'itemType') is null
       or (v_item ->> 'itemType') not in ('base', 'character', 'background', 'prop', 'rush', 'discount', 'other')
@@ -127,17 +167,30 @@ begin
       or nullif(btrim(v_item #>> '{label,en}'), '') is null
       or nullif(btrim(v_item #>> '{description,th}'), '') is null
       or nullif(btrim(v_item #>> '{description,en}'), '') is null
-      or v_quantity is null or v_quantity <= 0
-      or v_unit_amount_satang is null
-      or v_line_total_satang is null or v_line_total_satang <> v_unit_amount_satang * v_quantity
+      or v_quantity_text is null or char_length(v_quantity_text) > 4 or v_quantity_text !~ '^(0|[1-9][0-9]*)$'
+      or jsonb_typeof(v_item -> 'unitAmountSatang') <> 'string'
+      or v_unit_amount_text is null or char_length(v_unit_amount_text) > 20 or v_unit_amount_text !~ '^-?(0|[1-9][0-9]*)$'
+      or jsonb_typeof(v_item -> 'lineTotalSatang') <> 'string'
+      or v_line_total_text is null or char_length(v_line_total_text) > 20 or v_line_total_text !~ '^-?(0|[1-9][0-9]*)$'
     then
       raise exception 'invalid_quote_item';
     end if;
 
-    v_item_total := v_item_total + v_line_total_satang;
+    if v_quantity_text::numeric not between 1 and 1000
+      or v_unit_amount_text::numeric not between v_bigint_min and v_bigint_max
+      or v_line_total_text::numeric not between v_bigint_min and v_bigint_max
+      or v_line_total_text::numeric <> v_unit_amount_text::numeric * v_quantity_text::numeric
+    then
+      raise exception 'invalid_quote_item';
+    end if;
+
+    v_quantity := v_quantity_text::integer;
+    v_unit_amount_satang := v_unit_amount_text::bigint;
+    v_line_total_satang := v_line_total_text::bigint;
+    v_item_total := v_item_total + v_line_total_text::numeric;
   end loop;
 
-  if v_item_total <> v_total_satang then
+  if v_item_total <> v_total_satang::numeric then
     raise exception 'quote_total_mismatch';
   end if;
 
@@ -167,7 +220,8 @@ begin
     terms_document_version,
     expires_at,
     created_by,
-    submission_key
+    submission_key,
+    submission_payload_fingerprint
   ) values (
     p_request_id,
     v_version,
@@ -175,7 +229,7 @@ begin
     v_scope,
     v_total_satang,
     v_deposit_percent,
-    round(v_total_satang * v_deposit_percent / 100.0)::bigint,
+    round(v_total_satang::numeric * v_deposit_percent::numeric / 100)::bigint,
     v_free_revisions,
     v_duration_max,
     v_duration_min,
@@ -185,7 +239,8 @@ begin
     v_terms_version,
     v_expires_at,
     auth.uid(),
-    v_submission_key
+    v_submission_key,
+    v_payload_fingerprint
   ) returning * into v_quote;
 
   for v_item in select value from jsonb_array_elements(v_items)

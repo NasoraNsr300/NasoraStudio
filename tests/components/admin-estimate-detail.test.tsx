@@ -45,7 +45,7 @@ const request: AdminEstimateDetailModel = {
   requestedDeadline: "2026-09-01",
   requesterType: "member",
   serviceName: { en: "Full Body", th: "เต็มตัว" },
-  status: "submitted",
+  status: "reviewing",
   submittedAt: "2026-08-09T10:00:00.000Z",
   usageType: "personal",
 };
@@ -63,12 +63,18 @@ describe("AdminEstimateDetail", () => {
     expect(screen.getAllByText("2")).toHaveLength(2);
     expect(screen.getByText("Accepted policies")).toBeVisible();
     expect(screen.getByText("Latest quote v2 · sent · ฿3,000")).toBeVisible();
-    expect(controls.render).toHaveBeenCalledWith({ requestId: request.id, status: "submitted" });
+    expect(controls.render).toHaveBeenCalledWith({ requestId: request.id, status: "reviewing" });
     expect(quoteEditor.render).toHaveBeenCalledWith({
       requestId: request.id,
       requestedDeadline: request.requestedDeadline,
       serviceName: request.serviceName,
     });
     expect(JSON.stringify(quoteEditor.render.mock.calls)).not.toContain("@mali");
+  });
+
+  it("does not expose the quote editor before an estimate enters reviewing", () => {
+    render(<AdminEstimateDetail request={{ ...request, status: "submitted" }} />);
+
+    expect(quoteEditor.render).not.toHaveBeenCalled();
   });
 });

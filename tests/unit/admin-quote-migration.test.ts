@@ -62,4 +62,33 @@ describe("admin quote workflow migration", () => {
     expect(sql).toContain("revoke insert, update, delete on public.quotes from authenticated");
     expect(sql).toContain("revoke insert, update, delete on public.quote_items from authenticated");
   });
+
+  it("replays the persisted quote before lifecycle gating and rejects a changed payload for the same key", () => {
+    const sql = migrationSql();
+    const functionSql = sql.split("create function private.save_and_send_quote")[1] ?? "";
+    const lockPosition = functionSql.indexOf("for update");
+    const replayPosition = functionSql.indexOf("submission_payload_fingerprint");
+    const lifecyclePosition = functionSql.indexOf("v_request.status not in ('reviewing', 'quoted')");
+
+    expect(sql).toContain("add column submission_payload_fingerprint text");
+    expect(sql).toContain("quote_submission_fingerprint_check");
+    expect(lockPosition).toBeGreaterThan(-1);
+    expect(replayPosition).toBeGreaterThan(lockPosition);
+    expect(lifecyclePosition).toBeGreaterThan(replayPosition);
+    expect(functionSql).toContain("idempotency_payload_mismatch");
+    expect(functionSql).toContain("v_existing.status");
+    expect(functionSql).not.toContain("'submitted', 'reviewing', 'quoted'");
+  });
+
+  it("checks decimal strings as arbitrary precision numeric values before bigint casts", () => {
+    const sql = migrationSql();
+    const functionSql = sql.split("create function private.save_and_send_quote")[1] ?? "";
+
+    expect(functionSql).toContain("9223372036854775807");
+    expect(functionSql).toContain("-9223372036854775808");
+    expect(functionSql).toContain("::numeric");
+    expect(functionSql).toContain("v_item_total numeric := 0");
+    expect(functionSql.indexOf("unitamountsatang') !~")).toBeLessThan(functionSql.indexOf("unitamountsatang')::bigint"));
+    expect(functionSql.indexOf("totalsatang') !~")).toBeLessThan(functionSql.indexOf("totalsatang')::bigint"));
+  });
 });

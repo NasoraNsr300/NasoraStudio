@@ -42,7 +42,7 @@ export function AdminEstimateDetail({ request }: { request: AdminEstimateDetailM
     </div>
     {request.latestQuote && <aside className={styles.quoteSummary}>Latest quote v{request.latestQuote.version} · {request.latestQuote.status} · {formatQuoteTotal(request.latestQuote.totalSatang)}</aside>}
     <AdminEstimateStatusControls requestId={request.id} status={request.status} />
-    {(request.status === "submitted" || request.status === "reviewing" || request.status === "quoted") && <AdminQuoteEditor
+    {(request.status === "reviewing" || request.status === "quoted") && <AdminQuoteEditor
       requestId={request.id}
       requestedDeadline={request.requestedDeadline}
       serviceName={request.serviceName}

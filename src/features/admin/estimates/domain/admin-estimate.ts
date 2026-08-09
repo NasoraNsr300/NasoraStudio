@@ -58,9 +58,9 @@ export type AdminQuoteDraftItem = {
   description: AdminQuoteLocalizedText;
   itemType: AdminQuoteItemType;
   label: AdminQuoteLocalizedText;
-  lineTotalSatang: number;
+  lineTotalSatang: string;
   quantity: number;
-  unitAmountSatang: number;
+  unitAmountSatang: string;
 };
 
 export type AdminQuoteDraftInput = {
@@ -74,5 +74,5 @@ export type AdminQuoteDraftInput = {
   proposedDeadline: string | null;
   scope: AdminQuoteLocalizedText;
   termsDocument: { slug: string; version: number };
-  totalSatang: number;
+  totalSatang: string;
 };
