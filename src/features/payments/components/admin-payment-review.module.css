@@ -1,0 +1,28 @@
+.sectionPage { grid-column: 1 / -1; min-width: 0; }
+.pageHeader { align-items: center; display: flex; justify-content: space-between; margin-bottom: 18px; min-height: 66px; }
+.pageHeader > div { align-items: center; display: flex; gap: 13px; }
+.pageHeader > div > span { align-items: center; background: rgb(114 78 182 / 22%); border-radius: 9px; color: var(--brand-violet); display: flex; height: 45px; justify-content: center; width: 45px; }
+.pageHeader h1 { font-size: 25px; margin: 0; }
+.pageHeader p { color: var(--admin-muted, #9aa7be); font-size: 12px; margin: 4px 0 0; }
+.metricRow { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; }
+.metricRow article { background: var(--admin-panel, #0c1930); border: 1px solid var(--admin-border, #253551); border-radius: 10px; display: grid; padding: 17px 19px; }
+.metricRow small { color: var(--admin-muted, #9aa7be); }
+.metricRow strong { font-size: 25px; margin: 3px 0; }
+.metricRow span { color: var(--brand-gold); font-size: 10px; }
+.dataPanel { background: var(--admin-panel, #0c1930); border: 1px solid var(--admin-border, #253551); border-radius: 10px; overflow-x: auto; }
+.dataPanel table { border-collapse: collapse; min-width: 880px; width: 100%; }
+.dataPanel th, .dataPanel td { border-top: 1px solid rgb(37 53 81 / 70%); font-size: 11px; padding: 13px 15px; text-align: left; vertical-align: top; }
+.dataPanel th { color: var(--admin-muted, #9aa7be); font-weight: 500; }
+.pending { border: 1px solid #936c1c; border-radius: 999px; color: #f0b94a; display: inline-block; font-size: 10px; padding: 4px 9px; white-space: nowrap; }
+.iconAction { align-items: center; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; display: inline-flex; height: 31px; justify-content: center; width: 31px; }
+.actions { display: flex; gap: 6px; }
+.actions button, .rejectBox button { align-items: center; background: transparent; border: 1px solid #3a4a65; border-radius: 5px; color: inherit; display: inline-flex; font: inherit; font-size: 10px; gap: 5px; min-height: 30px; padding: 0 10px; }
+.actions button:first-child { border-color: #2d8150; color: #58d17a; }
+.actions button:last-child, .rejectBox button { border-color: #953d49; color: #ef6675; }
+.rejectBox { display: grid; gap: 6px; margin-top: 8px; min-width: 190px; }
+.rejectBox label { color: var(--admin-muted, #9aa7be); display: grid; gap: 4px; }
+.rejectBox input { background: var(--admin-input, #0a1629); border: 1px solid var(--admin-border, #253551); border-radius: 5px; color: inherit; min-height: 30px; padding: 0 7px; }
+.rejectBox p { color: #ef6675; margin: 0; }
+.empty { color: var(--admin-muted, #9aa7be); padding: 35px !important; text-align: center !important; }
+:global(html[data-theme="autumn"]) .rejectBox input { background: #fffdf8; color: #2b2118; }
+@media (max-width: 760px) { .metricRow { grid-template-columns: 1fr; } }

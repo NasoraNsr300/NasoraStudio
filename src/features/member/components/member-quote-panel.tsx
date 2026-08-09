@@ -15,6 +15,7 @@ type Props = {
   locale: Locale;
   now?: string;
   onPayDeposit?: (handoff: DepositPaymentHandoff) => void;
+  paymentPending?: boolean;
   quote: MemberQuote;
 };
 
@@ -57,7 +58,7 @@ function formatApproximateUsd(satang: number) {
   return new Intl.NumberFormat("en-US", { currency: "USD", maximumFractionDigits: 2, minimumFractionDigits: 2, style: "currency" }).format(satang / 100 / 35);
 }
 
-export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPayDeposit, quote }: Props) {
+export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPayDeposit, paymentPending = false, quote }: Props) {
   const text = copy[locale];
   const isExpired = quote.status === "expired" || (quote.expiresAt !== null && new Date(quote.expiresAt).getTime() <= new Date(now).getTime());
   const isReplaced = quote.status === "superseded";
@@ -79,6 +80,6 @@ export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPay
     </section>
     {quote.expiresAt ? <p className={styles.quoteMeta}>{text.expires}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(quote.expiresAt))}</p> : null}
     {quote.proposedDeadline ? <p className={styles.quoteMeta}>{text.proposedDeadline}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium" }).format(new Date(`${quote.proposedDeadline}T00:00:00`))}</p> : null}
-    {canPay ? <div className={styles.quoteAction}><button aria-describedby={onPayDeposit ? undefined : "deposit-payment-unavailable"} className={styles.goldButton} disabled={!onPayDeposit} onClick={() => onPayDeposit?.({ depositSatang: quote.depositSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{text.payDeposit}</button>{!onPayDeposit ? <small id="deposit-payment-unavailable">{text.paymentUnavailable}</small> : null}</div> : null}
+    {canPay ? <div className={styles.quoteAction}><button aria-describedby={onPayDeposit ? undefined : "deposit-payment-unavailable"} className={styles.goldButton} disabled={!onPayDeposit || paymentPending} onClick={() => onPayDeposit?.({ depositSatang: quote.depositSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{paymentPending ? "…" : text.payDeposit}</button>{!onPayDeposit ? <small id="deposit-payment-unavailable">{text.paymentUnavailable}</small> : null}</div> : null}
   </section>;
 }
