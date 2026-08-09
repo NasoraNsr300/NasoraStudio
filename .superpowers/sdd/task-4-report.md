@@ -53,7 +53,7 @@ Complete. Member request rows with a sent quote now link to a member-only quote 
 
 ### Changes
 
-- Added `supabase/migrations/20260809200000_harden_member_quote_visibility.sql`.
+- Added `supabase/migrations/20260809193000_harden_member_quote_visibility.sql`.
   - Owners can select quote rows and quote items only when the parent quote is `sent`, `accepted`, `declined`, `expired`, or `closed`.
   - Admin RLS access remains unrestricted across quote statuses.
   - The migration revokes the inherited table-wide `SELECT` grant on `quotes` and `quote_items`, then grants only member/admin-summary snapshot columns. It excludes audit/authoring/replay/timestamp internals such as `created_by`, submission secrets, and validity/audit timestamps.

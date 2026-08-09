@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migrationPath = "supabase/migrations/20260809200000_harden_member_quote_visibility.sql";
+const migrationPath = "supabase/migrations/20260809193000_harden_member_quote_visibility.sql";
 const coreMigrationPath = "supabase/migrations/20260806050235_core_commission_database.sql";
 
 function migrationSql() {
