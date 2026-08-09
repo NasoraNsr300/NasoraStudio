@@ -39,8 +39,34 @@ describe("verified deposit to job migration", () => {
     expect(createJob).toContain("accepted_quote_id = v_payment.quote_id");
     expect(createJob).toContain("if v_job.id is not null then");
     expect(createJob).toContain("return query select v_job.id, v_queue.id");
+    expect(createJob.indexOf("if v_job.id is not null then")).toBeLessThan(createJob.indexOf("if v_payment.kind <> 'deposit' then"));
+    expect(createJob).not.toContain("queue.archived_at is null");
+    expect(createJob.indexOf("from public.commission_requests request")).toBeLessThan(createJob.indexOf("from public.quotes quote"));
     const core = readFileSync("supabase/migrations/20260806050235_core_commission_database.sql", "utf8").toLowerCase();
     expect(core).toMatch(/unique index queue_entries_one_active_per_job/);
+  });
+
+  it("atomically verifies deposit slips and creates jobs in the same service RPC transaction", () => {
+    const migration = sql();
+    const wrapperStart = migration.lastIndexOf("create or replace function public.gateway_verify_payment_slip");
+    const wrapper = migration.slice(wrapperStart, migration.indexOf("$$;", wrapperStart) + 3);
+    expect(wrapper).toContain("private.verify_payment_slip");
+    expect(wrapper).toContain("private.create_job_from_verified_deposit");
+    expect(wrapper).toContain("payment.kind = 'deposit'");
+    expect(wrapper.indexOf("private.verify_payment_slip")).toBeLessThan(wrapper.indexOf("private.create_job_from_verified_deposit"));
+    const verifyStart = migration.lastIndexOf("create or replace function private.verify_payment_slip");
+    const verify = migration.slice(verifyStart, migration.indexOf("$$;", verifyStart) + 3);
+    expect(verify).toContain("from public.commission_requests request");
+    expect(verify.indexOf("from public.commission_requests request")).toBeLessThan(verify.indexOf("from public.quotes quote"));
+    expect(migration).toMatch(/revoke all on function[\s\S]*private\.verify_payment_slip\(uuid, uuid, text, text, uuid\)[\s\S]*from public, anon, authenticated, service_role/);
+  });
+
+  it("prevents a verified quote or request from being superseded during conversion", () => {
+    const migration = sql();
+    expect(migration).toContain("create function private.protect_verified_deposit_conversion");
+    expect(migration).toContain("create trigger quotes_protect_verified_deposit");
+    expect(migration).toContain("create trigger requests_protect_verified_deposit");
+    expect(migration).toContain("verified_deposit_conversion_required");
   });
 
   it("rejects missing, non-deposit, and non-verified ledgers before any job insert", () => {
@@ -80,9 +106,21 @@ describe("verified deposit to job migration", () => {
     const historyGrant = migration.match(/grant select \(([^)]+)\) on public\.job_status_history to authenticated/)?.[1] ?? "";
     expect(historyGrant).toContain("public_note");
     expect(historyGrant).not.toContain("private_note");
+    const jobsGrant = migration.match(/grant select \(([^)]+)\) on public\.jobs to authenticated/)?.[1] ?? "";
+    expect(jobsGrant).toContain("guest_display_name");
     const core = readFileSync("supabase/migrations/20260806052810_consolidate_core_commission_policies.sql", "utf8").toLowerCase().replace(/\s+/g, " ");
     expect(core).toContain("jobs_select_own");
     expect(core).toContain("auth.uid()) = user_id");
+  });
+
+  it("uses customer-visible initial statuses and never publishes private status labels", () => {
+    const migration = sql();
+    const createJob = privateFunction("create_job_from_verified_deposit");
+    expect(createJob).toContain("status.customer_visible");
+    const changeStart = migration.lastIndexOf("create or replace function private.change_job_status");
+    const changeStatus = migration.slice(changeStart, migration.indexOf("$$;", changeStart) + 3);
+    expect(changeStatus).toContain("if v_status.customer_visible then");
+    expect(changeStatus.indexOf("if v_status.customer_visible then")).toBeLessThan(changeStatus.indexOf("status_label_snapshot = v_status.label"));
   });
 
   it("adds the owner/time index used by the upload attempt quota", () => {

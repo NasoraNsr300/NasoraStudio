@@ -1,5 +1,5 @@
 -- Convert an already verified deposit into one durable job and queue entry.
--- The function body is one PostgreSQL transaction: any exception rolls back every write.
+-- The function body is one PostgreSQL transaction: any exception reverts every write.
 
 create index if not exists payment_slip_attempts_owner_created_idx
   on public.payment_slip_upload_attempts (user_id, created_at desc);
@@ -28,16 +28,24 @@ begin
   if not found then
     raise exception 'verified_deposit_not_found';
   end if;
-  if v_payment.kind <> 'deposit' then
-    raise exception 'verified_deposit_required';
-  end if;
-
   select payment_intent.* into v_payment_intent
   from public.payment_intents payment_intent
   where payment_intent.id = v_payment.intent_id
   for update;
   if not found or v_payment_intent.status <> 'verified' then
     raise exception 'verified_payment_intent_required';
+  end if;
+
+  -- Match quote authoring's request -> quote order. The request lock also prevents
+  -- a paid request from changing state while its job snapshot is being created.
+  select request.* into v_request
+  from public.commission_requests request
+  where request.id = v_payment.request_id
+    and request.user_id = v_payment.user_id
+    and request.requester_type = 'member'
+  for update;
+  if not found then
+    raise exception 'member_request_not_found';
   end if;
 
   select job.* into v_job
@@ -47,7 +55,7 @@ begin
   if v_job.id is not null then
     select queue.* into v_queue
     from public.queue_entries queue
-    where queue.job_id = v_job.id and queue.archived_at is null
+    where queue.job_id = v_job.id
     order by queue.created_at
     limit 1;
     if v_queue.id is null then
@@ -55,6 +63,16 @@ begin
     end if;
     return query select v_job.id, v_queue.id;
     return;
+  end if;
+
+  -- Installment/final replays are a successful no-op tied to the existing job.
+  -- Reaching here means their prerequisite deposit job is missing.
+  if v_payment.kind <> 'deposit' then
+    raise exception 'deposit_job_not_found';
+  end if;
+
+  if v_request.status not in ('quoted', 'reviewing') then
+    raise exception 'convertible_member_request_not_found';
   end if;
 
   select quote.* into v_quote
@@ -65,17 +83,6 @@ begin
   for update;
   if not found then
     raise exception 'sent_quote_not_found';
-  end if;
-
-  select request.* into v_request
-  from public.commission_requests request
-  where request.id = v_payment.request_id
-    and request.user_id = v_payment.user_id
-    and request.requester_type = 'member'
-    and request.status in ('quoted', 'reviewing')
-  for update;
-  if not found then
-    raise exception 'convertible_member_request_not_found';
   end if;
 
   select workflow.* into v_workflow
@@ -92,7 +99,9 @@ begin
 
   select status.* into v_initial_status
   from public.status_definitions status
-  where status.workflow_id = v_workflow.id and status.archived_at is null
+  where status.workflow_id = v_workflow.id
+    and status.archived_at is null
+    and status.customer_visible
   order by status.display_order, status.created_at
   limit 1
   for update;
@@ -182,6 +191,196 @@ begin
 end;
 $$;
 
+-- Replace Task 5's service wrapper so deposit verification and job conversion
+-- succeed or revert together. Non-deposit payments remain ledger-only.
+create or replace function private.verify_payment_slip(
+  p_admin_user_id uuid,
+  p_payment_id uuid,
+  p_decision text,
+  p_reason text,
+  p_verification_key uuid
+)
+returns table(payment_id uuid, intent_id uuid, slip_status text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_slip public.payment_slips%rowtype;
+  v_intent public.payment_intents%rowtype;
+  v_payment public.payments%rowtype;
+  v_request public.commission_requests%rowtype;
+  v_quote public.quotes%rowtype;
+  v_paid bigint;
+  v_fingerprint text := concat_ws(':', p_decision, coalesce(nullif(btrim(p_reason), ''), ''));
+begin
+  if not exists (
+    select 1 from auth.users admin_user where admin_user.id = p_admin_user_id
+      and lower(admin_user.email) = 'nasora.nsr300@gmail.com'
+      and admin_user.raw_app_meta_data ->> 'role' = 'admin'
+  ) then raise exception 'admin_required' using errcode = '42501'; end if;
+  if p_decision not in ('approve', 'reject') or (p_decision = 'reject' and nullif(btrim(p_reason), '') is null) then
+    raise exception 'invalid_verification';
+  end if;
+
+  select * into v_slip from public.payment_slips where id = p_payment_id for update;
+  if not found then raise exception 'payment_slip_not_found'; end if;
+  if v_slip.verification_key = p_verification_key then
+    if v_slip.verification_payload_fingerprint <> v_fingerprint then raise exception 'idempotency_payload_mismatch'; end if;
+    select * into v_payment from public.payments payment where payment.intent_id = v_slip.intent_id;
+    return query select v_payment.id, v_slip.intent_id, v_slip.status;
+    return;
+  end if;
+  if v_slip.status <> 'pending_review' or nullif(btrim(v_slip.etag), '') is null then
+    raise exception 'payment_slip_not_reviewable';
+  end if;
+
+  select * into v_intent from public.payment_intents
+  where id = v_slip.intent_id and status = 'pending'
+  for update;
+  if not found then raise exception 'payment_intent_not_found'; end if;
+
+  -- Shared order with quote authoring: request first, quote second.
+  select request.* into v_request
+  from public.commission_requests request
+  where request.id = v_intent.request_id
+  for update;
+  if not found then raise exception 'commission_request_not_found'; end if;
+
+  select * into v_quote from public.quotes quote
+  where quote.id = v_intent.quote_id and quote.status = 'sent'
+    and (quote.expires_at is null or quote.expires_at > now())
+    and not exists (
+      select 1 from public.quotes newer
+      where newer.request_id = quote.request_id and newer.version > quote.version
+    )
+  for update;
+  if not found then
+    update public.payment_slips set status = 'stale', reviewed_by = p_admin_user_id, reviewed_at = now(),
+      rejection_reason = 'quote_not_payable', verification_key = p_verification_key,
+      verification_payload_fingerprint = v_fingerprint where id = v_slip.id;
+    update public.payment_intents set status = 'closed' where id = v_intent.id;
+    return query select null::uuid, v_intent.id, 'stale'::text;
+    return;
+  end if;
+
+  if p_decision = 'reject' then
+    update public.payment_slips set status = 'rejected', reviewed_by = p_admin_user_id, reviewed_at = now(),
+      rejection_reason = btrim(p_reason), verification_key = p_verification_key,
+      verification_payload_fingerprint = v_fingerprint where id = v_slip.id;
+    update public.payment_intents set status = 'pending' where id = v_intent.id;
+    return query select null::uuid, v_intent.id, 'rejected'::text;
+    return;
+  end if;
+
+  select coalesce(sum(payment.amount_satang), 0)::bigint into v_paid
+  from public.payments payment where payment.quote_id = v_intent.quote_id;
+  if v_intent.amount_satang > v_quote.total_satang - v_paid then raise exception 'payment_exceeds_balance'; end if;
+  if v_intent.kind = 'deposit' and exists (
+    select 1 from public.payments payment
+    where payment.request_id = v_intent.request_id and payment.kind = 'deposit'
+  ) then raise exception 'deposit_already_verified_for_request'; end if;
+
+  insert into public.payments (
+    intent_id, quote_id, request_id, user_id, kind, amount_satang, verified_by, verified_at
+  ) values (
+    v_intent.id, v_intent.quote_id, v_intent.request_id, v_intent.user_id,
+    v_intent.kind, v_intent.amount_satang, p_admin_user_id, now()
+  ) on conflict (intent_id) do nothing returning * into v_payment;
+  if v_payment.id is null then
+    select * into v_payment from public.payments payment where payment.intent_id = v_intent.id;
+  end if;
+  update public.payment_slips set status = 'approved', reviewed_by = p_admin_user_id,
+    reviewed_at = v_payment.verified_at, rejection_reason = null,
+    verification_key = p_verification_key, verification_payload_fingerprint = v_fingerprint
+  where id = v_slip.id;
+  update public.payment_intents set status = 'verified', verified_at = v_payment.verified_at
+  where id = v_intent.id;
+  return query select v_payment.id, v_intent.id, 'approved'::text;
+end;
+$$;
+
+create or replace function public.gateway_verify_payment_slip(
+  p_admin_user_id uuid,
+  p_payment_id uuid,
+  p_decision text,
+  p_reason text,
+  p_verification_key uuid
+)
+returns table(payment_id uuid, intent_id uuid, slip_status text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_result record;
+begin
+  if coalesce((select auth.jwt()) ->> 'role', '') <> 'service_role' then
+    raise exception 'service_role_required' using errcode = '42501';
+  end if;
+
+  select verification.* into v_result
+  from private.verify_payment_slip(
+    p_admin_user_id, p_payment_id, p_decision, p_reason, p_verification_key
+  ) verification;
+
+  if v_result.slip_status = 'approved'
+    and v_result.payment_id is not null
+    and exists (
+      select 1 from public.payments payment
+      where payment.id = v_result.payment_id and payment.kind = 'deposit'
+    )
+  then
+    perform private.create_job_from_verified_deposit(v_result.payment_id);
+  end if;
+
+  return query select v_result.payment_id, v_result.intent_id, v_result.slip_status;
+end;
+$$;
+
+-- A verified deposit freezes the paid quote/request until the same transaction
+-- converts them. This also protects deposits verified before this migration.
+create function private.protect_verified_deposit_conversion()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_table_name = 'quotes'
+    and new.status is distinct from old.status
+    and new.status <> 'accepted'
+    and exists (
+      select 1 from public.payments payment
+      where payment.quote_id = old.id and payment.kind = 'deposit'
+    )
+  then
+    raise exception 'verified_deposit_conversion_required';
+  end if;
+
+  if tg_table_name = 'commission_requests'
+    and new.status is distinct from old.status
+    and new.status <> 'converted'
+    and exists (
+      select 1 from public.payments payment
+      where payment.request_id = old.id and payment.kind = 'deposit'
+    )
+  then
+    raise exception 'verified_deposit_conversion_required';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger quotes_protect_verified_deposit
+before update of status on public.quotes
+for each row execute function private.protect_verified_deposit_conversion();
+
+create trigger requests_protect_verified_deposit
+before update of status on public.commission_requests
+for each row execute function private.protect_verified_deposit_conversion();
+
 -- Manual Guest work remains a separate admin-only action because its agreement and
 -- payment are handled outside the member workflow.
 create function private.create_manual_guest_job(
@@ -212,7 +411,7 @@ begin
   where workflow.is_active and workflow.archived_at is null
   order by workflow.is_default desc, workflow.created_at limit 1;
   select status.* into v_status from public.status_definitions status
-  where status.workflow_id = v_workflow.id and status.archived_at is null
+  where status.workflow_id = v_workflow.id and status.archived_at is null and status.customer_visible
   order by status.display_order, status.created_at limit 1;
   if v_status.id is null then raise exception 'initial_status_not_found'; end if;
 
@@ -259,6 +458,71 @@ begin
   if not private.is_admin() then raise exception 'admin_required' using errcode = '42501'; end if;
   return query select * from private.create_manual_guest_job(
     p_guest_display_name, p_category_name, p_service_name, p_deadline, p_total_satang
+  );
+end;
+$$;
+
+create or replace function private.change_job_status(
+  p_job_id uuid,
+  p_new_status_id uuid,
+  p_public_note text default null,
+  p_private_note text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_before public.jobs%rowtype;
+  v_after public.jobs%rowtype;
+  v_status public.status_definitions%rowtype;
+begin
+  if not private.is_admin() then
+    raise exception 'admin_required' using errcode = '42501';
+  end if;
+
+  select * into v_before from public.jobs where id = p_job_id for update;
+  if not found then raise exception 'job_not_found'; end if;
+
+  select * into v_status
+  from public.status_definitions
+  where id = p_new_status_id and archived_at is null;
+  if not found or v_status.workflow_id <> v_before.workflow_id then
+    raise exception 'status_not_in_job_workflow';
+  end if;
+
+  insert into public.job_status_history (
+    job_id, from_status_id, to_status_id, public_note, private_note, changed_by
+  ) values (
+    p_job_id, v_before.status_id, p_new_status_id, p_public_note, p_private_note, auth.uid()
+  );
+
+  update public.jobs
+  set
+    status_id = p_new_status_id,
+    work_started_at = case when v_status.starts_work and work_started_at is null then now() else work_started_at end,
+    completed_at = case when v_status.stable_key = 'completed' then now() else completed_at end,
+    cancelled_at = case when v_status.stable_key = 'cancelled' then now() else cancelled_at end
+  where id = p_job_id
+  returning * into v_after;
+
+  -- Private workflow states are retained in member-owned history only. The public
+  -- queue keeps its last customer-visible snapshot until another visible state.
+  if v_status.customer_visible then
+    update public.queue_entries
+    set
+      status_label_snapshot = v_status.label,
+      archived_at = case when v_status.is_terminal then coalesce(archived_at, now()) else null end
+    where job_id = p_job_id and archived_at is null;
+  end if;
+
+  insert into public.audit_logs (
+    actor_user_id, actor_role, action, entity_type, entity_id,
+    before_state, after_state, reason
+  ) values (
+    auth.uid(), 'admin', 'change_status', 'job', p_job_id,
+    to_jsonb(v_before), to_jsonb(v_after), p_private_note
   );
 end;
 $$;
@@ -310,7 +574,7 @@ grant select on public.public_queue to anon, authenticated;
 revoke all on public.jobs, public.job_status_history from authenticated;
 grant select (
   id, request_id, accepted_quote_id, customer_type, user_id,
-  member_display_name_snapshot, category_slug, category_name_snapshot,
+  member_display_name_snapshot, guest_display_name, category_slug, category_name_snapshot,
   service_type_slug, service_type_name_snapshot, workflow_id, status_id,
   original_quote_total_satang, current_total_satang, deposit_percent,
   deposit_verified_at, default_free_revisions, deadline, work_started_at,
@@ -321,12 +585,17 @@ grant select (
 ) on public.job_status_history to authenticated;
 
 revoke all on function private.create_job_from_verified_deposit(uuid),
-  private.create_manual_guest_job(text, jsonb, jsonb, date, bigint)
+  private.verify_payment_slip(uuid, uuid, text, text, uuid),
+  private.create_manual_guest_job(text, jsonb, jsonb, date, bigint),
+  private.protect_verified_deposit_conversion(),
+  private.change_job_status(uuid, uuid, text, text)
   from public, anon, authenticated, service_role;
 revoke all on function public.gateway_create_job_from_verified_deposit(uuid, uuid),
-  public.admin_create_manual_guest_job(text, jsonb, jsonb, date, bigint)
+  public.admin_create_manual_guest_job(text, jsonb, jsonb, date, bigint),
+  public.gateway_verify_payment_slip(uuid, uuid, text, text, uuid)
   from public, anon, authenticated, service_role;
 grant execute on function public.gateway_create_job_from_verified_deposit(uuid, uuid) to service_role;
+grant execute on function public.gateway_verify_payment_slip(uuid, uuid, text, text, uuid) to service_role;
 grant execute on function public.admin_create_manual_guest_job(text, jsonb, jsonb, date, bigint) to authenticated;
 
 -- Runtime transaction, RLS-role, and concurrency simulation must be run against a

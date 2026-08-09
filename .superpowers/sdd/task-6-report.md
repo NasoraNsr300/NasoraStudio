@@ -36,3 +36,20 @@ Complete locally. Approving a verified deposit now invokes a service-only gatewa
 ## Deferred runtime verification
 
 No local/live Supabase PostgreSQL runtime or deployment authorization was available. The migration was not applied. Real transaction rollback, concurrent replay, RLS role-matrix, database advisor, and deployed PostgREST relationship checks remain required in the target Supabase environment.
+
+## Review remediation
+
+- Fresh verification now performs payment approval and deposit-to-job conversion inside the same service RPC transaction. Installment/final approvals remain ledger-only; replay uses an idempotent lookup that returns the existing job and its original queue row, including archived rows.
+- Standardized the quote lifecycle lock order to `commission_requests` then `quotes` in both payment verification and deposit conversion. Verified-deposit guard triggers prevent a paid quote/request from being superseded before conversion can finish or retry.
+- Initial member and manual Guest queue statuses must be customer-visible. Later private workflow statuses retain the last safe public snapshot; only customer-visible statuses update or archive public queue rows.
+- Corrected the authenticated `jobs` column grant for `guest_display_name`. Existing owner RLS still prevents members from selecting Guest jobs, while the admin-only policy supports the Admin Jobs repository.
+- Explicitly revoked the replacement private verification function from every API role; only the service-role wrapper remains executable.
+
+## Review-cycle TDD and verification
+
+1. RED: seven contract/route assertions failed for replay, grants, lock order, atomic conversion, archived queue recovery, and public-status visibility. A final security assertion also failed until the replacement private verifier was explicitly revoked.
+2. GREEN focused: `npm test -- --run tests/unit/deposit-to-job-migration.test.ts tests/unit/payment-routes.test.ts --maxWorkers=2` — PASS, 2 files / 38 tests.
+3. Full suite: `npm test -- --run --maxWorkers=2` — PASS, 78 files / 343 tests in 60.77s.
+4. `npm run typecheck` — PASS.
+5. `npm run lint` — PASS.
+6. `npm run build` — PASS; Next.js 16.3.0 generated 41 static pages and all dynamic routes.

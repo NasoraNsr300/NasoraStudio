@@ -45,6 +45,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     const slip = await memberScopedRepository.findReviewSlip(paymentId.data);
     if (!slip) {
       const concurrentReplay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
+      if (concurrentReplay?.slipStatus === "approved" && concurrentReplay.paymentId) {
+        const workflow = await gatewayClient.rpc("gateway_create_job_from_verified_deposit", { p_admin_user_id: user.id, p_payment_id: concurrentReplay.paymentId });
+        if (workflow.error) throw new Error("job_creation_failed");
+      }
       return concurrentReplay ? Response.json(concurrentReplay) : Response.json({ error: "Payment slip not found" }, { status: 404 });
     }
     if (decision === "approve") {
@@ -52,10 +56,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
       if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
     }
     const result = await gatewayRepository.verify({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
-    if (result.slipStatus === "approved" && result.paymentId) {
-      const workflow = await gatewayClient.rpc("gateway_create_job_from_verified_deposit", { p_admin_user_id: user.id, p_payment_id: result.paymentId });
-      if (workflow.error) throw new Error("job_creation_failed");
-    }
     if (decision === "reject") {
       try { await createR2SlipStorage().deleteObject(slip.objectKey); } catch { /* Lifecycle expiry remains the fallback. */ }
     }

@@ -259,7 +259,17 @@ describe("payment mutation routes", () => {
     const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.adminRepository.verify).toHaveBeenCalledWith({ adminUserId: "user-1", decision: "approve", idempotencyKey, paymentId, reason: null });
-    expect(mocks.workflowGateway.rpc).toHaveBeenCalledWith("gateway_create_job_from_verified_deposit", { p_admin_user_id: "user-1", p_payment_id: "fed71710-0713-44e5-8712-6105a0cd57bc" });
+    expect(mocks.workflowGateway.rpc).not.toHaveBeenCalled();
+  });
+
+  it("returns approved installment/final verification without a second job RPC", async () => {
+    mocks.createClient.mockResolvedValue(authClient("admin"));
+    mocks.adminRepository.findReviewSlip.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", id: paymentId, objectKey: "payment-slips/random.jpg", sizeBytes: 123 });
+    mocks.storage.headObject.mockResolvedValue({ contentType: "image/jpeg", etag: "etag", sizeBytes: 123 });
+    mocks.adminRepository.verify.mockResolvedValue({ intentId: paymentId, paymentId: "fed71710-0713-44e5-8712-6105a0cd57bc", slipStatus: "approved" });
+    const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
+    expect(response.status).toBe(200);
+    expect(mocks.workflowGateway.rpc).not.toHaveBeenCalled();
   });
 
   it("replays a terminal decision before HEAD after a lost response", async () => {
@@ -271,6 +281,7 @@ describe("payment mutation routes", () => {
     expect(await response.json()).toEqual(terminal);
     expect(mocks.storage.headObject).not.toHaveBeenCalled();
     expect(mocks.adminRepository.verify).not.toHaveBeenCalled();
+    expect(mocks.workflowGateway.rpc).toHaveBeenCalledWith("gateway_create_job_from_verified_deposit", { p_admin_user_id: "user-1", p_payment_id: terminal.paymentId });
   });
 
   it("rechecks terminal replay before returning 404 after a concurrent commit", async () => {
@@ -282,6 +293,7 @@ describe("payment mutation routes", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(terminal);
     expect(mocks.adminRepository.findVerificationResult).toHaveBeenCalledTimes(2);
+    expect(mocks.workflowGateway.rpc).toHaveBeenCalledWith("gateway_create_job_from_verified_deposit", { p_admin_user_id: "user-1", p_payment_id: terminal.paymentId });
   });
 
   it("returns conflict when a terminal decision is retried with another key", async () => {
