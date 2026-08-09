@@ -53,3 +53,18 @@ No local/live Supabase PostgreSQL runtime or deployment authorization was availa
 4. `npm run typecheck` — PASS.
 5. `npm run lint` — PASS.
 6. `npm run build` — PASS; Next.js 16.3.0 generated 41 static pages and all dynamic routes.
+
+## Post-deposit lifecycle remediation
+
+- Added one private payable-quote predicate shared by payment-intent creation, pending-intent recovery, slip authorization, and slip verification. Before deposit, only the current non-expired `sent` quote can create/continue a deposit. After conversion, only `installment`/`final` intents tied to the exact member-owned job, accepted quote, request, and verified deposit remain payable; the quote's old expiry no longer invalidates those later payments.
+- Preserved the existing balance calculation, exact deposit amount, 100 THB installment minimum, final-payment remainder exception, pending-intent exclusivity, upload lease/rate limits, and immutable verified-payment ledger.
+- Legacy pending installment/final intents now recover and continue after their quote becomes `accepted`, while mismatched job/request/user/payment relationships close or reject the intent.
+- Slip authorization and verification use the same `request -> intent -> quote` mutation lock order as intent creation, avoiding an intent/request lock inversion during concurrent payment activity.
+- Queue archival is now independent from public-label visibility: a private terminal status archives the active queue row without replacing its last customer-safe label.
+
+### Final re-review evidence
+
+1. RED: focused migration contracts failed for accepted-quote payment continuation and hidden terminal archival.
+2. GREEN focused: `npm test -- --run tests/unit/deposit-to-job-migration.test.ts tests/unit/payment-routes.test.ts tests/unit/payment-migration.test.ts --maxWorkers=2` — PASS, 3 files / 50 tests.
+3. Full suite: `npm test -- --run --maxWorkers=2` — PASS, 78 files / 344 tests in 60.14s.
+4. `npm run typecheck`, `npm run lint`, and `npm run build` — PASS.

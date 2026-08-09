@@ -191,7 +191,389 @@ begin
 end;
 $$;
 
--- Replace Task 5's service wrapper so deposit verification and job conversion
+-- A quote is payable either before the deposit while it is the current sent quote,
+-- or after conversion while the exact accepted quote belongs to the owner's job.
+-- Accepted quotes deliberately ignore their pre-acceptance expiry timestamp.
+create or replace function private.payment_quote_is_payable(
+  p_quote_id uuid,
+  p_request_id uuid,
+  p_user_id uuid,
+  p_intent_kind text default null
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.quotes quote
+    join public.commission_requests request
+      on request.id = quote.request_id
+      and request.id = p_request_id
+      and request.user_id = p_user_id
+    where quote.id = p_quote_id
+      and (
+        (
+          quote.status = 'sent'
+          and (p_intent_kind is null or p_intent_kind = 'deposit')
+          and (quote.expires_at is null or quote.expires_at > now())
+          and not exists (
+            select 1 from public.quotes newer
+            where newer.request_id = quote.request_id and newer.version > quote.version
+          )
+        )
+        or (
+          quote.status = 'accepted'
+          and (p_intent_kind is null or p_intent_kind in ('installment', 'final'))
+          and exists (
+            select 1
+            from public.jobs job
+            where job.accepted_quote_id = quote.id
+              and job.request_id = quote.request_id
+              and job.user_id = p_user_id
+              and job.customer_type = 'member'
+          )
+          and exists (
+            select 1
+            from public.payments payment
+            where payment.quote_id = quote.id
+              and payment.request_id = quote.request_id
+              and payment.user_id = p_user_id
+              and payment.kind = 'deposit'
+          )
+        )
+      )
+  )
+$$;
+
+create or replace function private.create_payment_intent(
+  p_quote_id uuid,
+  p_request_id uuid,
+  p_amount_satang bigint,
+  p_idempotency_key uuid
+)
+returns table(intent_id uuid, amount_satang bigint, kind text, status text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_quote public.quotes%rowtype;
+  v_request public.commission_requests%rowtype;
+  v_existing public.payment_intents%rowtype;
+  v_paid bigint;
+  v_balance bigint;
+  v_kind text;
+  v_fingerprint text := concat_ws(':', p_quote_id, p_request_id, p_amount_satang);
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode = '42501'; end if;
+
+  select * into v_request
+  from public.commission_requests request
+  where request.id = p_request_id and request.user_id = auth.uid()
+  for update;
+  if not found then raise exception 'request_not_found'; end if;
+
+  select * into v_existing
+  from public.payment_intents intent
+  where intent.user_id = auth.uid() and intent.idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.payload_fingerprint <> v_fingerprint then raise exception 'idempotency_payload_mismatch'; end if;
+    if v_existing.status <> 'pending' then
+      return query select v_existing.id, v_existing.amount_satang, v_existing.kind, v_existing.status;
+      return;
+    end if;
+  end if;
+
+  update public.payment_intents intent
+  set status = 'closed'
+  where intent.request_id = p_request_id
+    and intent.status = 'pending'
+    and not private.payment_quote_is_payable(intent.quote_id, intent.request_id, intent.user_id, intent.kind);
+
+  select quote.* into v_quote
+  from public.quotes quote
+  where quote.id = p_quote_id
+    and quote.request_id = p_request_id
+    and private.payment_quote_is_payable(quote.id, quote.request_id, auth.uid(), null)
+  for update;
+  if not found then return; end if;
+
+  if v_existing.id is not null then
+    if not private.payment_quote_is_payable(v_existing.quote_id, v_existing.request_id, v_existing.user_id, v_existing.kind) then
+      update public.payment_intents set status = 'closed' where id = v_existing.id;
+      return;
+    end if;
+    return query select v_existing.id, v_existing.amount_satang, v_existing.kind, v_existing.status;
+    return;
+  end if;
+
+  select coalesce(sum(payment.amount_satang), 0)::bigint into v_paid
+  from public.payments payment
+  where payment.quote_id = p_quote_id
+    and payment.request_id = p_request_id
+    and payment.user_id = auth.uid();
+  v_balance := v_quote.total_satang - v_paid;
+  if p_amount_satang is null or p_amount_satang <= 0 then raise exception 'invalid_satang'; end if;
+  if p_amount_satang > v_balance then raise exception 'payment_exceeds_balance'; end if;
+  if v_paid = 0 then
+    if exists (
+      select 1 from public.payments payment
+      where payment.request_id = p_request_id and payment.kind = 'deposit'
+    ) then raise exception 'deposit_already_verified_for_request'; end if;
+    if p_amount_satang <> v_quote.deposit_satang then raise exception 'deposit_amount_mismatch'; end if;
+    v_kind := 'deposit';
+  elsif v_paid < v_quote.deposit_satang then
+    raise exception 'invalid_payment_state';
+  elsif p_amount_satang = v_balance then
+    v_kind := 'final';
+  elsif p_amount_satang < 10000 then
+    raise exception 'payment_below_minimum';
+  else
+    v_kind := 'installment';
+  end if;
+
+  if v_quote.status = 'sent' and v_kind <> 'deposit' then
+    raise exception 'invalid_payment_state';
+  end if;
+  if v_quote.status = 'accepted' and v_kind not in ('installment', 'final') then
+    raise exception 'invalid_payment_state';
+  end if;
+
+  select * into v_existing
+  from public.payment_intents intent
+  where intent.quote_id = p_quote_id and intent.status = 'pending';
+  if found then raise exception 'payment_intent_pending'; end if;
+
+  insert into public.payment_intents (
+    quote_id, request_id, user_id, kind, amount_satang, idempotency_key, payload_fingerprint
+  ) values (
+    p_quote_id, p_request_id, auth.uid(), v_kind, p_amount_satang, p_idempotency_key, v_fingerprint
+  )
+  returning id, public.payment_intents.amount_satang, public.payment_intents.kind, public.payment_intents.status
+  into intent_id, amount_satang, kind, status;
+  return next;
+end;
+$$;
+
+create or replace function private.get_member_pending_payment_intent(
+  p_quote_id uuid,
+  p_request_id uuid
+)
+returns table(intent_id uuid, quote_id uuid, amount_satang bigint, kind text, status text, slip_status text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select intent.id, intent.quote_id, intent.amount_satang, intent.kind, intent.status, latest_slip.status
+  from public.payment_intents intent
+  join public.commission_requests request
+    on request.id = intent.request_id and request.user_id = auth.uid()
+  join public.quotes quote
+    on quote.id = intent.quote_id and quote.request_id = request.id
+  left join lateral (
+    select case
+      when slip.status = 'authorized' and slip.lease_expires_at <= now() then 'failed'::text
+      else slip.status
+    end as status
+    from public.payment_slips slip
+    where slip.intent_id = intent.id
+    order by slip.created_at desc, slip.id desc
+    limit 1
+  ) latest_slip on true
+  where intent.quote_id = p_quote_id
+    and intent.request_id = p_request_id
+    and intent.user_id = auth.uid()
+    and intent.status = 'pending'
+    and private.payment_quote_is_payable(quote.id, quote.request_id, intent.user_id, intent.kind)
+  order by intent.created_at desc
+  limit 1
+$$;
+
+create or replace function private.authorize_payment_slip(
+  p_user_id uuid,
+  p_intent_id uuid,
+  p_content_type text,
+  p_size_bytes bigint,
+  p_upload_key uuid,
+  p_attempt_id uuid
+)
+returns table(
+  slip_id uuid,
+  object_key text,
+  content_type text,
+  size_bytes bigint,
+  slip_status text,
+  delete_after timestamptz,
+  cleanup_attempt_id uuid,
+  cleanup_object_key text
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_intent public.payment_intents%rowtype;
+  v_request public.commission_requests%rowtype;
+  v_quote public.quotes%rowtype;
+  v_slip public.payment_slips%rowtype;
+  v_extension text;
+  v_slip_id uuid := gen_random_uuid();
+  v_object_key text;
+  v_cleanup_attempt_id uuid;
+  v_cleanup_object_key text;
+  v_slip_found boolean;
+begin
+  if p_user_id is null then raise exception 'authentication_required' using errcode = '42501'; end if;
+  if p_attempt_id is null then raise exception 'invalid_upload_attempt'; end if;
+  if p_content_type not in ('image/png', 'image/jpeg', 'image/webp')
+    or p_size_bytes not between 1 and 5242880
+  then raise exception 'invalid_slip_metadata'; end if;
+
+  v_extension := case p_content_type
+    when 'image/jpeg' then 'jpg'
+    when 'image/png' then 'png'
+    else 'webp'
+  end;
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  with expired as (
+    update public.payment_slips
+    set status = 'failed', cleanup_required = true
+    where user_id = p_user_id and status = 'authorized' and lease_expires_at <= now()
+    returning attempt_id
+  )
+  update public.payment_slip_upload_attempts attempt
+  set status = 'superseded', cleanup_required = true
+  where attempt.attempt_id in (select expired.attempt_id from expired);
+
+  select slip.* into v_slip
+  from public.payment_slips slip
+  where slip.user_id = p_user_id and slip.upload_key = p_upload_key
+  for update;
+  v_slip_found := found;
+
+  select intent.* into v_intent
+  from public.payment_intents intent
+  where intent.id = p_intent_id and intent.user_id = p_user_id and intent.status = 'pending';
+  if not found then raise exception 'payment_intent_not_found'; end if;
+
+  -- Shared mutation order: request, intent, then quote.
+  select request.* into v_request
+  from public.commission_requests request
+  where request.id = v_intent.request_id and request.user_id = p_user_id
+  for update;
+  if not found then raise exception 'request_not_found'; end if;
+
+  select intent.* into v_intent
+  from public.payment_intents intent
+  where intent.id = p_intent_id
+    and intent.request_id = v_request.id
+    and intent.user_id = p_user_id
+    and intent.status = 'pending'
+  for update;
+  if not found then raise exception 'payment_intent_not_found'; end if;
+
+  select quote.* into v_quote
+  from public.quotes quote
+  where quote.id = v_intent.quote_id
+    and quote.request_id = v_intent.request_id
+    and private.payment_quote_is_payable(quote.id, quote.request_id, p_user_id, v_intent.kind)
+  for update;
+  if not found then
+    update public.payment_intents set status = 'closed' where id = v_intent.id;
+    return;
+  end if;
+
+  if v_slip_found then
+    if v_slip.intent_id <> p_intent_id
+      or v_slip.content_type <> p_content_type
+      or v_slip.size_bytes <> p_size_bytes
+    then raise exception 'idempotency_payload_mismatch'; end if;
+    if v_slip.status = 'pending_review' then
+      return query select
+        v_slip.id, v_slip.object_key, v_slip.content_type, v_slip.size_bytes,
+        v_slip.status, v_slip.delete_after, null::uuid, null::text;
+      return;
+    end if;
+    if v_slip.status = 'authorized'
+      and v_slip.attempt_id <> p_attempt_id
+      and v_slip.lease_expires_at > now()
+    then raise exception 'payment_slip_upload_in_progress'; end if;
+    if v_slip.status not in ('authorized', 'failed') then raise exception 'payment_slip_not_uploadable'; end if;
+    if v_slip.status = 'failed' or v_slip.lease_expires_at <= now() then
+      if exists (
+        select 1 from public.payment_slips other_slip
+        where other_slip.intent_id = p_intent_id
+          and other_slip.id <> v_slip.id
+          and other_slip.status in ('authorized', 'pending_review')
+      ) then raise exception 'payment_slip_active'; end if;
+      v_cleanup_attempt_id := v_slip.attempt_id;
+      v_cleanup_object_key := v_slip.object_key;
+      update public.payment_slip_upload_attempts
+      set status = 'superseded', cleanup_required = true
+      where attempt_id = v_cleanup_attempt_id;
+      if (
+        select count(*) from public.payment_slip_upload_attempts attempt
+        where attempt.user_id = p_user_id and attempt.created_at > now() - interval '1 hour'
+      ) >= 5 then raise exception 'slip_upload_rate_limited'; end if;
+      v_object_key := 'payment-slips/' || gen_random_uuid()::text || '.' || v_extension;
+      update public.payment_slips
+      set
+        status = 'authorized',
+        object_key = v_object_key,
+        attempt_id = p_attempt_id,
+        lease_expires_at = now() + interval '10 minutes',
+        etag = null,
+        cleanup_required = false,
+        uploaded_at = now(),
+        delete_after = now() + interval '30 days'
+      where id = v_slip.id
+      returning * into v_slip;
+      insert into public.payment_slip_upload_attempts (
+        attempt_id, slip_id, user_id, object_key, status
+      ) values (
+        p_attempt_id, v_slip.id, p_user_id, v_object_key, 'authorized'
+      );
+    end if;
+    return query select
+      v_slip.id, v_slip.object_key, v_slip.content_type, v_slip.size_bytes,
+      v_slip.status, v_slip.delete_after, v_cleanup_attempt_id, v_cleanup_object_key;
+    return;
+  end if;
+
+  if exists (
+    select 1 from public.payment_slips slip
+    where slip.intent_id = p_intent_id and slip.status in ('authorized', 'pending_review')
+  ) then raise exception 'payment_slip_active'; end if;
+  if (
+    select count(*) from public.payment_slip_upload_attempts attempt
+    where attempt.user_id = p_user_id and attempt.created_at > now() - interval '1 hour'
+  ) >= 5 then raise exception 'slip_upload_rate_limited'; end if;
+
+  v_object_key := 'payment-slips/' || gen_random_uuid()::text || '.' || v_extension;
+  insert into public.payment_slips (
+    id, intent_id, user_id, object_key, content_type, size_bytes,
+    upload_key, attempt_id, lease_expires_at
+  ) values (
+    v_slip_id, p_intent_id, p_user_id, v_object_key, p_content_type, p_size_bytes,
+    p_upload_key, p_attempt_id, now() + interval '10 minutes'
+  ) returning * into v_slip;
+  insert into public.payment_slip_upload_attempts (
+    attempt_id, slip_id, user_id, object_key, status
+  ) values (
+    p_attempt_id, v_slip.id, p_user_id, v_object_key, 'authorized'
+  );
+  return query select
+    v_slip.id, v_slip.object_key, v_slip.content_type, v_slip.size_bytes,
+    v_slip.status, v_slip.delete_after, null::uuid, null::text;
+end;
+$$;
+
+-- Replace Task 5's verification wrapper so deposit verification and job conversion
 -- succeed or revert together. Non-deposit payments remain ledger-only.
 create or replace function private.verify_payment_slip(
   p_admin_user_id uuid,
@@ -235,24 +617,33 @@ begin
     raise exception 'payment_slip_not_reviewable';
   end if;
 
-  select * into v_intent from public.payment_intents
-  where id = v_slip.intent_id and status = 'pending'
-  for update;
+  select intent.* into v_intent
+  from public.payment_intents intent
+  where intent.id = v_slip.intent_id and intent.status = 'pending';
   if not found then raise exception 'payment_intent_not_found'; end if;
 
-  -- Shared order with quote authoring: request first, quote second.
+  -- Shared mutation order: request, intent, then quote.
   select request.* into v_request
   from public.commission_requests request
   where request.id = v_intent.request_id
+    and request.user_id = v_intent.user_id
   for update;
   if not found then raise exception 'commission_request_not_found'; end if;
 
+  select intent.* into v_intent
+  from public.payment_intents intent
+  where intent.id = v_slip.intent_id
+    and intent.request_id = v_request.id
+    and intent.user_id = v_request.user_id
+    and intent.status = 'pending'
+  for update;
+  if not found then raise exception 'payment_intent_not_found'; end if;
+
   select * into v_quote from public.quotes quote
-  where quote.id = v_intent.quote_id and quote.status = 'sent'
-    and (quote.expires_at is null or quote.expires_at > now())
-    and not exists (
-      select 1 from public.quotes newer
-      where newer.request_id = quote.request_id and newer.version > quote.version
+  where quote.id = v_intent.quote_id
+    and quote.request_id = v_intent.request_id
+    and private.payment_quote_is_payable(
+      quote.id, quote.request_id, v_intent.user_id, v_intent.kind
     )
   for update;
   if not found then
@@ -274,7 +665,10 @@ begin
   end if;
 
   select coalesce(sum(payment.amount_satang), 0)::bigint into v_paid
-  from public.payments payment where payment.quote_id = v_intent.quote_id;
+  from public.payments payment
+  where payment.quote_id = v_intent.quote_id
+    and payment.request_id = v_intent.request_id
+    and payment.user_id = v_intent.user_id;
   if v_intent.amount_satang > v_quote.total_satang - v_paid then raise exception 'payment_exceeds_balance'; end if;
   if v_intent.kind = 'deposit' and exists (
     select 1 from public.payments payment
@@ -512,8 +906,15 @@ begin
   if v_status.customer_visible then
     update public.queue_entries
     set
-      status_label_snapshot = v_status.label,
-      archived_at = case when v_status.is_terminal then coalesce(archived_at, now()) else null end
+      status_label_snapshot = v_status.label
+    where job_id = p_job_id and archived_at is null;
+  end if;
+
+  -- Terminal work leaves the active queue even when its final internal status is
+  -- intentionally hidden. The last safe public label remains unchanged.
+  if v_status.is_terminal then
+    update public.queue_entries
+    set archived_at = coalesce(archived_at, now())
     where job_id = p_job_id and archived_at is null;
   end if;
 
@@ -585,6 +986,10 @@ grant select (
 ) on public.job_status_history to authenticated;
 
 revoke all on function private.create_job_from_verified_deposit(uuid),
+  private.payment_quote_is_payable(uuid, uuid, uuid, text),
+  private.create_payment_intent(uuid, uuid, bigint, uuid),
+  private.get_member_pending_payment_intent(uuid, uuid),
+  private.authorize_payment_slip(uuid, uuid, text, bigint, uuid, uuid),
   private.verify_payment_slip(uuid, uuid, text, text, uuid),
   private.create_manual_guest_job(text, jsonb, jsonb, date, bigint),
   private.protect_verified_deposit_conversion(),
