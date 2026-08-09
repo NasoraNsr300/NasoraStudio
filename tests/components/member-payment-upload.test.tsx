@@ -77,6 +77,7 @@ describe("member payment slip upload", () => {
     const user = userEvent.setup();
     render(<MemberRequestQuotePage locale="en" repository={repository as never} requestId={requestId} />);
     expect(await screen.findByText("recovered-qr")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Pay deposit" })).not.toBeInTheDocument();
     const input = screen.getByLabelText("Upload slip") as HTMLInputElement;
     const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], "replacement.png", { type: "image/png" });
     await user.upload(input, file);

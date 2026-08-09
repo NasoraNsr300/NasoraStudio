@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   createR2SlipStorage: vi.fn(),
   paymentRepository: { allocateSlip: vi.fn(), beginPut: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn(), recoverIntent: vi.fn() },
   storage: { deleteObject: vi.fn(), headObject: vi.fn(), putObject: vi.fn() },
+  workflowGateway: { rpc: vi.fn() },
 }));
 
 vi.mock("@/shared/supabase/server", () => ({ createClient: mocks.createClient }));
@@ -52,9 +53,10 @@ beforeEach(() => {
   mocks.paymentRepository.createIntent.mockReset();
   mocks.paymentRepository.recoverIntent.mockReset();
   mocks.storage.deleteObject.mockReset().mockResolvedValue(undefined);
+  mocks.workflowGateway.rpc.mockReset().mockResolvedValue({ data: [{ job_id: "job-1", queue_entry_id: "queue-1" }], error: null });
+  mocks.createPaymentGatewayClient.mockReturnValue(mocks.workflowGateway);
   process.env.PROMPTPAY_ID = "0812345678";
   mocks.createClient.mockResolvedValue(authClient());
-  mocks.createPaymentGatewayClient.mockReturnValue({ rpc: vi.fn() });
   mocks.createPaymentRepository.mockReturnValue(mocks.paymentRepository);
   mocks.createAdminPaymentRepository.mockReturnValue(mocks.adminRepository);
   mocks.createR2SlipStorage.mockReturnValue(mocks.storage);
@@ -257,6 +259,7 @@ describe("payment mutation routes", () => {
     const response = await verifySlip(post(`/api/admin/payments/${paymentId}/verify`, { decision: "approve", idempotencyKey }), { params: Promise.resolve({ paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.adminRepository.verify).toHaveBeenCalledWith({ adminUserId: "user-1", decision: "approve", idempotencyKey, paymentId, reason: null });
+    expect(mocks.workflowGateway.rpc).toHaveBeenCalledWith("gateway_create_job_from_verified_deposit", { p_admin_user_id: "user-1", p_payment_id: "fed71710-0713-44e5-8712-6105a0cd57bc" });
   });
 
   it("replays a terminal decision before HEAD after a lost response", async () => {
@@ -299,6 +302,7 @@ describe("payment mutation routes", () => {
     expect(response.status).toBe(200);
     expect(mocks.storage.headObject).not.toHaveBeenCalled();
     expect(mocks.adminRepository.verify).toHaveBeenCalled();
+    expect(mocks.workflowGateway.rpc).not.toHaveBeenCalled();
   });
 
   it("requires the exact immutable admin identity", async () => {

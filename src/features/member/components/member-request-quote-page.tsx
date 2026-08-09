@@ -195,7 +195,7 @@ export function MemberRequestQuotePage({
           <MemberQuotePanel
             locale={locale}
             onPayDeposit={(handoff) => void startDeposit(handoff)}
-            paymentBlocked={activeSlip || paymentRecoveryPending}
+            paymentBlocked={Boolean(paymentIntent) || paymentRecoveryPending}
             paymentPending={paymentPending}
             quote={quote}
           />

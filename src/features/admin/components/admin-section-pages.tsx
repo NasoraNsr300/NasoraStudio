@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
 import { AdminEstimateDetail } from "@/features/admin/estimates/components/admin-estimate-detail";
 import type { AdminEstimateDetail as AdminEstimateDetailModel, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
+import type { AdminJobSummary } from "@/features/admin/jobs/data/admin-job-repository.server";
 
 import styles from "./admin-section-pages.module.css";
 
@@ -33,10 +34,20 @@ export function AdminEstimatesPage({ detail, requests = [] }: { detail?: AdminEs
   </section>;
 }
 
-export function AdminJobsPage() {
+export function AdminJobsPage({ jobs = [] }: { jobs?: AdminJobSummary[] }) {
+  const columns = [
+    { key: "waiting", title: "รอเริ่มงาน" },
+    { key: "active", title: "กำลังทำ" },
+    { key: "review", title: "รอตรวจ" },
+    { key: "complete", title: "เสร็จสิ้น" },
+  ];
+  const tone = (key: string) => key.includes("complete") ? "complete" : key.includes("review") ? "review" : key.includes("wait") || key.includes("queue") ? "waiting" : "active";
   return <section className={styles.sectionPage}>
     <PageHeader action="เพิ่มคิว Guest" description="จัดลำดับคิว อัปเดตขั้นตอนทำงาน เดดไลน์ และความคืบหน้า" icon={<Clock3 size={25} />} title="งานและคิว" />
-    <div className={styles.jobBoard}>{[["รอเริ่มงาน", "2", ["Tanmayo — Chibi", "Lunaris — Skin Minecraft"]], ["กำลังทำ", "3", ["Kirana — Full Body", "ShiroNeko — Half Body", "Mildred — Background"]], ["รอตรวจ", "2", ["Ploy — Chibi", "Aster — VTuber"]], ["เสร็จสิ้น", "24", ["งานที่ส่งมอบแล้วในเดือนนี้"]]].map(([title, count, items]) => <section key={String(title)}><header><h2>{title}</h2><b>{count}</b></header>{(items as string[]).map((item, index) => <article key={item}><strong>{item}</strong><span>กำหนดส่ง {26 + index} พ.ค. 2567</span><div><i style={{ width: `${20 + index * 30}%` }} /></div></article>)}</section>)}</div>
+    <div className={styles.jobBoard}>{columns.map((column) => {
+      const items = jobs.filter((job) => tone(job.statusKey) === column.key);
+      return <section key={column.key}><header><h2>{column.title}</h2><b>{items.length}</b></header>{items.map((job) => <article key={job.id}><strong>{job.customerDisplayName} — {job.serviceName.th}</strong><span>กำหนดส่ง {job.deadline ?? "—"}</span><div><i style={{ width: column.key === "complete" ? "100%" : column.key === "review" ? "75%" : column.key === "active" ? "45%" : "10%" }} /></div></article>)}</section>;
+    })}</div>
   </section>;
 }
 

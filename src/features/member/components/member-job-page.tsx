@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
+import type { MemberJobView } from "@/features/member/data/member-job-repository.server";
 
 import { MemberMessagesContent } from "./member-messages-page";
 import { MemberPaymentsContent } from "./member-payments-page";
@@ -87,7 +88,7 @@ const copy = {
   },
 } as const;
 
-export function MemberJobPage({ locale }: { locale: Locale }) {
+export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | null; locale: Locale }) {
   const labels = copy[locale];
   const [activeSection, setActiveSection] = useState<MemberSection>("jobs");
 
@@ -98,13 +99,13 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
       {activeSection === "jobs" && (
         <section className={styles.jobWorkspace}>
           <header className={styles.jobHeader}>
-            <h1>{labels.title}</h1>
+            <h1>{job?.title ?? labels.title}</h1>
             <div>
-              <span>{labels.job}</span>
-              <b>● {labels.status}</b>
+              <span>{job ? `${locale === "th" ? "งาน" : "Job"} #${job.code}` : labels.job}</span>
+              <b>● {job?.statusLabel ?? labels.status}</b>
               <span>
                 <CalendarDays size={15} />
-                {labels.deadline}
+                {job ? `${locale === "th" ? "กำหนดส่ง" : "Due"}: ${job.deadlineLabel}` : labels.deadline}
               </span>
             </div>
           </header>
@@ -124,6 +125,12 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
             <section className={styles.timelineCard}>
               <h2>{labels.progress}</h2>
               <div className={styles.timeline}>
+                {job?.history.map((event) => <article key={event.id}>
+                  <time>{event.changedAtLabel}</time>
+                  <span className={styles.eventDone}><Check size={15} /></span>
+                  <div><strong>{event.statusLabel}</strong>{event.publicNote && <p>{event.publicNote}</p>}</div>
+                </article>)}
+                {!job && <>
                 <article>
                   <time>
                     20 พ.ค. 2026
@@ -187,6 +194,7 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
                     <p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง และเปลี่ยนรูปดาวด้านหลังเป็นพระจันทร์เต็มดวงได้ไหมคะ?</p>
                   </div>
                 </article>
+                </>}
               </div>
             </section>
 
@@ -200,17 +208,17 @@ export function MemberJobPage({ locale }: { locale: Locale }) {
                   <dl>
                     <div>
                       <dt>{labels.total}</dt>
-                      <dd>6,500 THB</dd>
+                      <dd>{job ? `${(job.totalSatang / 100).toLocaleString()} THB` : "6,500 THB"}</dd>
                     </div>
                     <div>
                       <dt>{labels.paid}</dt>
                       <dd className={styles.paid}>
-                        3,250 THB <small>(50%)</small>
+                        {job ? `${(job.paidSatang / 100).toLocaleString()} THB` : <>3,250 THB <small>(50%)</small></>}
                       </dd>
                     </div>
                     <div>
                       <dt>{labels.balance}</dt>
-                      <dd className={styles.balance}>3,250 THB</dd>
+                      <dd className={styles.balance}>{job ? `${((job.totalSatang - job.paidSatang) / 100).toLocaleString()} THB` : "3,250 THB"}</dd>
                     </div>
                   </dl>
                   <p>

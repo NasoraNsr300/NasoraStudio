@@ -25,13 +25,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   if (user.app_metadata?.role !== "admin" || user.email?.toLowerCase() !== "nasora.nsr300@gmail.com") return Response.json({ error: "Admin access required" }, { status: 403 });
   const memberScopedRepository = createAdminPaymentRepository(client as unknown as AdminPaymentClient);
   let gatewayRepository: ReturnType<typeof createAdminPaymentRepository>;
-  try { gatewayRepository = createAdminPaymentRepository(createPaymentGatewayClient() as unknown as AdminPaymentClient); }
+  let gatewayClient: ReturnType<typeof createPaymentGatewayClient>;
+  try {
+    gatewayClient = createPaymentGatewayClient();
+    gatewayRepository = createAdminPaymentRepository(gatewayClient as unknown as AdminPaymentClient);
+  }
   catch { return Response.json({ error: "Payment service is not configured" }, { status: 503 }); }
   try {
     const decision = input.data.decision;
     const reason = input.data.reason ?? null;
     const replay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
-    if (replay) return Response.json(replay);
+    if (replay) {
+      if (replay.slipStatus === "approved" && replay.paymentId) {
+        const workflow = await gatewayClient.rpc("gateway_create_job_from_verified_deposit", { p_admin_user_id: user.id, p_payment_id: replay.paymentId });
+        if (workflow.error) throw new Error("job_creation_failed");
+      }
+      return Response.json(replay);
+    }
     const slip = await memberScopedRepository.findReviewSlip(paymentId.data);
     if (!slip) {
       const concurrentReplay = await gatewayRepository.findVerificationResult({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
@@ -42,6 +52,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
       if (actual.contentType !== slip.contentType || actual.sizeBytes !== slip.sizeBytes || normalizeEtag(actual.etag) !== normalizeEtag(slip.etag)) return Response.json({ error: "Uploaded file metadata does not match" }, { status: 422 });
     }
     const result = await gatewayRepository.verify({ adminUserId: user.id, decision, idempotencyKey: input.data.idempotencyKey, paymentId: paymentId.data, reason });
+    if (result.slipStatus === "approved" && result.paymentId) {
+      const workflow = await gatewayClient.rpc("gateway_create_job_from_verified_deposit", { p_admin_user_id: user.id, p_payment_id: result.paymentId });
+      if (workflow.error) throw new Error("job_creation_failed");
+    }
     if (decision === "reject") {
       try { await createR2SlipStorage().deleteObject(slip.objectKey); } catch { /* Lifecycle expiry remains the fallback. */ }
     }
