@@ -48,6 +48,7 @@ describe("MemberRequestsPage", () => {
     expect(screen.getByText(/REQ-THREE0000/)).toBeVisible();
     expect(screen.getAllByText("1")).toHaveLength(3);
     expect(screen.getByText("3 items")).toBeVisible();
+    expect(screen.getByRole("link", { name: "View quote REQ-TWO000000" })).toHaveAttribute("href", "/en/member/requests/r2");
   });
 
   it("cancels only an awaiting request and updates it locally", async () => {
