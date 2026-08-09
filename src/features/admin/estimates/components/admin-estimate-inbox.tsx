@@ -39,6 +39,7 @@ export function AdminEstimateInbox({
   const router = useRouter();
   const searchParams = useSearchParams();
   const openedRequestId = searchParams.get("request");
+  const openedRequest = requests.find((request) => request.id === openedRequestId);
 
   function openRequest(request: AdminEstimateSummary) {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
@@ -46,29 +47,50 @@ export function AdminEstimateInbox({
     router.push(`${pathname}?${nextSearchParams.toString()}`);
   }
 
-  return <section className={styles.dataPanel}>
-    <div className={styles.toolbar}>
-      <label><Search size={18} /><input placeholder="ค้นหาชื่อลูกค้า หรือเลขแบบประเมิน..." /></label>
-      <button type="button"><Filter size={17} />ตัวกรอง</button>
-      <button type="button">ล่าสุด<ChevronDown size={16} /></button>
-    </div>
-    <table>
-      <thead><tr><th>ลูกค้า</th><th>ประเภทงาน</th><th>งบที่แจ้ง</th><th>วันที่ส่ง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-      <tbody>
-        {requests.length === 0
-          ? <tr><td colSpan={6}>ยังไม่มีแบบประเมินในรายการนี้</td></tr>
-          : requests.map((request) => {
-            const status = statusPresentation[request.status];
-            return <tr aria-selected={openedRequestId === request.id} key={request.id}>
-              <td><UserRound size={17} /><span>{request.customerDisplayName}<small>{request.requestCode}</small></span></td>
-              <td>{request.serviceName.en}</td>
-              <td>{formatBudget(request)}</td>
-              <td>{formatSubmittedAt(request.submittedAt)}</td>
-              <td><span className={styles.status} data-tone={status.tone}>● {status.label}</span></td>
-              <td><button aria-label={`ประเมิน ${request.requestCode}`} className={styles.rowAction} onClick={() => openRequest(request)} type="button"><PenLine size={15} />ประเมิน</button></td>
-            </tr>;
-          })}
-      </tbody>
-    </table>
-  </section>;
+  function closePreview() {
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete("request");
+    const query = nextSearchParams.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  return <>
+    <section className={styles.dataPanel}>
+      <div className={styles.toolbar}>
+        <label><Search size={18} /><input placeholder="ค้นหาชื่อลูกค้า หรือเลขแบบประเมิน..." /></label>
+        <button type="button"><Filter size={17} />ตัวกรอง</button>
+        <button type="button">ล่าสุด<ChevronDown size={16} /></button>
+      </div>
+      <table>
+        <thead><tr><th>ลูกค้า</th><th>ประเภทงาน</th><th>งบที่แจ้ง</th><th>วันที่ส่ง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+        <tbody>
+          {requests.length === 0
+            ? <tr><td colSpan={6}>ยังไม่มีแบบประเมินในรายการนี้</td></tr>
+            : requests.map((request) => {
+              const status = statusPresentation[request.status];
+              return <tr aria-selected={openedRequestId === request.id} key={request.id}>
+                <td><UserRound size={17} /><span>{request.customerDisplayName}<small>{request.requestCode}</small></span></td>
+                <td>{request.serviceName.en}</td>
+                <td>{formatBudget(request)}</td>
+                <td>{formatSubmittedAt(request.submittedAt)}</td>
+                <td><span className={styles.status} data-tone={status.tone}>● {status.label}</span></td>
+                <td><button aria-label={`ประเมิน ${request.requestCode}`} className={styles.rowAction} onClick={() => openRequest(request)} type="button"><PenLine size={15} />ประเมิน</button></td>
+              </tr>;
+            })}
+        </tbody>
+      </table>
+    </section>
+    {openedRequest && <section aria-label={`ตัวอย่างแบบประเมิน ${openedRequest.requestCode}`} className={styles.dataPanel} role="region">
+      <div className={styles.toolbar}><strong>แบบประเมิน {openedRequest.requestCode}</strong><button onClick={closePreview} type="button">กลับไปรายการ</button></div>
+      <table>
+        <tbody>
+          <tr><th scope="row">ลูกค้า</th><td>{openedRequest.customerDisplayName}</td></tr>
+          <tr><th scope="row">ประเภทงาน</th><td>{openedRequest.serviceName.en}</td></tr>
+          <tr><th scope="row">งบที่แจ้ง</th><td>{formatBudget(openedRequest)}</td></tr>
+          <tr><th scope="row">วันที่ส่ง</th><td>{formatSubmittedAt(openedRequest.submittedAt)}</td></tr>
+          <tr><th scope="row">สถานะ</th><td><span className={styles.status} data-tone={statusPresentation[openedRequest.status].tone}>● {statusPresentation[openedRequest.status].label}</span></td></tr>
+        </tbody>
+      </table>
+    </section>}
+  </>;
 }

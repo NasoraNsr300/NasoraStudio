@@ -43,12 +43,6 @@ const rowSchema = z.object({
 
 const inboxColumns = "id,request_code,requester_type,member_display_name_snapshot,guest_display_name,service_type_name_snapshot,budget_min_satang,budget_max_satang,submitted_at,status";
 
-function failureMessage(error: QueryError | unknown) {
-  return error && typeof error === "object" && "message" in error && typeof error.message === "string"
-    ? error.message
-    : "Unable to load estimate requests";
-}
-
 export async function listAdminEstimateRequests(filters: AdminEstimateFilters = {}): Promise<AdminEstimateSummary[]> {
   const client = await createClient() as unknown as AdminEstimateClient;
   const { data: authData, error: authError } = await client.auth.getUser();
@@ -57,7 +51,7 @@ export async function listAdminEstimateRequests(filters: AdminEstimateFilters = 
   let query = client.from("commission_requests").select(inboxColumns);
   if (filters.status) query = query.eq("status", filters.status);
   const { data, error } = await query.order("submitted_at", { ascending: false });
-  if (error) throw new Error(failureMessage(error));
+  if (error) throw new Error("Unable to load estimate requests");
 
   if (!Array.isArray(data)) throw new Error("Admin estimate inbox data is unavailable");
   const parsed = z.array(rowSchema).safeParse(data);

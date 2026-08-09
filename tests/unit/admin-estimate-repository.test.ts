@@ -6,10 +6,10 @@ vi.mock("@/shared/supabase/server", () => supabase);
 
 import { listAdminEstimateRequests } from "@/features/admin/estimates/data/admin-estimate-repository.server";
 
-function queryResult(data: unknown) {
+function queryResult(data: unknown, error: { message?: string } | null = null) {
   const query = {
     eq: vi.fn(() => query),
-    order: vi.fn(async () => ({ data, error: null })),
+    order: vi.fn(async () => ({ data, error })),
     select: vi.fn(() => query),
   };
   return query;
@@ -86,6 +86,17 @@ describe("listAdminEstimateRequests", () => {
     });
 
     await expect(listAdminEstimateRequests()).rejects.toThrow("Admin estimate inbox data is unavailable");
+  });
+
+  it("does not expose a Supabase query error to the caller", async () => {
+    const query = queryResult(null, { message: "database host and row payload details" });
+    supabase.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "admin" } } }, error: null })) },
+      from: vi.fn(() => query),
+    });
+
+    await expect(listAdminEstimateRequests()).rejects.toThrow("Unable to load estimate requests");
+    await expect(listAdminEstimateRequests()).rejects.not.toThrow("database host and row payload details");
   });
 
   it("rejects a session that is not an admin", async () => {
