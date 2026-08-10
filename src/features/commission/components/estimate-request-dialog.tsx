@@ -22,9 +22,11 @@ import type { Locale } from "@/shared/i18n/locales";
 import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 import type { ServiceType } from "@/shared/types/public-content";
 
+import { GuestEstimateIdentity, MemberEstimateIdentity } from "./estimate-request-identity";
 import styles from "./commission.module.css";
 
 type CustomerMode = "member" | "guest";
+type UsageType = "personal" | "commercial";
 
 type EstimateRequestDialogProps = {
   auth?: { status: AuthStatus; user: AuthIdentity | null };
@@ -160,20 +162,6 @@ function Counter({ count, disabled, label, hint, onChange }: { count: number; di
   </div>;
 }
 
-function MemberIdentity({ contact, labels, loading, nickname }: { contact: string; labels: typeof copy.th | typeof copy.en; loading: boolean; nickname: string }) {
-  return <div className={styles.memberIdentity}>
-    <div><UserRound size={18} /><span><small>{labels.nickname}</small><strong>{loading ? labels.identityLoading : nickname}</strong></span></div>
-    <div><span className={styles.discordMark}>◉</span><span><small>{labels.contact}</small><strong>{loading ? labels.identityLoading : contact}</strong></span></div>
-  </div>;
-}
-
-function GuestIdentity({ disabled, labels }: { disabled: boolean; labels: typeof copy.th | typeof copy.en }) {
-  return <div className={styles.guestIdentity}>
-    <label>{labels.nickname}<span>*</span><input disabled={disabled} maxLength={80} name="guestDisplayName" placeholder={labels.guestNameHint} required type="text" /></label>
-    <label>{labels.contact}<span>*</span><div className={styles.contactFields}><select aria-label={`${labels.contact} method`} defaultValue="discord" disabled={disabled} name="guestContactKind"><option value="discord">Discord</option><option value="email">Email</option><option value="facebook">Facebook</option><option value="x">X</option></select><input aria-label={`${labels.contact} value`} disabled={disabled} maxLength={200} name="guestContactValue" placeholder={labels.contactHint} required type="text" /></div></label>
-  </div>;
-}
-
 function localIsoDate(date = new Date()) {
   const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return offsetDate.toISOString().slice(0, 10);
@@ -205,6 +193,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
   const [backgroundLevel, setBackgroundLevel] = useState(0);
   const [propCount, setPropCount] = useState(0);
   const [budgetKind, setBudgetKind] = useState<"open" | "range">("range");
+  const [usageType, setUsageType] = useState<UsageType>("personal");
   const [description, setDescription] = useState("");
   const [moodAndStyle, setMoodAndStyle] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -273,7 +262,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
         requestedDeadline: deadline,
         requesterMode: customerMode,
         submissionKey,
-        usageType: form.get("usage"),
+        usageType,
       }, localIsoDate());
       const categoryName = titleCaseSlug(service.categorySlug);
       const payload = toCommissionRequestRpcPayload(parsed, {
@@ -315,8 +304,20 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
             <button aria-pressed={customerMode === "member"} disabled type="button"><UserRound size={17} />{labels.member}</button>
             <button aria-pressed={customerMode === "guest"} disabled type="button"><UserRound size={17} />{labels.guest}</button>
           </div>
-          {customerMode === "member" ? <MemberIdentity contact={identity.contact} labels={labels} loading={identityLoading} nickname={identity.nickname} /> : <GuestIdentity disabled={disabled} labels={labels} />}
-          <fieldset className={styles.usageFieldset} disabled={disabled}><legend>{labels.usage}<span>*</span></legend><div><label><input defaultChecked name="usage" type="radio" value="personal" />{labels.personal}<Sparkles size={15} /></label><label><input name="usage" type="radio" value="commercial" />{labels.commercial}</label></div></fieldset>
+          {customerMode === "member" ? <MemberEstimateIdentity contact={identity.contact} labels={labels} loading={identityLoading} nickname={identity.nickname} /> : <GuestEstimateIdentity disabled={disabled} labels={labels} />}
+          <fieldset className={styles.usageFieldset} disabled={disabled}>
+            <legend>{labels.usage}<span>*</span></legend>
+            <div>
+              <label data-selected={usageType === "personal"}>
+                <input checked={usageType === "personal"} name="usage" onChange={() => setUsageType("personal")} type="radio" value="personal" />
+                {labels.personal}<Sparkles size={15} />
+              </label>
+              <label data-selected={usageType === "commercial"}>
+                <input checked={usageType === "commercial"} name="usage" onChange={() => setUsageType("commercial")} type="radio" value="commercial" />
+                {labels.commercial}
+              </label>
+            </div>
+          </fieldset>
           <label className={styles.formField}>{labels.budget}<span>*</span><div className={styles.budgetFields}><select disabled={disabled} name="budgetKind" onChange={(event) => setBudgetKind(event.target.value === "open" ? "open" : "range")} value={budgetKind}><option value="range">{labels.budgetType}</option><option value="open">Open budget</option></select><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMin" placeholder={labels.min} required={budgetKind === "range"} type="number" /><em>{locale === "th" ? "ถึง" : "to"}</em><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMax" placeholder={labels.max} required={budgetKind === "range"} type="number" /></div></label>
           <label className={styles.formField}>{labels.deadline}<span>*</span><div className={styles.dateField}><input aria-label={labels.deadline} disabled={disabled} min={localIsoDate()} onChange={(event) => setDeadline(event.target.value)} required type="date" value={deadline} /><span><CalendarDays size={18} />{deadline || labels.date}</span></div></label>
         </section>

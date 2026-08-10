@@ -89,6 +89,18 @@ describe("Commission albums", () => {
     expect(screen.queryByRole("button", { name: /ดูรายละเอียด.+Chibi/i })).not.toBeInTheDocument();
   });
 
+  it("does not label every service as full color in alternate view modes", async () => {
+    const user = userEvent.setup();
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    const chibiServices = serviceTypes.filter((service) => service.categorySlug === "chibi");
+    if (!chibi || chibiServices.length === 0) throw new Error("Expected Chibi fixtures");
+
+    render(<ServiceCategoryPage category={chibi} locale="en" services={chibiServices} />);
+    await user.click(screen.getByRole("button", { name: "List view" }));
+
+    expect(screen.queryByText("FULL COLOR")).not.toBeInTheDocument();
+  });
+
   it("opens an accessible detail dialog and restores focus without changing the URL", async () => {
     const user = userEvent.setup();
     const initialUrl = window.location.href;

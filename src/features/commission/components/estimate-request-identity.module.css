@@ -1,0 +1,72 @@
+.memberIdentity {
+  display: grid;
+  gap: .55rem;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: .75rem;
+}
+
+.memberIdentity > div {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: .45rem;
+  display: flex;
+  gap: .6rem;
+  padding: .55rem .65rem;
+}
+
+.memberIdentity svg,
+.discordMark {
+  color: var(--brand-violet);
+}
+
+.memberIdentity span {
+  display: grid;
+}
+
+.memberIdentity small {
+  color: var(--text-secondary);
+  font-size: .68rem;
+}
+
+.memberIdentity strong {
+  font-size: .82rem;
+}
+
+.guestIdentity {
+  display: grid;
+  gap: .65rem;
+  margin-bottom: .75rem;
+}
+
+.guestIdentity label {
+  display: block;
+  font-size: .78rem;
+  font-style: normal;
+  font-weight: 600;
+  position: relative;
+}
+
+.guestIdentity label > span {
+  color: #f87171;
+  margin-left: .25rem;
+}
+
+.guestIdentity input,
+.guestIdentity select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: .4rem;
+  color: var(--text-primary);
+  font: inherit;
+  margin-top: .35rem;
+  min-height: 2.35rem;
+  padding: .55rem .7rem;
+  width: 100%;
+}
+
+.contactFields {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: .9fr 1.1fr;
+}

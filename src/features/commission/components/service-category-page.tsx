@@ -86,7 +86,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
                   <span className={styles.serviceSubtitle}>COMMISSION</span>
                   <div className={styles.listTitleRow}>
                     <h2>≡ {service.name[locale]}</h2>
-                    <span className={styles.subtypeBadge}>FULL COLOR</span>
+                    <span className={styles.subtypeBadge}>{category.name[locale]}</span>
                   </div>
                   <p className={styles.listDescription}>{service.description[locale]}</p>
                   <div className={styles.listActionsGroup}>
@@ -119,7 +119,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
                     <span className={styles.serviceSubtitle}>COMMISSION</span>
                     <div className={styles.galleryTitleRow}>
                       <h2>≡ {service.name[locale]}</h2>
-                      <span className={styles.subtypeBadge}>FULL COLOR</span>
+                      <span className={styles.subtypeBadge}>{category.name[locale]}</span>
                     </div>
                   </div>
                   <div className={styles.galleryActionsGroup}>

@@ -29,9 +29,32 @@ describe("EstimateRequestDialog", () => {
     render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
 
     expect(screen.getByRole("button", { name: "Guest" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Guest" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Member" })).toBeDisabled();
     expect(screen.getByPlaceholderText("For example: Lunaris, StarWalker")).toBeVisible();
+    expect(screen.queryByText("Loading member information...")).not.toBeInTheDocument();
     expect(screen.queryByText("Upload more")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("moves the selected treatment when the usage type changes", async () => {
+    const user = userEvent.setup();
+    render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
+
+    const personal = screen.getByRole("radio", { name: "Personal" });
+    const commercial = screen.getByRole("radio", { name: "Commercial" });
+    const personalOption = personal.closest("label");
+    const commercialOption = commercial.closest("label");
+
+    expect(personal).toBeChecked();
+    expect(personalOption).toHaveAttribute("data-selected", "true");
+    expect(commercialOption).toHaveAttribute("data-selected", "false");
+
+    await user.click(commercial);
+
+    expect(commercial).toBeChecked();
+    expect(personalOption).toHaveAttribute("data-selected", "false");
+    expect(commercialOption).toHaveAttribute("data-selected", "true");
   });
 
   it("automatically loads member identity when signed in", async () => {
@@ -45,8 +68,11 @@ describe("EstimateRequestDialog", () => {
     />);
 
     expect(screen.getByRole("button", { name: "Member" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Member" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Guest" })).toBeDisabled();
     await waitFor(() => expect(screen.getByText("Stardust")).toBeVisible());
     expect(screen.getByText("@stardust")).toBeVisible();
+    expect(screen.queryByPlaceholderText("For example: Lunaris, StarWalker")).not.toBeInTheDocument();
     expect(repository.loadMemberIdentity).toHaveBeenCalledWith("user-1", "member@example.com");
   });
 
