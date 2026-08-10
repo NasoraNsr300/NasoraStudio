@@ -5,8 +5,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { AuthClientLike } from "@/shared/auth/auth-session-provider";
 
-const navigation = vi.hoisted(() => ({ pathname: "/en", usePathname: vi.fn() }));
-vi.mock("next/navigation", () => ({ usePathname: navigation.usePathname }));
+const navigation = vi.hoisted(() => ({
+  params: new URLSearchParams(),
+  pathname: "/en",
+  usePathname: vi.fn(),
+  useSearchParams: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  usePathname: navigation.usePathname,
+  useSearchParams: navigation.useSearchParams,
+}));
 
 import { PublicShell } from "@/shared/components/public-shell/public-shell";
 
@@ -25,6 +33,8 @@ function createAuthClient(signedIn = false): AuthClientLike {
 }
 
 afterEach(cleanup);
+
+navigation.useSearchParams.mockImplementation(() => navigation.params);
 
 describe("PublicShell", () => {
   it("renders the shared public controls without a footer or navbar login", () => {
@@ -195,5 +205,20 @@ describe("Language switch route preservation", () => {
     render(<PublicShell authClient={createAuthClient()} locale={locale}>Page content</PublicShell>);
 
     expect(screen.getByRole("link", { name: linkText })).toHaveAttribute("href", expectedHref);
+  });
+
+  it("preserves active search parameters when switching language", () => {
+    navigation.pathname = "/th/commission";
+    navigation.params = new URLSearchParams("q=chibi&view=list");
+    navigation.usePathname.mockImplementation(() => navigation.pathname);
+    navigation.useSearchParams.mockImplementation(() => navigation.params);
+
+    render(<PublicShell authClient={createAuthClient()} locale="th">Page content</PublicShell>);
+
+    expect(screen.getByRole("link", { name: "EN" })).toHaveAttribute(
+      "href",
+      "/en/commission?q=chibi&view=list",
+    );
+    navigation.params = new URLSearchParams();
   });
 });

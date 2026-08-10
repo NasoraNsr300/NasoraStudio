@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useState, useSyncExternalStore } from "react";
 
 import { Layers, Menu, Moon, Sparkles } from "lucide-react";
 
@@ -41,6 +41,12 @@ export function getAlternateLocalePath(pathname: string | null, currentLocale: L
   return `/${nextLocale}`;
 }
 
+function LocaleLink({ basePath, locale }: { basePath: string; locale: Locale }) {
+  const searchParams = useSearchParams();
+  const href = searchParams.size > 0 ? `${basePath}?${searchParams.toString()}` : basePath;
+  return <a className={styles.languageLink} href={href}>{locale.toUpperCase()}</a>;
+}
+
 function getSearchConfig(locale: Locale, pathname: string | null) {
   const basePath = `/${locale}`;
   const route = pathname ?? basePath;
@@ -58,7 +64,7 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
   const alternateLocale = locale === "th" ? "en" : "th";
   const pathname = usePathname();
   const search = getSearchConfig(locale, pathname);
-  const alternatePath = getAlternateLocalePath(pathname, locale, alternateLocale);
+  const alternateBasePath = getAlternateLocalePath(pathname, locale, alternateLocale);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   const setTheme = (nextTheme: ThemeName) => {
@@ -92,7 +98,9 @@ export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbar
           <span className={styles.localeControl}>
             <strong>{locale.toUpperCase()}</strong>
             <span aria-hidden="true">/</span>
-            <a className={styles.languageLink} href={alternatePath}>{alternateLocale.toUpperCase()}</a>
+            <Suspense fallback={<a className={styles.languageLink} href={alternateBasePath}>{alternateLocale.toUpperCase()}</a>}>
+              <LocaleLink basePath={alternateBasePath} locale={alternateLocale} />
+            </Suspense>
           </span>
           <span className={styles.themeControls}>
             <button aria-pressed={theme === "night"} data-active={theme === "night"} onClick={() => setTheme("night")} type="button">
