@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const invalid = validatePortfolioMutation(request);
   if (invalid) return invalid;
   const parsed = await parsePortfolioBody(request, portfolioBodySchema);
-  if (!parsed.success) return Response.json({ error: "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸œà¸¥à¸‡à¸²à¸™à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡" }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: "ข้อมูลผลงานไม่ถูกต้อง" }, { status: 400 });
   try {
     const itemId = await saveAdminPortfolioItem({ ...parsed.data, id: null });
     revalidatePortfolio();

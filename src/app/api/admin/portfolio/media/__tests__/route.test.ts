@@ -26,7 +26,7 @@ beforeEach(() => {
 function request() {
   const values = new Map<string, unknown>([
     ["file", { arrayBuffer: async () => new Uint8Array([137, 80, 78, 71]).buffer, size: 4, type: "image/png" }],
-    ["altTh", "à¸ à¸²à¸žà¸œà¸¥à¸‡à¸²à¸™"], ["altEn", "Artwork"], ["width", "1600"], ["height", "900"],
+    ["altTh", "ภาพผลงาน"], ["altEn", "Artwork"], ["width", "1600"], ["height", "900"],
   ]);
   return {
     formData: async () => ({ get: (key: string) => values.get(key) ?? null }) as FormData,
@@ -42,7 +42,7 @@ describe("admin portfolio media upload", () => {
     expect(repository.assertPortfolioAdmin).toHaveBeenCalledBefore(storage.putImage);
     expect(storage.putImage).toHaveBeenCalledWith(expect.stringMatching(/^portfolio\/[0-9a-f-]{36}\.png$/), expect.any(Uint8Array), "image/png");
     expect(repository.createAdminPortfolioMedia).toHaveBeenCalledWith(expect.objectContaining({
-      alt: { en: "Artwork", th: "à¸ à¸²à¸žà¸œà¸¥à¸‡à¸²à¸™" }, contentType: "image/png", height: 900, width: 1600,
+      alt: { en: "Artwork", th: "ภาพผลงาน" }, contentType: "image/png", height: 900, width: 1600,
     }));
   });
 

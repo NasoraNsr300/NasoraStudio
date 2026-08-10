@@ -22,7 +22,7 @@ const body = {
   featured: true,
   mediaId,
   published: true,
-  title: { en: "Star", th: "à¸”à¸²à¸§" },
+  title: { en: "Star", th: "ดาว" },
 };
 
 function request(value: unknown, url = "http://localhost/api/admin/portfolio/items", headers: Record<string, string> = {}) {

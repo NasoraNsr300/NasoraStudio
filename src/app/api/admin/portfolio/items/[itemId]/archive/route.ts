@@ -12,9 +12,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ite
   const invalid = validatePortfolioMutation(request);
   if (invalid) return invalid;
   const { itemId } = await params;
-  if (!portfolioUuidSchema.safeParse(itemId).success) return Response.json({ error: "à¸£à¸«à¸±à¸ªà¸œà¸¥à¸‡à¸²à¸™à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡" }, { status: 400 });
+  if (!portfolioUuidSchema.safeParse(itemId).success) return Response.json({ error: "รหัสผลงานไม่ถูกต้อง" }, { status: 400 });
   const parsed = await parsePortfolioBody(request, portfolioArchiveBodySchema);
-  if (!parsed.success) return Response.json({ error: "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ archive à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡" }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: "ข้อมูล archive ไม่ถูกต้อง" }, { status: 400 });
   try {
     await archiveAdminPortfolioItem({ ...parsed.data, itemId });
     revalidatePortfolio();

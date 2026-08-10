@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       || file.size > PRIVATE_ASSET_LIMITS.imageBytes || !extensions[file.type]
       || !Number.isInteger(width) || width < 1 || width > 20_000
       || !Number.isInteger(height) || height < 1 || height > 20_000) {
-      return Response.json({ error: "à¸£à¸¹à¸›à¸œà¸¥à¸‡à¸²à¸™à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡" }, { status: 400 });
+      return Response.json({ error: "รูปผลงานไม่ถูกต้อง" }, { status: 400 });
     }
 
     objectKey = `portfolio/${randomUUID()}.${extensions[file.type]}`;

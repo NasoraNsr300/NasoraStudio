@@ -39,8 +39,8 @@ export async function parsePortfolioBody<T>(request: Request, schema: z.ZodType<
 export function portfolioMutationError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   if (message === "Admin access required") return Response.json({ error: message }, { status: 403 });
-  if (message.includes("not found")) return Response.json({ error: "à¹„à¸¡à¹ˆà¸žà¸šà¸œà¸¥à¸‡à¸²à¸™" }, { status: 404 });
-  return Response.json({ error: "à¸šà¸±à¸™à¸—à¸¶à¸à¸œà¸¥à¸‡à¸²à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ" }, { status: 400 });
+  if (message.includes("not found")) return Response.json({ error: "ไม่พบผลงาน" }, { status: 404 });
+  return Response.json({ error: "บันทึกผลงานไม่สำเร็จ" }, { status: 400 });
 }
 
 export function revalidatePortfolio() {
