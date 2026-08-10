@@ -147,11 +147,16 @@ describe("verified deposit to job migration", () => {
     expect(migration).not.toMatch(/grant execute on function private\.create_job_from_verified_deposit[^;]+to authenticated/);
   });
 
+  it("uses the named payment intent constraint to avoid PL/pgSQL output-column ambiguity", () => {
+    expect(sql()).toContain("on conflict on constraint payments_intent_id_key do nothing");
+  });
+
   it("publishes only rank, display name, service, public status, and deadline", () => {
     const migration = sql();
     const view = migration.slice(migration.indexOf("create view public.public_queue"), migration.indexOf("grant select on public.public_queue"));
     expect(view).toContain("security_invoker = true");
     expect(migration).toContain("create function public.read_public_queue");
+    expect(migration).toContain('"position" bigint');
     expect(migration).toMatch(/public\.read_public_queue\(\)[^$]+security definer set search_path = ''/);
     expect(view).toContain("position");
     expect(view).toContain("customer_display_name");

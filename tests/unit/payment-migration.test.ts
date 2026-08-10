@@ -193,6 +193,7 @@ describe("payment deposit workflow migration", () => {
     const migration = sql();
     expect(privateFunction("finalize_payment_slip")).toContain("nullif(btrim(p_etag), '')");
     expect(privateFunction("finalize_payment_slip")).toContain("cleanup_required = false");
+    expect(privateFunction("finalize_payment_slip")).toContain("attempt.slip_id = v_slip.id");
     expect(migration).toContain("etag_required_for_review");
     expect(migration).toContain("admin_list_pending_payment_slips");
     expect(migration).toContain("least(greatest(p_limit, 1), 50)");

@@ -393,8 +393,9 @@ begin
   update public.payment_slips set status = 'pending_review', etag = v_etag, cleanup_required = false,
     uploaded_at = now(), delete_after = now() + interval '30 days'
     where id = v_slip.id returning id, public.payment_slips.status into slip_id, slip_status;
-  update public.payment_slip_upload_attempts set status = 'pending_review', cleanup_required = false, finalized_at = now()
-    where attempt_id = p_attempt_id and slip_id = v_slip.id;
+  update public.payment_slip_upload_attempts as attempt
+  set status = 'pending_review', cleanup_required = false, finalized_at = now()
+  where attempt.attempt_id = p_attempt_id and attempt.slip_id = v_slip.id;
   return next;
 end;
 $$;
@@ -406,11 +407,11 @@ begin
   update public.payment_slips set status = 'failed', etag = null, cleanup_required = p_cleanup_required
     where id = p_slip_id and user_id = p_user_id and upload_key = p_upload_key and attempt_id = p_attempt_id
       and status in ('authorized', 'failed');
-  update public.payment_slip_upload_attempts set
+  update public.payment_slip_upload_attempts as attempt set
       status = case when status in ('superseded', 'deleted') then 'superseded' else 'failed' end,
       cleanup_required = p_cleanup_required
-    where attempt_id = p_attempt_id and slip_id = p_slip_id and user_id = p_user_id
-      and status in ('authorized', 'failed', 'superseded', 'deleted');
+    where attempt.attempt_id = p_attempt_id and attempt.slip_id = p_slip_id and attempt.user_id = p_user_id
+      and attempt.status in ('authorized', 'failed', 'superseded', 'deleted');
 end;
 $$;
 
@@ -523,7 +524,7 @@ begin
 
   insert into public.payments (intent_id, quote_id, request_id, user_id, kind, amount_satang, verified_by, verified_at)
   values (v_intent.id, v_intent.quote_id, v_intent.request_id, v_intent.user_id, v_intent.kind, v_intent.amount_satang, p_admin_user_id, now())
-  on conflict (intent_id) do nothing returning * into v_payment;
+  on conflict on constraint payments_intent_id_key do nothing returning * into v_payment;
   if v_payment.id is null then select * into v_payment from public.payments payment where payment.intent_id = v_intent.id; end if;
   update public.payment_slips set status = 'approved', reviewed_by = p_admin_user_id, reviewed_at = v_payment.verified_at,
     rejection_reason = null, verification_key = p_verification_key, verification_payload_fingerprint = v_fingerprint where id = v_slip.id;

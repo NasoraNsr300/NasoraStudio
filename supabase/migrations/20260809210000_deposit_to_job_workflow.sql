@@ -697,7 +697,7 @@ begin
   ) values (
     v_intent.id, v_intent.quote_id, v_intent.request_id, v_intent.user_id,
     v_intent.kind, v_intent.amount_satang, p_admin_user_id, now()
-  ) on conflict (intent_id) do nothing returning * into v_payment;
+  ) on conflict on constraint payments_intent_id_key do nothing returning * into v_payment;
   if v_payment.id is null then
     select * into v_payment from public.payments payment where payment.intent_id = v_intent.id;
   end if;
@@ -977,7 +977,7 @@ $$;
 drop view if exists public.public_queue;
 create function public.read_public_queue()
 returns table(
-  position bigint,
+  "position" bigint,
   customer_display_name text,
   service_type_name_snapshot jsonb,
   status_label_snapshot jsonb,
@@ -1002,7 +1002,7 @@ create view public.public_queue
 with (security_invoker = true, security_barrier = true)
 as
 select
-  queue.position,
+  queue."position",
   queue.customer_display_name,
   queue.service_type_name_snapshot,
   queue.status_label_snapshot,
