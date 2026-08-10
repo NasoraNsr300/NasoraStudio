@@ -177,7 +177,7 @@ export function mapAdminAlbum(row: CatalogAlbumRow): AdminCatalogAlbum {
 
 export function mapPublicAlbum(row: CatalogAlbumRow): { category: ServiceCategory; types: ServiceType[] } {
   const activeServices = row.commission_services
-    .filter((service) => service.published && !service.archived_at)
+    .filter((service) => service.published && !service.archived_at && service.commission_service_prices.length > 0)
     .sort((left, right) => left.display_order - right.display_order);
   const category: ServiceCategory = {
     availability: row.availability,
@@ -214,4 +214,3 @@ export function mapPublicAlbum(row: CatalogAlbumRow): { category: ServiceCategor
   }));
   return { category, types };
 }
-

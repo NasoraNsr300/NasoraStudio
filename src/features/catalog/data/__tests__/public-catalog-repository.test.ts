@@ -97,5 +97,17 @@ describe("public catalog repository", () => {
     supabase.createClient.mockResolvedValue({ from: vi.fn(() => query) });
     await expect(listPublicAlbums("th")).rejects.toThrow("Public catalog data is unavailable");
   });
-});
 
+  it("keeps a newly published child service hidden until it has a reference price", async () => {
+    const row = albumRow();
+    const service = row.commission_services[0];
+    service.commission_service_prices = [];
+    const query = queryResult([row]);
+    supabase.createClient.mockResolvedValue({ from: vi.fn(() => query) });
+
+    const result = await listPublicAlbums("th");
+
+    expect(result.categories[0].typeCount).toBe(0);
+    expect(result.types).toEqual([]);
+  });
+});
