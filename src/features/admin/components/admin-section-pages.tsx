@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, PenLine, Plus, Search, Send, Settings2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
+import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, Plus, Search, Send, Settings2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
@@ -51,13 +51,6 @@ export function AdminMessagesPage() {
   return <section className={styles.sectionPage}>
     <PageHeader action="ข้อความใหม่" description="พูดคุยกับสมาชิกและเก็บประวัติการติดต่อไว้กับงาน" icon={<Mail size={25} />} title="ข้อความ" />
     <div className={styles.inbox}><aside><label><Search size={17} /><input placeholder="ค้นหาข้อความ..." /></label>{threads.map(([name, preview, time], index) => <button aria-pressed={index === 0} key={name} type="button"><span>{name.slice(0,1)}</span><div><strong>{name}</strong><p>{preview}</p></div><time>{time}</time></button>)}</aside><section><header><div><strong>Kirana</strong><span>ออนไลน์ · Illustration / Full Body</span></div><button aria-label="ตัวเลือกข้อความ" type="button"><MoreHorizontal /></button></header><div className={styles.chatBody}><p data-side="customer">สวัสดีค่ะ อยากทราบว่าภาพร่างเป็นอย่างไรบ้างคะ</p><p data-side="admin">กำลังอัปเดตให้ค่ะ ภายในวันนี้จะส่งภาพร่างรอบใหม่ให้ตรวจนะคะ</p><p data-side="customer">ขอบคุณค่ะ รอตรวจนะคะ</p></div><footer><button aria-label="แนบไฟล์" type="button"><Upload size={18} /></button><input placeholder="พิมพ์ข้อความถึง Kirana..." /><button aria-label="ส่งข้อความ" type="button"><Send size={18} /></button></footer></section></div>
-  </section>;
-}
-
-export function AdminDocumentsPage() {
-  return <section className={styles.sectionPage}>
-    <PageHeader action="สร้างเอกสาร" description="เขียน ปักหมุด เผยแพร่ และจัดหมวดหมู่เอกสารสำหรับลูกค้า" icon={<FileText size={25} />} title="เอกสาร" />
-    <section className={styles.dataPanel}><Toolbar placeholder="ค้นหาเอกสาร..." /><table><thead><tr><th>ชื่อเอกสาร</th><th>หมวดหมู่</th><th>ภาษา</th><th>อัปเดตล่าสุด</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{[["ข้อตกลงการว่าจ้างคอมมิชชัน", "ข้อตกลง", "TH / EN", "24 เม.ย. 2568", "เผยแพร่"], ["เงื่อนไขการใช้งานเชิงพาณิชย์", "ข้อตกลง", "TH / EN", "18 เม.ย. 2568", "เผยแพร่"], ["ขั้นตอนการชำระเงิน", "คู่มือ", "TH / EN", "10 เม.ย. 2568", "ฉบับร่าง"], ["การรับและส่งมอบงาน", "คู่มือ", "TH / EN", "12 เม.ย. 2568", "เผยแพร่"]].map(([title, category, language, updated, status]) => <tr key={title}><td><FileText size={17} />{title}</td><td>{category}</td><td>{language}</td><td>{updated}</td><td><Status tone={status === "เผยแพร่" ? "success" : "neutral"}>{status}</Status></td><td><button className={styles.rowAction} type="button"><PenLine size={15} />แก้ไข</button></td></tr>)}</tbody></table></section>
   </section>;
 }
 
