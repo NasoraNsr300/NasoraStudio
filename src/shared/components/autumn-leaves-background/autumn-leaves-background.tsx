@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createAnimationLoop } from "../animated-background/animation-loop";
 import styles from "./autumn-leaves-background.module.css";
 
 interface MapleLeaf {
@@ -47,7 +48,6 @@ export function AutumnLeavesBackground() {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    let animationFrameId: number;
     let width = 0;
     let height = 0;
     let dpr = 1;
@@ -62,14 +62,17 @@ export function AutumnLeavesBackground() {
     let windForce = 0.2;
     let targetWindForce = 0.2;
     let gustTimer: ReturnType<typeof setTimeout> | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
     const checkTheme = () => {
       const theme = document.documentElement.getAttribute("data-theme");
       isAutumnTheme = theme === "autumn";
     };
 
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
     const checkReducedMotion = () => {
-      isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      isReducedMotion = motionQuery.matches;
     };
 
     const initCanvasSize = () => {
@@ -134,18 +137,30 @@ export function AutumnLeavesBackground() {
       }
 
       // Calm down breeze after 3.5 - 5 seconds
-      setTimeout(() => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
         targetWindForce = 0.15;
       }, Math.random() * 1500 + 3500);
     };
 
     const scheduleWindGust = () => {
+      if (gustTimer || isReducedMotion || !isAutumnTheme || document.hidden) return;
       // Wind comes infrequently (every 15 to 33 seconds)
       const delay = Math.random() * 18000 + 15000;
       gustTimer = setTimeout(() => {
+        gustTimer = null;
         triggerWindGust();
         scheduleWindGust();
       }, delay);
+    };
+
+    const stopWindTimers = () => {
+      if (gustTimer) clearTimeout(gustTimer);
+      if (settleTimer) clearTimeout(settleTimer);
+      gustTimer = null;
+      settleTimer = null;
+      targetWindForce = 0.2;
     };
 
     const drawMapleLeafPath = (leafCtx: CanvasRenderingContext2D, size: number) => {
@@ -265,30 +280,35 @@ export function AutumnLeavesBackground() {
         ctx.restore();
       });
 
-      if (!isReducedMotion && isAutumnTheme) {
-        animationFrameId = requestAnimationFrame(render);
+    };
+
+    const animationLoop = createAnimationLoop(render);
+
+    const syncActivity = () => {
+      const active = isAutumnTheme && !document.hidden;
+      if (active && !isReducedMotion) {
+        animationLoop.start();
+        scheduleWindGust();
+        return;
       }
+
+      animationLoop.stop();
+      stopWindTimers();
+      if (active) render();
+      else ctx.clearRect(0, 0, width, height);
     };
 
     checkReducedMotion();
     checkTheme();
     initCanvasSize();
-    scheduleWindGust();
-    render();
+    syncActivity();
 
     // Listen for data-theme change
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
-          const wasAutumn = isAutumnTheme;
           checkTheme();
-          if (!wasAutumn && isAutumnTheme) {
-            cancelAnimationFrame(animationFrameId);
-            render();
-          } else if (!isAutumnTheme) {
-            cancelAnimationFrame(animationFrameId);
-            ctx.clearRect(0, 0, width, height);
-          }
+          syncActivity();
         }
       });
     });
@@ -300,26 +320,28 @@ export function AutumnLeavesBackground() {
 
     const handleResize = () => {
       initCanvasSize();
-      if (isAutumnTheme) render();
+      syncActivity();
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cancelAnimationFrame(animationFrameId);
-      } else if (!isReducedMotion && isAutumnTheme) {
-        render();
-      }
+    const handleReducedMotionChange = (event: MediaQueryListEvent) => {
+      isReducedMotion = event.matches;
+      if (isReducedMotion) windStreaks = [];
+      syncActivity();
     };
+
+    const handleVisibilityChange = () => syncActivity();
 
     window.addEventListener("resize", handleResize);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    motionQuery.addEventListener("change", handleReducedMotionChange);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (gustTimer) clearTimeout(gustTimer);
+      animationLoop.stop();
+      stopWindTimers();
       observer.disconnect();
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      motionQuery.removeEventListener("change", handleReducedMotionChange);
     };
   }, []);
 

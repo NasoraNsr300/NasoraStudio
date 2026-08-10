@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createAnimationLoop } from "../animated-background/animation-loop";
 import styles from "./starry-background.module.css";
 
 interface Star {
@@ -48,6 +49,8 @@ const STAR_COLORS_NIGHT = [
   "#e9d5ff",
 ];
 
+const MAX_ACTIVE_SHOOTING_STARS = 4;
+
 export function StarryBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -58,7 +61,6 @@ export function StarryBackground() {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    let animationFrameId: number;
     let width = 0;
     let height = 0;
     let dpr = 1;
@@ -82,8 +84,10 @@ export function StarryBackground() {
       isNightTheme = !theme || theme === "night";
     };
 
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
     const checkReducedMotion = () => {
-      isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      isReducedMotion = motionQuery.matches;
     };
 
     const initCanvasSize = () => {
@@ -154,7 +158,9 @@ export function StarryBackground() {
       if (isReducedMotion || !isNightTheme || document.hidden) return;
 
       const shootingStarColors = ["#f6c85f", "#c4b5fd", "#38bdf8", "#f472b6", "#ffffff"];
-      const count = Math.random() > 0.45 ? (Math.random() > 0.5 ? 3 : 2) : 1;
+      const availableSlots = MAX_ACTIVE_SHOOTING_STARS - shootingStars.length;
+      const count = Math.min(Math.random() > 0.7 ? 2 : 1, availableSlots);
+      if (count <= 0) return;
 
       for (let i = 0; i < count; i++) {
         // Spawn strictly OUTSIDE the visible viewport (off-screen top or left)
@@ -190,12 +196,19 @@ export function StarryBackground() {
     };
 
     const scheduleShootingStar = () => {
-      // Trigger very frequently (every 0.8 to 2.2 seconds)
-      const delay = Math.random() * 1400 + 800;
+      if (shootingStarTimer || isReducedMotion || !isNightTheme || document.hidden) return;
+      const delay = Math.random() * 6000 + 6000;
       shootingStarTimer = setTimeout(() => {
+        shootingStarTimer = null;
         triggerShootingStar();
         scheduleShootingStar();
       }, delay);
+    };
+
+    const stopShootingStarTimer = () => {
+      if (!shootingStarTimer) return;
+      clearTimeout(shootingStarTimer);
+      shootingStarTimer = null;
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -345,30 +358,35 @@ export function StarryBackground() {
         ctx.restore();
       }
 
-      if (!isReducedMotion && isNightTheme) {
-        animationFrameId = requestAnimationFrame(render);
+    };
+
+    const animationLoop = createAnimationLoop(render);
+
+    const syncActivity = () => {
+      const active = isNightTheme && !document.hidden;
+      if (active && !isReducedMotion) {
+        animationLoop.start();
+        scheduleShootingStar();
+        return;
       }
+
+      animationLoop.stop();
+      stopShootingStarTimer();
+      if (active) render();
+      else ctx.clearRect(0, 0, width, height);
     };
 
     checkReducedMotion();
     checkTheme();
     initCanvasSize();
-    scheduleShootingStar();
-    render();
+    syncActivity();
 
     // Listen for theme attribute changes on <html>
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
-          const wasNight = isNightTheme;
           checkTheme();
-          if (!wasNight && isNightTheme) {
-            cancelAnimationFrame(animationFrameId);
-            render();
-          } else if (!isNightTheme) {
-            cancelAnimationFrame(animationFrameId);
-            ctx.clearRect(0, 0, width, height);
-          }
+          syncActivity();
         }
       });
     });
@@ -380,30 +398,33 @@ export function StarryBackground() {
 
     const handleResize = () => {
       initCanvasSize();
-      if (isNightTheme) {
-        render();
-      }
+      syncActivity();
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cancelAnimationFrame(animationFrameId);
-      } else if (!isReducedMotion && isNightTheme) {
-        render();
+    const handleReducedMotionChange = (event: MediaQueryListEvent) => {
+      isReducedMotion = event.matches;
+      if (isReducedMotion) {
+        stardust = [];
+        shootingStars = [];
       }
+      syncActivity();
     };
+
+    const handleVisibilityChange = () => syncActivity();
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    motionQuery.addEventListener("change", handleReducedMotionChange);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (shootingStarTimer) clearTimeout(shootingStarTimer);
+      animationLoop.stop();
+      stopShootingStarTimer();
       observer.disconnect();
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      motionQuery.removeEventListener("change", handleReducedMotionChange);
     };
   }, []);
 
