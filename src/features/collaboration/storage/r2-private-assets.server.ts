@@ -28,7 +28,7 @@ export function createR2PrivateAssetsStorage(environment: Environment = process.
   const bucket = required(environment, "R2_PRIVATE_ASSETS_BUCKET");
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
   async function signedUrl(method: Method, objectKey: string, contentType?: string, expiresIn = 300) {
-    if (!/^(deliveries|message-images|progress-images)\//.test(objectKey) || expiresIn < 1 || expiresIn > 900) throw new Error("invalid_r2_request");
+    if (!/^(catalog-covers|deliveries|message-images|progress-images)\//.test(objectKey) || expiresIn < 1 || expiresIn > 900) throw new Error("invalid_r2_request");
     const amzDate = now().toISOString().replace(/[:-]|\.\d{3}/g, ""); const date = amzDate.slice(0, 8); const scope = `${date}/auto/s3/aws4_request`;
     const path = `/${encode(bucket)}/${objectKey.split("/").map(encode).join("/")}`; const signedHeaders = contentType ? "content-type;host" : "host";
     const query = new URLSearchParams({ "X-Amz-Algorithm": "AWS4-HMAC-SHA256", "X-Amz-Content-Sha256": "UNSIGNED-PAYLOAD", "X-Amz-Credential": `${accessKeyId}/${scope}`, "X-Amz-Date": amzDate, "X-Amz-Expires": String(expiresIn), "X-Amz-SignedHeaders": signedHeaders });

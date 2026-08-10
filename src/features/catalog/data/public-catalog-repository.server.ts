@@ -12,7 +12,7 @@ type Query = {
   order(column: string, options: { ascending: boolean }): Promise<QueryResult>;
   select(columns: string): Query;
 };
-type PublicCatalogClient = { from(table: "commission_albums"): Query };
+type PublicCatalogClient = { from(table: "commission_albums" | "commission_catalog_media"): Query };
 
 export const catalogSelect = `
   id,slug,name,description,availability,recommended,published,display_order,archived_at,
@@ -56,3 +56,15 @@ export async function getPublicAlbum(_locale: Locale, slug: string) {
   return mapPublicAlbum(parsed.data);
 }
 
+export async function getPublicCatalogMediaObject(id: string) {
+  if (!/^[-0-9a-f]{36}$/i.test(id)) return null;
+  const catalogClient = await client();
+  const { data, error } = await catalogClient.from("commission_catalog_media")
+    .select("object_key,content_type").eq("id", id).is("archived_at", null).maybeSingle();
+  if (error) throw new Error("Unable to load catalog media");
+  if (!data || typeof data !== "object") return null;
+  const row = data as Record<string, unknown>;
+  if (typeof row.object_key !== "string" || !/^catalog-covers\//.test(row.object_key)) return null;
+  if (!(["image/jpeg", "image/png", "image/webp"] as unknown[]).includes(row.content_type)) return null;
+  return { contentType: row.content_type as string, objectKey: row.object_key };
+}

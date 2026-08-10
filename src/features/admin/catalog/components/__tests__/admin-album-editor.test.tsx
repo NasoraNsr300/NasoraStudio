@@ -25,6 +25,7 @@ const album: AdminCatalogAlbum = {
     albumId,
     archivedAt: null,
     availability: "open",
+    coverMedia: undefined,
     description: { en: "Full body", th: "เต็มตัว" },
     displayOrder: 1,
     documentSlugs: ["commission-terms"],
@@ -97,6 +98,26 @@ describe("AdminAlbumEditor", () => {
     const priceCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/prices"));
     expect(JSON.parse(String(priceCall?.[1]?.body))).toEqual(expect.objectContaining({
       prices: expect.arrayContaining([expect.objectContaining({ amountSatang: 150025, pace: "normal", usage: "personal" })]),
+    }));
+  });
+
+  it("uploads a real album cover and saves its media id on the album", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ mediaId: "00000000-0000-4000-8000-000000000413", src: "/api/catalog/media/00000000-0000-4000-8000-000000000413" }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ albumId }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ close: vi.fn(), height: 1500, width: 1200 })));
+    render(<AdminAlbumEditor initialAlbum={album} />);
+
+    await user.upload(screen.getByLabelText("ภาพปกอัลบั้ม"), new File([new Uint8Array([137, 80, 78, 71])], "cover.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: "อัปโหลดภาพปกอัลบั้ม" }));
+    await screen.findByText("อัปโหลดภาพปกอัลบั้มแล้ว");
+    await user.click(screen.getByRole("button", { name: "บันทึกอัลบั้ม" }));
+
+    const saveCall = fetchMock.mock.calls.find(([url]) => String(url).includes(`/albums/${albumId}`));
+    expect(JSON.parse(String(saveCall?.[1]?.body))).toEqual(expect.objectContaining({
+      coverMediaId: "00000000-0000-4000-8000-000000000413",
     }));
   });
 });

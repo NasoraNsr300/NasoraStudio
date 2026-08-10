@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = "supabase/migrations/20260810110000_commission_catalog.sql";
-const sql = existsSync(migrationPath) ? readFileSync(migrationPath, "utf8") : "";
+const accessMigrationPath = "supabase/migrations/20260810141015_restrict_catalog_rpc_access.sql";
+const sql = `${existsSync(migrationPath) ? readFileSync(migrationPath, "utf8") : ""}\n${existsSync(accessMigrationPath) ? readFileSync(accessMigrationPath, "utf8") : ""}`;
 
 describe("commission catalog migration", () => {
   it("creates albums, services, prices, and media with archive-safe relationships", () => {
@@ -39,6 +40,7 @@ describe("commission catalog migration", () => {
       "admin_save_commission_service",
       "admin_set_commission_service_archive",
       "admin_replace_commission_service_prices",
+      "admin_create_commission_catalog_media",
     ]) {
       expect(sql).toMatch(new RegExp(`create (?:or replace )?function public\\.${name}`, "i"));
       expect(sql).toMatch(new RegExp(`revoke all on function public\\.${name}[\\s\\S]*from public`, "i"));
@@ -53,5 +55,12 @@ describe("commission catalog migration", () => {
       expect(sql).toContain(`'${slug}'`);
     }
     expect(sql).toMatch(/on conflict \(slug\) do update/i);
+  });
+
+  it("explicitly denies every catalog mutation RPC to anon and service_role", () => {
+    for (const name of [
+      "admin_save_commission_album", "admin_set_commission_album_archive", "admin_save_commission_service",
+      "admin_set_commission_service_archive", "admin_replace_commission_service_prices", "admin_create_commission_catalog_media",
+    ]) expect(sql).toMatch(new RegExp(`revoke execute on function public\\.${name}[\\s\\S]*from anon, service_role`, "i"));
   });
 });

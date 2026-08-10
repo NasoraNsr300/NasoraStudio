@@ -93,6 +93,7 @@ export type AdminCatalogService = {
   albumId: string;
   archivedAt: string | null;
   availability: "open" | "limited" | "closed";
+  coverMedia: PublicMedia | undefined;
   description: LocalizedText;
   displayOrder: number;
   documentSlugs: string[];
@@ -141,6 +142,7 @@ export function mapAdminService(row: CatalogServiceRow): AdminCatalogService {
     albumId: row.album_id,
     archivedAt: row.archived_at,
     availability: row.availability,
+    coverMedia: mapMedia(row.commission_catalog_media),
     description: row.description,
     displayOrder: row.display_order,
     documentSlugs: row.document_slugs,

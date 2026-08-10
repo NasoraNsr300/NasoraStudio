@@ -24,7 +24,37 @@ function toSatang(value: string) {
 }
 
 async function responseBody(response: Response) {
-  return await response.json().catch(() => ({})) as { albumId?: string; error?: string; serviceId?: string };
+  return await response.json().catch(() => ({})) as { albumId?: string; error?: string; mediaId?: string; serviceId?: string; src?: string };
+}
+
+function CatalogCoverUpload({ altEn, altTh, initialSrc, label, onUploaded }: {
+  altEn: string; altTh: string; initialSrc?: string; label: string; onUploaded(mediaId: string): void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [src, setSrc] = useState(initialSrc);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  async function upload() {
+    if (!file) { setMessage("เลือกไฟล์ภาพก่อน"); return; }
+    setBusy(true); setMessage("");
+    try {
+      const bitmap = await createImageBitmap(file);
+      const data = new FormData();
+      data.set("file", file); data.set("altTh", altTh); data.set("altEn", altEn);
+      data.set("width", String(bitmap.width)); data.set("height", String(bitmap.height)); bitmap.close();
+      const response = await fetch("/api/admin/catalog/media", { body: data, method: "POST" });
+      const body = await responseBody(response);
+      if (!response.ok || !body.mediaId) throw new Error(body.error ?? "อัปโหลดภาพไม่สำเร็จ");
+      onUploaded(body.mediaId); setSrc(body.src); setMessage(`อัปโหลด${label}แล้ว`);
+    } catch (cause) { setMessage(cause instanceof Error ? cause.message : "อัปโหลดภาพไม่สำเร็จ"); }
+    finally { setBusy(false); }
+  }
+  return <div className={`${styles.coverUpload} ${styles.wide}`}>
+    <div className={styles.coverPreview} style={src ? { backgroundImage: `url(${src})` } : undefined}><span>{src ? "" : "ยังไม่มีภาพ"}</span></div>
+    <div><label>{label}<input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" /></label>
+      <button disabled={busy || !file} onClick={upload} type="button">{busy ? "กำลังอัปโหลด..." : `อัปโหลด${label}`}</button>
+      {message ? <small>{message}</small> : null}</div>
+  </div>;
 }
 
 export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogAlbum | null }) {
@@ -38,6 +68,7 @@ export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogA
   const [displayOrder, setDisplayOrder] = useState(String(initialAlbum?.displayOrder ?? 0));
   const [published, setPublished] = useState(initialAlbum?.published ?? false);
   const [recommended, setRecommended] = useState(initialAlbum?.recommended ?? false);
+  const [coverMediaId, setCoverMediaId] = useState(initialAlbum?.coverMedia?.id ?? null);
   const [editingService, setEditingService] = useState<AdminCatalogService | "new" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +83,7 @@ export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogA
       const response = await fetch(initialAlbum ? `/api/admin/catalog/albums/${initialAlbum.id}` : "/api/admin/catalog/albums", {
         body: JSON.stringify({
           availability,
-          coverMediaId: initialAlbum?.coverMedia?.id ?? null,
+          coverMediaId,
           description: { en: descriptionEn, th: descriptionTh },
           displayOrder: order,
           name: { en: nameEn, th: nameTh },
@@ -111,6 +142,7 @@ export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogA
           <label>Album name (EN)<input maxLength={160} onChange={(event) => setNameEn(event.target.value)} required value={nameEn} /></label>
           <label>Slug<input maxLength={80} onChange={(event) => setSlug(event.target.value.toLowerCase())} pattern="[a-z0-9][a-z0-9-]*" required value={slug} /></label>
           <label>สถานะเปิดรับ<select onChange={(event) => setAvailability(event.target.value as typeof availability)} value={availability}><option value="open">เปิดรับ</option><option value="limited">รับจำนวนจำกัด</option><option value="closed">ปิดรับ</option></select></label>
+          <CatalogCoverUpload altEn={nameEn} altTh={nameTh} initialSrc={initialAlbum?.coverMedia?.thumbnailSrc} label="ภาพปกอัลบั้ม" onUploaded={setCoverMediaId} />
           <label className={styles.wide}>คำอธิบาย (TH)<textarea maxLength={4000} onChange={(event) => setDescriptionTh(event.target.value)} value={descriptionTh} /></label>
           <label className={styles.wide}>Description (EN)<textarea maxLength={4000} onChange={(event) => setDescriptionEn(event.target.value)} value={descriptionEn} /></label>
           <label>ลำดับแสดง<input min="0" onChange={(event) => setDisplayOrder(event.target.value)} required type="number" value={displayOrder} /></label>
@@ -143,6 +175,7 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
   const [revisions, setRevisions] = useState(String(service?.freeRevisionCount ?? 4));
   const [displayOrder, setDisplayOrder] = useState(String(service?.displayOrder ?? 0));
   const [published, setPublished] = useState(service?.published ?? false);
+  const [coverMediaId, setCoverMediaId] = useState(service?.coverMedia?.id ?? null);
   const [prices, setPrices] = useState<Record<string, string>>(() => Object.fromEntries(variants.map((variant) => {
     const found = service?.prices.find((price) => price.usage === variant.usage && price.pace === variant.pace);
     return [`${variant.usage}:${variant.pace}`, found ? (found.amountSatang / 100).toFixed(found.amountSatang % 100 ? 2 : 0) : ""];
@@ -156,7 +189,7 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
       const revisionCount = Number(revisions); const order = Number(displayOrder);
       if (!Number.isInteger(revisionCount) || revisionCount < 0 || !Number.isInteger(order) || order < 0) throw new Error("จำนวนแก้หรือลำดับไม่ถูกต้อง");
       const servicePayload = {
-        availability, coverMediaId: null,
+        availability, coverMediaId,
         description: { en: descriptionEn, th: descriptionTh }, displayOrder: order,
         documentSlugs: ["commission-terms"], freeRevisionCount: revisionCount, modifiers: [],
         name: { en: nameEn, th: nameTh }, published, slug,
@@ -200,6 +233,7 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
     <div className={styles.twoColumns}>
       <label>ชื่อรูปแบบ (TH)<input onChange={(event) => setNameTh(event.target.value)} required value={nameTh} /></label><label>Service name (EN)<input onChange={(event) => setNameEn(event.target.value)} required value={nameEn} /></label>
       <label>Slug<input onChange={(event) => setSlug(event.target.value.toLowerCase())} pattern="[a-z0-9][a-z0-9-]*" required value={slug} /></label><label>สถานะเปิดรับ<select onChange={(event) => setAvailability(event.target.value as typeof availability)} value={availability}><option value="open">เปิดรับ</option><option value="limited">รับจำนวนจำกัด</option><option value="closed">ปิดรับ</option></select></label>
+      <CatalogCoverUpload altEn={nameEn} altTh={nameTh} initialSrc={service?.coverMedia?.thumbnailSrc} label="ภาพปกรูปแบบย่อย" onUploaded={setCoverMediaId} />
       <label className={styles.wide}>รายละเอียด (TH)<textarea onChange={(event) => setDescriptionTh(event.target.value)} value={descriptionTh} /></label><label className={styles.wide}>Description (EN)<textarea onChange={(event) => setDescriptionEn(event.target.value)} value={descriptionEn} /></label>
       <label>ระยะเวลา (TH)<input onChange={(event) => setTimingTh(event.target.value)} value={timingTh} /></label><label>Timing (EN)<input onChange={(event) => setTimingEn(event.target.value)} value={timingEn} /></label>
       <label>จำนวนแก้ฟรี<input min="0" onChange={(event) => setRevisions(event.target.value)} type="number" value={revisions} /></label><label>ลำดับแสดง<input min="0" onChange={(event) => setDisplayOrder(event.target.value)} type="number" value={displayOrder} /></label>
@@ -210,4 +244,3 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
       <div><button onClick={onClose} type="button">ยกเลิก</button><button className={styles.saveButton} disabled={busy} type="submit"><Save size={16} />{busy ? "กำลังบันทึก..." : "บันทึกรูปแบบย่อย"}</button></div></footer>
   </form></div>;
 }
-

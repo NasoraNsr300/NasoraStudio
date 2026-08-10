@@ -64,6 +64,33 @@ async function adminClient() {
   return client;
 }
 
+export async function assertCatalogAdmin() {
+  await adminClient();
+}
+
+export async function createAdminCatalogMedia(input: {
+  alt: LocalizedText;
+  contentType: "image/jpeg" | "image/png" | "image/webp";
+  etag: string;
+  height: number;
+  objectKey: string;
+  width: number;
+}) {
+  const client = await adminClient();
+  const { data, error } = await client.rpc("admin_create_commission_catalog_media", {
+    p_alt: input.alt,
+    p_content_type: input.contentType,
+    p_etag: input.etag,
+    p_height: input.height,
+    p_object_key: input.objectKey,
+    p_width: input.width,
+  });
+  if (error) throw new Error("Unable to register catalog media");
+  const parsed = z.uuid().safeParse(data);
+  if (!parsed.success) throw new Error("Catalog media result is unavailable");
+  return parsed.data;
+}
+
 export async function listAdminAlbums() {
   const client = await adminClient();
   const { data, error } = await client.from("commission_albums").select(catalogSelect).order("display_order", { ascending: true });
@@ -160,4 +187,3 @@ export async function replaceAdminServicePrices(serviceId: string, prices: Catal
   });
   if (error) throw new Error("Unable to save catalog prices");
 }
-

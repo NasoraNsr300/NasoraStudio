@@ -374,17 +374,48 @@ begin
 end;
 $$;
 
+create or replace function public.admin_create_commission_catalog_media(
+  p_object_key text,
+  p_etag text,
+  p_content_type text,
+  p_width integer,
+  p_height integer,
+  p_alt jsonb
+) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+  v_after jsonb;
+begin
+  if not (select private.is_admin()) then raise exception 'admin_access_required'; end if;
+  if p_object_key !~ '^catalog-covers/[0-9a-f-]{36}\.(png|jpg|webp)$' then
+    raise exception 'invalid_catalog_media_key';
+  end if;
+  insert into public.commission_catalog_media
+    (object_key, etag, content_type, width, height, alt, created_by)
+  values
+    (p_object_key, p_etag, p_content_type, p_width, p_height, p_alt, (select auth.uid()))
+  returning id, to_jsonb(commission_catalog_media.*) into v_id, v_after;
+  insert into public.audit_logs
+    (actor_user_id, actor_role, action, entity_type, entity_id, after_state)
+  values ((select auth.uid()), 'admin', 'create_catalog_media', 'commission_catalog_media', v_id, v_after);
+  return v_id;
+end;
+$$;
+
 revoke all on function public.admin_save_commission_album(uuid, text, jsonb, jsonb, uuid, text, boolean, boolean, integer) from public;
 revoke all on function public.admin_set_commission_album_archive(uuid, boolean, text) from public;
 revoke all on function public.admin_save_commission_service(uuid, uuid, text, jsonb, jsonb, jsonb, uuid, text, integer, jsonb, text[], boolean, integer) from public;
 revoke all on function public.admin_set_commission_service_archive(uuid, boolean, text) from public;
 revoke all on function public.admin_replace_commission_service_prices(uuid, jsonb) from public;
+revoke all on function public.admin_create_commission_catalog_media(text, text, text, integer, integer, jsonb) from public;
 
 grant execute on function public.admin_save_commission_album(uuid, text, jsonb, jsonb, uuid, text, boolean, boolean, integer) to authenticated;
 grant execute on function public.admin_set_commission_album_archive(uuid, boolean, text) to authenticated;
 grant execute on function public.admin_save_commission_service(uuid, uuid, text, jsonb, jsonb, jsonb, uuid, text, integer, jsonb, text[], boolean, integer) to authenticated;
 grant execute on function public.admin_set_commission_service_archive(uuid, boolean, text) to authenticated;
 grant execute on function public.admin_replace_commission_service_prices(uuid, jsonb) to authenticated;
+grant execute on function public.admin_create_commission_catalog_media(text, text, text, integer, integer, jsonb) to authenticated;
 
 insert into public.commission_albums
   (slug, name, description, availability, recommended, published, display_order)
