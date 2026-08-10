@@ -5,6 +5,7 @@ node_modules/
 .wrangler/
 coverage/
 playwright-report/
+.playwright-cli/
 test-results/
 .env
 .env.local
