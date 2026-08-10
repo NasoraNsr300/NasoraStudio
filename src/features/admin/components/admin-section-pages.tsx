@@ -1,5 +1,4 @@
-import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, ImagePlus, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, PenLine, Plus, Search, Send, Settings2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
-import Image from "next/image";
+import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, PenLine, Plus, Search, Send, Settings2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AdminEstimateInbox } from "@/features/admin/estimates/components/admin-estimate-inbox";
@@ -52,13 +51,6 @@ export function AdminMessagesPage() {
   return <section className={styles.sectionPage}>
     <PageHeader action="ข้อความใหม่" description="พูดคุยกับสมาชิกและเก็บประวัติการติดต่อไว้กับงาน" icon={<Mail size={25} />} title="ข้อความ" />
     <div className={styles.inbox}><aside><label><Search size={17} /><input placeholder="ค้นหาข้อความ..." /></label>{threads.map(([name, preview, time], index) => <button aria-pressed={index === 0} key={name} type="button"><span>{name.slice(0,1)}</span><div><strong>{name}</strong><p>{preview}</p></div><time>{time}</time></button>)}</aside><section><header><div><strong>Kirana</strong><span>ออนไลน์ · Illustration / Full Body</span></div><button aria-label="ตัวเลือกข้อความ" type="button"><MoreHorizontal /></button></header><div className={styles.chatBody}><p data-side="customer">สวัสดีค่ะ อยากทราบว่าภาพร่างเป็นอย่างไรบ้างคะ</p><p data-side="admin">กำลังอัปเดตให้ค่ะ ภายในวันนี้จะส่งภาพร่างรอบใหม่ให้ตรวจนะคะ</p><p data-side="customer">ขอบคุณค่ะ รอตรวจนะคะ</p></div><footer><button aria-label="แนบไฟล์" type="button"><Upload size={18} /></button><input placeholder="พิมพ์ข้อความถึง Kirana..." /><button aria-label="ส่งข้อความ" type="button"><Send size={18} /></button></footer></section></div>
-  </section>;
-}
-
-export function AdminPortfolioPage() {
-  return <section className={styles.sectionPage}>
-    <PageHeader action="เพิ่มผลงาน" description="อัปโหลดผลงาน จัดหมวดหมู่ และเลือกภาพที่แสดงบนหน้า Portfolio" icon={<ImagePlus size={25} />} title="ผลงาน" />
-    <Toolbar placeholder="ค้นหาชื่อผลงานหรือหมวดหมู่..." /><div className={styles.portfolioGrid}>{["moonlit", "violet", "forest", "sky", "amber", "moonlit"].map((image, index) => <article key={`${image}-${index}`}><Image alt={`ผลงานตัวอย่าง ${index + 1}`} height={110} src={`/fixtures/derivatives/${image}-card.webp`} width={140} /><div><strong>{["Starlight Full Body", "Moon Garden", "Minecraft Cottage", "Blue Horizon", "Chibi Star", "Night Portrait"][index]}</strong><span>{index % 2 ? "Chibi" : "Illustration"}</span></div><button aria-label={`แก้ไขผลงาน ${index + 1}`} type="button"><PenLine size={16} /></button></article>)}</div>
   </section>;
 }
 
