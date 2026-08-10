@@ -56,8 +56,8 @@ export type ServiceCategory = {
   slug: string;
   name: LocalizedText;
   description: LocalizedText;
-  coverMedia: PublicMedia;
-  coverCrop: MediaCrop;
+  coverMedia?: PublicMedia;
+  coverCrop?: MediaCrop;
   displayOrder: number;
   availability: ServiceAvailability;
   recommended: boolean;
@@ -68,6 +68,7 @@ export type ServiceCategory = {
 export type ServicePrice = {
   label: LocalizedText;
   usage: "personal" | "commercial";
+  pace?: "normal" | "rush";
   amountThb: number;
 };
 
@@ -93,6 +94,7 @@ export type ServiceType = {
   displayOrder: number;
   timingGuidance: LocalizedText;
   referencePrices: ServicePrice[];
+  freeRevisionCount?: number;
   modifiers: ServiceModifier[];
   documentSlugs: string[];
   examples: CommissionExample[];

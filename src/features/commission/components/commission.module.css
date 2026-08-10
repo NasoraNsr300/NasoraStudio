@@ -10,6 +10,7 @@
 .albumGrid { display: grid; gap: clamp(.75rem, 1.5vw, 1.25rem); grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .albumTile { aspect-ratio: 4 / 5; background: var(--background-elevated); border: var(--border-subtle) solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); cursor: pointer; display: block; font: inherit; isolation: isolate; overflow: hidden; padding: 0; position: relative; text-align: left; width: 100%; }
 .albumMedia { inset: 0; position: absolute; }
+.albumMediaPlaceholder { background: radial-gradient(circle at 72% 24%, rgb(229 193 115 / 30%) 0 8%, transparent 9%), linear-gradient(145deg, #17254b, #241d4c 56%, #10182f); inset: 0; position: absolute; }
 .albumTile img { transition: transform 220ms ease; }
 .albumTile:hover img, .albumTile:focus-visible img { transform: scale(1.035); }
 .albumGradient { background: linear-gradient(180deg, transparent 35%, rgb(6 8 20 / 92%)); inset: 0; position: absolute; }

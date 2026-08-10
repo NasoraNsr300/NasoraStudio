@@ -28,14 +28,16 @@ export function AlbumTile({ category, eager = false, locale = "en", onSelect }: 
 
   return (
     <button aria-label={viewLabel} className={styles.albumTile} onClick={onSelect} type="button">
-      <ResponsiveMedia
-        className={styles.albumMedia}
-        crop={category.coverCrop}
-        locale={locale}
-        media={category.coverMedia}
-        priority={eager}
-        sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
-      />
+      {category.coverMedia ? (
+        <ResponsiveMedia
+          className={styles.albumMedia}
+          crop={category.coverCrop}
+          locale={locale}
+          media={category.coverMedia}
+          priority={eager}
+          sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
+        />
+      ) : <span aria-hidden="true" className={styles.albumMediaPlaceholder} data-catalog-cover="empty" />}
       <span className={styles.albumGradient} />
       {category.recommended ? <span className={styles.recommendedBadge}>{copy.recommended}</span> : null}
       <span className={`${styles.availabilityBadge} ${styles[category.availability]}`}>{availabilityCopy[locale][category.availability]}</span>

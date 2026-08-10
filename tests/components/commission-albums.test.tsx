@@ -10,6 +10,8 @@ afterEach(cleanup);
 
 describe("Commission albums", () => {
   it("renders image-led album tiles with title, subtype count, availability, and recommendation without prices or requests", () => {
+    const firstCategory = serviceCategories[0];
+    if (!firstCategory?.coverMedia) throw new Error("Expected fixture cover media");
     render(<CommissionAlbumsPage categories={serviceCategories} locale="en" services={serviceTypes} />);
 
     const chibi = screen.getByRole("button", { name: /view chibi album/i });
@@ -17,9 +19,21 @@ describe("Commission albums", () => {
     expect(chibi).toHaveTextContent("2 types");
     expect(chibi).toHaveTextContent("Open");
     expect(chibi).toHaveTextContent("Recommended");
-    expect(screen.getByRole("img", { name: serviceCategories[0].coverMedia.alt.en })).toBeVisible();
+    expect(screen.getByRole("img", { name: firstCategory.coverMedia.alt.en })).toBeVisible();
     expect(screen.queryByText(/THB|\$/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /request/i })).not.toBeInTheDocument();
+  });
+
+  it("renders an accessible neutral album cover when live catalog media is absent", () => {
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    if (!chibi) throw new Error("Expected Chibi category");
+
+    render(<CommissionAlbumsPage categories={[{ ...chibi, coverCrop: undefined, coverMedia: undefined }]} locale="en" services={[]} />);
+
+    const tile = screen.getByRole("button", { name: /view chibi album/i });
+    expect(tile).toBeVisible();
+    expect(tile.querySelector("[data-catalog-cover='empty']")).toBeVisible();
+    expect(tile.querySelector("img")).not.toBeInTheDocument();
   });
 
   it("localizes album badges and service price guidance for Thai and English visitors", () => {
