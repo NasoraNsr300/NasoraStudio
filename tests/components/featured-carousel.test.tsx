@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { featuredItems } from "@/data/fixtures/public-content";
 import { FeaturedCarousel } from "@/features/home/components/featured-carousel";
@@ -12,7 +12,6 @@ const items = [
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 describe("FeaturedCarousel continuous loop", () => {
@@ -25,58 +24,12 @@ describe("FeaturedCarousel continuous loop", () => {
     expect(screen.queryByRole("button", { name: "Next featured work" })).not.toBeInTheDocument();
   });
 
-  it("toggles an explicit manual pause", () => {
+  it("keeps the artwork loop continuous without manual motion controls", () => {
     render(<FeaturedCarousel items={items} locale="en" />);
     const track = screen.getByTestId("featured-loop-track");
 
-    fireEvent.click(screen.getByRole("button", { name: "Pause featured artwork" }));
-    expect(track).toHaveAttribute("data-paused", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Play featured artwork" }));
-    expect(track).toHaveAttribute("data-paused", "false");
-  });
-
-  it("pauses while hovered and resumes after the pointer leaves", () => {
-    render(<FeaturedCarousel items={items} locale="en" />);
-    const carousel = screen.getByRole("region", { name: "Featured work" });
-    const track = screen.getByTestId("featured-loop-track");
-
-    fireEvent.pointerEnter(carousel);
-    expect(track).toHaveAttribute("data-paused", "true");
-    fireEvent.pointerLeave(carousel);
-    expect(track).toHaveAttribute("data-paused", "false");
-  });
-
-  it("pauses while focus is within and resumes after focus leaves", () => {
-    render(<FeaturedCarousel items={items} locale="en" />);
-    const carousel = screen.getByRole("region", { name: "Featured work" });
-    const track = screen.getByTestId("featured-loop-track");
-    const pause = screen.getByRole("button", { name: "Pause featured artwork" });
-
-    fireEvent.focusIn(pause);
-    expect(track).toHaveAttribute("data-paused", "true");
-    fireEvent.focusOut(carousel, { relatedTarget: document.body });
-    expect(track).toHaveAttribute("data-paused", "false");
-  });
-
-  it("pauses while the document is hidden and resumes when visible", () => {
-    render(<FeaturedCarousel items={items} locale="en" />);
-    const track = screen.getByTestId("featured-loop-track");
-    const visibilityState = vi.spyOn(document, "visibilityState", "get");
-
-    visibilityState.mockReturnValue("hidden");
-    fireEvent(document, new Event("visibilitychange"));
-    expect(track).toHaveAttribute("data-paused", "true");
-
-    visibilityState.mockReturnValue("visible");
-    fireEvent(document, new Event("visibilitychange"));
-    expect(track).toHaveAttribute("data-paused", "false");
-  });
-
-  it("stays static when reduced motion is preferred", () => {
-    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    render(<FeaturedCarousel items={items} locale="en" />);
-
-    expect(screen.getByTestId("featured-loop-track")).toHaveAttribute("data-paused", "true");
+    expect(track).not.toHaveAttribute("data-paused");
+    expect(screen.queryByRole("button", { name: /pause featured artwork|play featured artwork/i })).not.toBeInTheDocument();
   });
 
   it("pads a short source to four visible presentation cards without changing the source", () => {
@@ -93,10 +46,11 @@ describe("FeaturedCarousel continuous loop", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("localizes the motion control and destinations", () => {
+  it("localizes the region and destinations", () => {
     render(<FeaturedCarousel items={items} locale="th" />);
 
-    expect(screen.getByRole("button", { name: "หยุดผลงานเด่น" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "ผลงานแนะนำ" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "หยุดผลงานเด่น" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "ดู Starlit Traveler" })).toHaveAttribute(
       "href",
       "/th/portfolio?work=starlit-traveler",
