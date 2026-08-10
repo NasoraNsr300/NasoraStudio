@@ -23,7 +23,7 @@ export function createR2PrivateAssetsStorage(environment: Environment = process.
   const bucket = required(environment, "R2_PRIVATE_ASSETS_BUCKET");
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
   async function signedUrl(method: Method, objectKey: string, contentType?: string, expiresIn = 300) {
-    if (!/^(catalog-covers|deliveries|message-images|portfolio|progress-images)\//.test(objectKey) || expiresIn < 1 || expiresIn > 900) throw new Error("invalid_r2_request");
+    if (!/^(catalog-covers|deliveries|document-covers|message-images|portfolio|progress-images)\//.test(objectKey) || expiresIn < 1 || expiresIn > 900) throw new Error("invalid_r2_request");
     const path = `/${encode(bucket)}/${objectKey.split("/").map(encode).join("/")}`;
     const signer = new AwsV4Signer({
       accessKeyId,
