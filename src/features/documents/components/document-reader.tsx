@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import type { DocumentSummary } from "@/shared/types/public-content";
+import { RichTextRenderer } from "./rich-text-renderer";
 
 import { getDocumentCategoryLabel } from "./document-category";
 import styles from "./documents.module.css";
@@ -26,7 +27,7 @@ function ReaderBody({ document, locale }: Pick<DocumentReaderProps, "document"> 
     <p className={styles.category}>{getDocumentCategoryLabel(locale, document.category)}</p>
     <h1>{document.title[locale]}</h1>
     <p className={styles.summary}>{document.summary[locale]}</p>
-    <div className={styles.content}>{document.content[locale]}</div>
+    <div className={styles.content}><RichTextRenderer document={document.content[locale]} /></div>
     <ul className={styles.tags}>{document.tags.map((tag) => <li key={tag.en}>{tag[locale]}</li>)}</ul>
   </article>;
 }

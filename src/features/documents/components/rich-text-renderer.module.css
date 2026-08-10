@@ -1,0 +1,6 @@
+.richText { line-height: 1.8; overflow-wrap: anywhere; }.richText > :first-child { margin-top: 0; }.richText > :last-child { margin-bottom: 0; }
+.richText [data-align="center"] { text-align: center; }.richText [data-align="right"] { text-align: right; }
+.richText [data-bold="true"] { font-weight: 800; }.richText [data-underline="true"] { text-decoration: underline; }
+.richText [data-color="red"] { color: #ff727f; }.richText [data-color="gold"] { color: var(--brand-gold); }.richText [data-color="violet"] { color: #bca8ff; }
+.richText [data-highlight="yellow"] { background: #ffe676; color: #261d00; }.richText [data-highlight="rose"] { background: #793747; color: #fff4f6; }
+.richText a { color: #aecdff; text-underline-offset: .18em; }.richText hr { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }.richText li + li { margin-top: .35rem; }

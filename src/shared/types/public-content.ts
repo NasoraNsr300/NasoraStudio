@@ -1,4 +1,5 @@
 import type { Locale } from "@/shared/i18n/locales";
+import type { SafeRichTextDocument } from "@/features/documents/domain/rich-text";
 
 export type LocalizedText = Record<Locale, string>;
 
@@ -130,7 +131,7 @@ export type DocumentSummary = {
   category: string;
   title: LocalizedText;
   summary: LocalizedText;
-  content: LocalizedText;
+  content: Record<Locale, SafeRichTextDocument>;
   tags: LocalizedText[];
   pinned: boolean;
   displayOrder: number;

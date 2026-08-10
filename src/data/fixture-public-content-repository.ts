@@ -12,6 +12,7 @@ import {
   serviceTypes,
 } from "@/data/fixtures/public-content";
 import { privateQueueFixtureRecords } from "@/data/fixtures/private-queue-fixtures.server";
+import { richTextPlainText } from "@/features/documents/domain/rich-text";
 
 type QueueProjectionSource = {
   position: number;
@@ -92,7 +93,7 @@ export const fixturePublicContentRepository: PublicContentRepository = {
   async getDocuments(locale: Locale, query?: string) {
     return documents
       .filter((item) => item.published)
-      .filter((item) => includesQuery([item.title[locale], item.summary[locale], item.content[locale]], query))
+      .filter((item) => includesQuery([item.title[locale], item.summary[locale], richTextPlainText(item.content[locale])], query))
       .sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.displayOrder - b.displayOrder);
   },
 

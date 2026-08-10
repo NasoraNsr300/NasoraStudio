@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import type { DocumentSummary } from "@/shared/types/public-content";
+import { richTextPlainText } from "@/features/documents/domain/rich-text";
 
 import { getDocumentCategoryLabel } from "./document-category";
 import { DocumentReader } from "./document-reader";
@@ -27,7 +28,7 @@ export function DocumentCenterPage({ documents, initialQuery = "", locale }: Doc
   const visibleDocuments = useMemo(() => {
     const term = query.trim().toLocaleLowerCase(locale);
     return [...documents].sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.displayOrder - b.displayOrder).filter((document) =>
-      (category === "all" || document.category === category) && (!term || [document.title[locale], document.summary[locale], document.content[locale]].some((value) => value.toLocaleLowerCase(locale).includes(term))));
+      (category === "all" || document.category === category) && (!term || [document.title[locale], document.summary[locale], richTextPlainText(document.content[locale])].some((value) => value.toLocaleLowerCase(locale).includes(term))));
   }, [category, documents, locale, query]);
 
   const featuredDocument = visibleDocuments.find((document) => document.pinned);

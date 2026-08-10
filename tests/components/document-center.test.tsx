@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { documents } from "@/data/fixtures/public-content";
 import { DocumentSearch } from "@/features/documents/components/document-search";
 import { DocumentReader } from "@/features/documents/components/document-reader";
+import { richTextPlainText } from "@/features/documents/domain/rich-text";
 
 const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
 vi.mock("next/navigation", () => ({ useSearchParams: navigation.useSearchParams }));
@@ -65,7 +66,7 @@ describe("DocumentReader", () => {
     const fixtureDocument = publishedDocuments[0];
     render(<DocumentReader document={fixtureDocument} mode="dialog" onClose={onClose} />);
 
-    expect(screen.getByRole("dialog", { name: "Commission Terms" })).toHaveTextContent(fixtureDocument.content.en);
+    expect(screen.getByRole("dialog", { name: "Commission Terms" })).toHaveTextContent(richTextPlainText(fixtureDocument.content.en));
     fireEvent.click(screen.getByRole("button", { name: "Close document" }));
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();

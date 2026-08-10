@@ -7,6 +7,7 @@ import type {
   ServiceCategory,
   ServiceType,
 } from "@/shared/types/public-content";
+import { createPlainRichText } from "@/features/documents/domain/rich-text";
 
 const media = {
   moonlit: {
@@ -157,9 +158,14 @@ export const serviceTypes: ServiceType[] = [
   { slug: "draft-private-service", categorySlug: "draft-private", name: { th: "บริการร่าง", en: "Draft service" }, description: { th: "ยังไม่เผยแพร่", en: "Not yet published" }, availability: "closed", displayOrder: 1, timingGuidance: { th: "ยังไม่กำหนด", en: "Not scheduled" }, referencePrices: [{ label: { th: "ใช้งานส่วนตัว", en: "Personal" }, usage: "personal", amountThb: 1000 }], modifiers: [], documentSlugs: [], examples: [], published: false },
 ];
 
-export const documents: DocumentSummary[] = [
+const legacyDocuments = [
   { slug: "commission-terms", category: "terms", title: { th: "เงื่อนไขการคอมมิชชัน", en: "Commission Terms" }, summary: { th: "ข้อตกลงก่อนเริ่มงาน", en: "The agreement before work begins." }, content: { th: "กรุณาอ่านข้อตกลงก่อนยืนยันใบเสนอราคา", en: "Please read these terms before confirming a quote." }, tags: [{ th: "เงื่อนไข", en: "Terms" }], pinned: true, displayOrder: 1, published: true, coverMedia: media.amber },
   { slug: "revision-guide", category: "guide", title: { th: "คู่มือการแก้งาน", en: "Revision Guide" }, summary: { th: "วิธีส่งคำขอแก้ไขอย่างชัดเจน", en: "How to send a clear revision request." }, content: { th: "รวบรวมคำขอแก้ไขเป็นรายการเดียว", en: "Collect revision notes into one clear list." }, tags: [{ th: "แก้งาน", en: "Revisions" }], pinned: false, displayOrder: 2, published: true, coverMedia: media.violet },
   { slug: "privacy-policy", category: "privacy", title: { th: "นโยบายความเป็นส่วนตัว", en: "Privacy Policy" }, summary: { th: "วิธีดูแลข้อมูลของคุณ", en: "How your information is handled." }, content: { th: "ข้อมูลติดต่อใช้สำหรับการสื่อสารเรื่องงานเท่านั้น", en: "Contact information is used only to communicate about your commission." }, tags: [{ th: "ความเป็นส่วนตัว", en: "Privacy" }], pinned: false, displayOrder: 3, published: true },
   { slug: "draft-process", category: "guide", title: { th: "ขั้นตอนงานฉบับร่าง", en: "Draft Process" }, summary: { th: "เอกสารที่ยังไม่เผยแพร่", en: "An unpublished document." }, content: { th: "ฉบับร่าง", en: "Draft" }, tags: [{ th: "ร่าง", en: "Draft" }], pinned: false, displayOrder: 4, published: false },
 ];
+
+export const documents: DocumentSummary[] = legacyDocuments.map((document) => ({
+  ...document,
+  content: { en: createPlainRichText(document.content.en), th: createPlainRichText(document.content.th) },
+}));
