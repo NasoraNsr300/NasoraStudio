@@ -1,4 +1,4 @@
-+create table public.portfolio_items (
+create table public.portfolio_items (
   id uuid primary key default gen_random_uuid(),
   album_id uuid not null references public.commission_albums(id) on delete restrict,
   media_id uuid not null references public.commission_catalog_media(id) on delete restrict,
@@ -185,9 +185,41 @@ begin
 end;
 $$;
 
+create or replace function public.admin_create_portfolio_media(
+  p_object_key text,
+  p_etag text,
+  p_content_type text,
+  p_width integer,
+  p_height integer,
+  p_alt jsonb
+) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+  v_after jsonb;
+begin
+  if not (select private.is_admin()) then raise exception 'admin_access_required'; end if;
+  if p_object_key !~ '^portfolio/[0-9a-f-]{36}\.(png|jpg|webp)$' then raise exception 'invalid_portfolio_media_key'; end if;
+  if p_width < 1 or p_width > 20000 or p_height < 1 or p_height > 20000 then raise exception 'invalid_portfolio_media_size'; end if;
+  if p_content_type not in ('image/png', 'image/jpeg', 'image/webp') then raise exception 'invalid_portfolio_media_type'; end if;
+  insert into public.commission_catalog_media
+    (object_key, etag, content_type, width, height, alt, created_by)
+  values
+    (p_object_key, p_etag, p_content_type, p_width, p_height, p_alt, (select auth.uid()))
+  returning id, to_jsonb(commission_catalog_media.*) into v_id, v_after;
+  insert into public.audit_logs
+    (actor_user_id, actor_role, action, entity_type, entity_id, after_state)
+  values ((select auth.uid()), 'admin', 'create_portfolio_media', 'commission_catalog_media', v_id, v_after);
+  return v_id;
+end;
+$$;
+
 revoke all on function public.admin_save_portfolio_item(uuid, uuid, uuid, jsonb, boolean, integer, boolean) from public;
 revoke all on function public.admin_set_portfolio_item_archive(uuid, boolean, text) from public;
+revoke all on function public.admin_create_portfolio_media(text, text, text, integer, integer, jsonb) from public;
 revoke execute on function public.admin_save_portfolio_item(uuid, uuid, uuid, jsonb, boolean, integer, boolean) from anon, service_role;
 revoke execute on function public.admin_set_portfolio_item_archive(uuid, boolean, text) from anon, service_role;
+revoke execute on function public.admin_create_portfolio_media(text, text, text, integer, integer, jsonb) from anon, service_role;
 grant execute on function public.admin_save_portfolio_item(uuid, uuid, uuid, jsonb, boolean, integer, boolean) to authenticated;
 grant execute on function public.admin_set_portfolio_item_archive(uuid, boolean, text) to authenticated;
+grant execute on function public.admin_create_portfolio_media(text, text, text, integer, integer, jsonb) to authenticated;

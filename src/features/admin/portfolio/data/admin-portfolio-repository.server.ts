@@ -44,6 +44,29 @@ export async function assertPortfolioAdmin() {
   await adminClient();
 }
 
+export async function createAdminPortfolioMedia(input: {
+  alt: LocalizedPortfolioText;
+  contentType: "image/jpeg" | "image/png" | "image/webp";
+  etag: string;
+  height: number;
+  objectKey: string;
+  width: number;
+}) {
+  const client = await adminClient();
+  const { data, error } = await client.rpc("admin_create_portfolio_media", {
+    p_alt: input.alt,
+    p_content_type: input.contentType,
+    p_etag: input.etag,
+    p_height: input.height,
+    p_object_key: input.objectKey,
+    p_width: input.width,
+  });
+  if (error) throw new Error("Unable to register portfolio media");
+  const parsed = z.uuid().safeParse(data);
+  if (!parsed.success) throw new Error("Portfolio media result is unavailable");
+  return parsed.data;
+}
+
 export async function listAdminPortfolio() {
   const client = await adminClient();
   const { data, error } = await client.from("portfolio_items").select(portfolioSelect)

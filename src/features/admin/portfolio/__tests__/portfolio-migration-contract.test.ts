@@ -24,7 +24,7 @@ describe("portfolio cms migration", () => {
   });
 
   it("provides sole-admin save and reversible archive RPCs with audit records", () => {
-    for (const name of ["admin_save_portfolio_item", "admin_set_portfolio_item_archive"]) {
+    for (const name of ["admin_save_portfolio_item", "admin_set_portfolio_item_archive", "admin_create_portfolio_media"]) {
       expect(sql).toMatch(new RegExp(`create (?:or replace )?function public\\.${name}`, "i"));
       expect(sql).toMatch(new RegExp(`revoke all on function public\\.${name}[\\s\\S]*from public`, "i"));
       expect(sql).toMatch(new RegExp(`revoke execute on function public\\.${name}[\\s\\S]*from anon, service_role`, "i"));
