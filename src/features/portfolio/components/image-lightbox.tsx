@@ -4,12 +4,12 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { PortfolioItem } from "@/shared/types/public-content";
+import type { PublicPortfolioItem } from "@/features/portfolio/domain/portfolio";
 
 import styles from "./portfolio.module.css";
 
 export type ImageLightboxProps = {
-  item: PortfolioItem | null;
+  item: PublicPortfolioItem | null;
   locale: Locale;
   onClose(): void;
 };
@@ -88,25 +88,14 @@ export function ImageLightbox({ item, locale, onClose }: ImageLightboxProps) {
         >
           ×
         </button>
-        {item.media.kind === "video" ? (
-          <video
-            className={styles.lightboxVideo}
-            controls
-            poster={item.media.posterSrc ?? item.media.cardSrc}
-            preload="none"
-            src={item.media.detailSrc}
-          />
-        ) : (
-          <img
-            alt={item.media.alt[locale]}
-            className={styles.lightboxImage}
-            height={item.media.height}
-            sizes="(max-width: 780px) 100vw, 90vw"
-            src={item.media.detailSrc}
-            srcSet={`${item.media.cardSrc} 960w, ${item.media.detailSrc} 1600w`}
-            width={item.media.width}
-          />
-        )}
+        <img
+          alt={item.media.alt[locale]}
+          className={styles.lightboxImage}
+          height={item.media.height}
+          sizes="(max-width: 780px) 100vw, 90vw"
+          src={item.media.detailSrc}
+          width={item.media.width}
+        />
         <figcaption>{item.title[locale]}</figcaption>
       </figure>
     </div>

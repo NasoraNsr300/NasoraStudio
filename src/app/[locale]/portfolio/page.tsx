@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 
-import { getPublicContentRepository } from "@/data/fixture-public-content-repository";
 import { PortfolioPage } from "@/features/portfolio/components/portfolio-page";
 import { PortfolioSearch } from "@/features/portfolio/components/portfolio-search";
+import { listPublicPortfolio } from "@/features/portfolio/data/public-portfolio-repository.server";
 import { isLocale } from "@/shared/i18n/locales";
 
 export function generateStaticParams() {
@@ -13,7 +13,7 @@ export default async function PortfolioRoute({ params }: Readonly<{ params: Prom
   const { locale } = await params;
   if (!isLocale(locale)) return null;
 
-  const items = await getPublicContentRepository().getPortfolio(locale);
+  const items = await listPublicPortfolio();
 
   return (
     <Suspense fallback={<PortfolioPage items={items} locale={locale} />}>

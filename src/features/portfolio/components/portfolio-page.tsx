@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { PortfolioItem } from "@/shared/types/public-content";
+import type { PublicPortfolioItem } from "@/features/portfolio/domain/portfolio";
 
 import { PortfolioGallery } from "./portfolio-gallery";
 import styles from "./portfolio.module.css";
@@ -10,7 +10,7 @@ export type PortfolioPageProps = {
   initialCategory?: string | null;
   initialQuery?: string | null;
   initialWork?: string | null;
-  items: PortfolioItem[];
+  items: PublicPortfolioItem[];
   locale: Locale;
 };
 

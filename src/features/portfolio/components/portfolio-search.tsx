@@ -3,12 +3,12 @@
 import { useSearchParams } from "next/navigation";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { PortfolioItem } from "@/shared/types/public-content";
+import type { PublicPortfolioItem } from "@/features/portfolio/domain/portfolio";
 
 import { PortfolioPage } from "./portfolio-page";
 
 export type PortfolioSearchProps = {
-  items: PortfolioItem[];
+  items: PublicPortfolioItem[];
   locale: Locale;
 };
 
