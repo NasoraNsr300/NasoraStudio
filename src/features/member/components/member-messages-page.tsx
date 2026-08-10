@@ -1,117 +1,74 @@
 "use client";
 
-import { ImagePlus, Search, Send, UserRound } from "lucide-react";
-import { useState } from "react";
+import { ImagePlus, Send, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { type FormEvent, useMemo, useState } from "react";
 
+import type { ConversationView } from "@/features/collaboration/data/collaboration-repository.server";
 import type { Locale } from "@/shared/i18n/locales";
 
 import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import styles from "./member-pages.module.css";
 
-export function MemberMessagesContent({ locale }: { locale: Locale }) {
-  const [active, setActive] = useState(0);
-  const th = locale === "th";
-  const conversations = [
-    ["Illustration — Full Body", th ? "อัปเดตร่าง — ภาพร่างขั้นต้น" : "Sketch update", "15:42"],
-    ["Chibi — Full Body", th ? "ได้รับมัดจำแล้ว ขอบคุณค่ะ" : "Deposit received", "25 ก.พ."],
-    ["VTuber — Reference", th ? "ปิดรายการเรียบร้อยแล้ว" : "Request closed", "10 มิ.ย."],
-  ];
+type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<{ ok: boolean }>;
 
-  return (
-    <section className={styles.pagePanel}>
-      <header className={styles.pageHeader}>
-        <div>
-          <h1>{th ? "ข้อความ" : "Messages"}</h1>
-          <p>{th ? "พูดคุยเรื่องงานและส่งภาพอ้างอิงกับ Nasora" : "Discuss jobs and share image references with Nasora."}</p>
+export function MemberMessagesContent({ conversations = [], fetcher = fetch, locale }: { conversations?: ConversationView[]; fetcher?: Fetcher; locale: Locale }) {
+  const [active, setActive] = useState(0);
+  const [body, setBody] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const router = useRouter();
+  const th = locale === "th";
+  const selected = conversations[active] ?? null;
+  const rows = useMemo(() => conversations, [conversations]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!selected || !body.trim() || sending) return;
+    setSending(true); setError("");
+    try {
+      const payload = image ? (() => { const data = new FormData(); data.set("body", body); data.set("image", image); return data; })() : JSON.stringify({ body });
+      const response = await fetcher(`/api/member/jobs/${selected.jobId}/messages`, { body: payload, ...(image ? {} : { headers: { "content-type": "application/json" } }), method: "POST" });
+      if (!response.ok) throw new Error("send_failed");
+      setBody(""); setImage(null); router.refresh();
+    } catch { setError(th ? "ส่งข้อความไม่สำเร็จ กรุณาลองอีกครั้ง" : "Could not send. Please retry."); }
+    finally { setSending(false); }
+  }
+
+  return <section className={styles.pagePanel}>
+    <header className={styles.pageHeader}><div><h1>{th ? "ข้อความ" : "Messages"}</h1><p>{th ? "พูดคุยและติดตามรายละเอียดของงานที่กำลังดำเนินการ" : "Discuss and follow the details of your active jobs."}</p></div></header>
+    <div className={styles.messagesLayout}>
+      <section className={`${styles.surface} ${styles.conversationList}`}>
+        <header><input aria-label={th ? "ค้นหาข้อความ" : "Search messages"} placeholder={th ? "ค้นหาข้อความ..." : "Search messages..."} /></header>
+        {rows.length === 0 ? <p>{th ? "ยังไม่มีห้องสนทนา ห้องจะเปิดหลังยืนยันมัดจำ" : "No conversations yet. A thread opens after deposit verification."}</p> : rows.map((conversation, index) => {
+          const latest = conversation.messages.at(-1);
+          return <button aria-pressed={active === index} className={styles.conversation} key={conversation.id} onClick={() => setActive(index)} type="button">
+            <span><strong>{conversation.title}</strong><time>{latest ? new Date(latest.createdAt).toLocaleString(locale) : ""}</time></span>
+            <span><small>{latest?.body ?? (th ? "เริ่มการสนทนา" : "Start a conversation")}</small></span>
+          </button>;
+        })}
+      </section>
+      <section className={`${styles.surface} ${styles.chat}`}>
+        <header className={styles.chatHeader}><span><UserRound size={19} /></span><div><strong>Nasora</strong><small>{selected?.title ?? (th ? "เลือกงานเพื่อเริ่มสนทนา" : "Select a job")}</small></div></header>
+        <div className={styles.chatBody}>
+          {selected?.messages.map((message) => <div className={`${styles.bubble} ${message.senderRole === "member" ? styles.mine : ""}`} key={message.id}>
+            {message.imageAssetId ? <Image alt={th ? "รูปภาพในข้อความ" : "Message image"} height={320} src={`/api/member/message-assets/${message.imageAssetId}`} unoptimized width={480} /> : null}<p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString(locale)}</small>
+          </div>)}
         </div>
-      </header>
-      <div className={styles.messagesLayout}>
-        <section className={`${styles.surface} ${styles.conversationList}`}>
-          <header>
-            <input aria-label="Search conversations" placeholder={th ? "ค้นหาข้อความ..." : "Search messages..."} />
-          </header>
-          {conversations.map((item, index) => (
-            <button
-              aria-pressed={active === index}
-              className={styles.conversation}
-              key={item[0]}
-              onClick={() => setActive(index)}
-              type="button"
-            >
-              <span>
-                <strong>{item[0]}</strong>
-                <time>{item[2]}</time>
-              </span>
-              <span>
-                <small>{item[1]}</small>
-                {index === 0 ? <b>3</b> : null}
-              </span>
-            </button>
-          ))}
-        </section>
-        <section className={`${styles.surface} ${styles.chat}`}>
-          <header className={styles.chatHeader}>
-            <span>
-              <UserRound size={19} />
-            </span>
-            <div>
-              <strong>Nasora</strong>
-              <small>● {th ? "ออนไลน์" : "Online"}</small>
-            </div>
-            <Search size={18} />
-          </header>
-          <div className={styles.chatBody}>
-            <div className={styles.bubble}>
-              <p>
-                {th
-                  ? "สวัสดีค่ะ อัปเดตร่างขั้นต้นให้ตรวจสอบนะคะ ถ้ามีจุดที่อยากปรับแจ้งได้เลยค่ะ"
-                  : "Here is the initial sketch. Let me know if you would like anything adjusted."}
-              </p>
-              <small>15:42</small>
-            </div>
-            <div className={`${styles.bubble} ${styles.mine}`}>
-              <p>
-                {th
-                  ? "ขอบคุณค่ะ ขอปรับท่าให้ยาวขึ้นนิดนึง และเปลี่ยนรูปดาวด้านหลังเป็นพระจันทร์เต็มดวงได้ไหมคะ?"
-                  : "Thank you! Could the pose be a little longer, and could the star be changed to a full moon?"}
-              </p>
-              <small>18:07 · ✓✓</small>
-            </div>
-            <div className={styles.bubble}>
-              <p>
-                {th
-                  ? "ได้เลยค่ะ เดี๋ยวปรับให้ในรอบถัดไปนะคะ"
-                  : "Absolutely, I will include those changes in the next update."}
-              </p>
-              <small>18:12</small>
-            </div>
-          </div>
-          <footer className={styles.chatComposer}>
-            <button aria-label="Add image" type="button">
-              <ImagePlus size={18} />
-            </button>
-            <input placeholder={th ? "พิมพ์ข้อความ..." : "Write a message..."} />
-            <button aria-label="Send" type="button">
-              <Send size={18} />
-            </button>
-          </footer>
-        </section>
-      </div>
-    </section>
-  );
+        <form className={styles.chatComposer} onSubmit={submit}>
+          <label aria-label={th ? "เพิ่มรูปภาพ" : "Add image"}><ImagePlus size={18} /><input accept="image/png,image/jpeg,image/webp" hidden onChange={(event) => setImage(event.target.files?.[0] ?? null)} type="file" /></label>
+          <input disabled={!selected || sending} onChange={(event) => setBody(event.target.value)} placeholder={th ? "พิมพ์ข้อความ..." : "Write a message..."} value={body} />
+          <button aria-label={th ? "ส่งข้อความ" : "Send message"} disabled={!selected || !body.trim() || sending} type="submit"><Send size={18} /></button>
+        </form>
+        {image ? <small>{image.name}</small> : null}
+        {error && <p role="alert">{error}</p>}
+      </section>
+    </div>
+  </section>;
 }
 
-export function MemberMessagesPage({
-  locale,
-  onSelectSection,
-}: {
-  locale: Locale;
-  onSelectSection?: (section: MemberSection) => void;
-}) {
-  return (
-    <main className={styles.memberArea}>
-      <MemberSidebar active="messages" locale={locale} onSelectSection={onSelectSection} />
-      <MemberMessagesContent locale={locale} />
-    </main>
-  );
+export function MemberMessagesPage({ conversations = [], locale, onSelectSection }: { conversations?: ConversationView[]; locale: Locale; onSelectSection?: (section: MemberSection) => void }) {
+  return <main className={styles.memberArea}><MemberSidebar active="messages" locale={locale} onSelectSection={onSelectSection} /><MemberMessagesContent conversations={conversations} locale={locale} /></main>;
 }

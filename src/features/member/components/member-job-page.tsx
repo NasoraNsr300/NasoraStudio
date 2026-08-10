@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
@@ -129,6 +130,11 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                   <time>{event.changedAtLabel}</time>
                   <span className={styles.eventDone}><Check size={15} /></span>
                   <div><strong>{event.statusLabel}</strong>{event.publicNote && <p>{event.publicNote}</p>}</div>
+                </article>)}
+                {job?.progressUpdates?.map((progress) => <article key={progress.id}>
+                  <time>{new Date(progress.createdAt).toLocaleString(locale)}</time>
+                  <span className={styles.eventActive}><Sparkles size={15} /></span>
+                  <div><strong>{progress.title}</strong><p>{progress.body}</p>{progress.imageId ? <a className={styles.progressImage} href={`/api/member/progress-images/${progress.imageId}`} target="_blank"><Image alt={progress.title} height={256} src={`/api/member/progress-images/${progress.imageId}`} unoptimized width={480} /></a> : null}</div>
                 </article>)}
                 {!job && <>
                 <article>
@@ -297,9 +303,12 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                     <LockKeyhole size={18} />
                     {labels.delivery}
                   </h2>
-                  <p>{labels.deliveryHint}</p>
+                  {job?.deliveries?.length ? job.deliveries.map((delivery) => <p key={delivery.id}>
+                    <Link href={`/api/member/deliveries/${delivery.id}/download`}>{delivery.displayName}</Link>
+                    {" · "}{locale === "th" ? "ใช้ได้ถึง" : "Available until"} {new Date(delivery.expiresAt).toLocaleDateString(locale)}
+                  </p>) : <p>{labels.deliveryHint}</p>}
                 </div>
-                <button disabled type="button">
+                <button disabled={!job?.deliveries?.length} type="button">
                   <Send size={17} />
                   {labels.locked}
                 </button>

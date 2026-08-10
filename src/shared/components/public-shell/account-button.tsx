@@ -10,15 +10,23 @@ import { useAuthDialog } from "@/shared/auth/auth-dialog-controller";
 import { useAuthSession } from "@/shared/auth/auth-session-provider";
 import { isNasoraAdmin } from "@/shared/auth/admin-access";
 
-import { AccountMenu, NotificationPanel } from "./account-menu";
+import { AccountMenu, NotificationPanel, type AccountNotification } from "./account-menu";
 import styles from "./public-shell.module.css";
 
 export function AccountButton({ locale }: { locale: Locale }) {
   const [panel, setPanel] = useState<"menu" | "notifications" | null>(null);
+  const [notifications, setNotifications] = useState<AccountNotification[]>([]);
   const controlRef = useRef<HTMLDivElement>(null);
   const { open: authOpen, show } = useAuthDialog();
   const { signOut, status, user } = useAuthSession();
   const dictionary = getDictionary(locale);
+
+  useEffect(() => {
+    if (status !== "signedIn") return;
+    let active = true;
+    void fetch(`/api/member/notifications?locale=${locale}`).then((response) => response.ok ? response.json() : null).then((payload) => { if (active && Array.isArray(payload?.notifications)) setNotifications(payload.notifications); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [locale, status]);
 
   useEffect(() => {
     if (!panel) return;
@@ -49,8 +57,8 @@ export function AccountButton({ locale }: { locale: Locale }) {
       >
         <UserRound size={22} />
       </IconButton>
-      {status === "signedIn" && panel === "menu" ? <AccountMenu isAdmin={isNasoraAdmin({ app_metadata: { role: user?.role }, email: user?.email })} locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => setPanel("notifications")} onSignOut={async () => { await signOut(); setPanel(null); }} /> : null}
-      {status === "signedIn" && panel === "notifications" ? <NotificationPanel locale={locale} onBack={() => setPanel("menu")} /> : null}
+      {status === "signedIn" && panel === "menu" ? <AccountMenu isAdmin={isNasoraAdmin({ app_metadata: { role: user?.role }, email: user?.email })} locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => { setPanel("notifications"); void fetch("/api/member/notifications", { method: "PATCH" }).then((response) => { if (response.ok) setNotifications((items) => items.map((item) => ({ ...item, read: true }))); }).catch(() => undefined); }} onSignOut={async () => { await signOut(); setPanel(null); }} unreadCount={notifications.filter((item) => !item.read).length} /> : null}
+      {status === "signedIn" && panel === "notifications" ? <NotificationPanel locale={locale} notifications={notifications} onBack={() => setPanel("menu")} /> : null}
     </div>
   );
 }

@@ -28,6 +28,7 @@ const rowSchema = z.object({
 });
 
 export type AdminJobSummary = {
+  customerType?: "member" | "guest";
   customerDisplayName: string;
   deadline: string | null;
   depositVerifiedAt: string | null;
@@ -53,7 +54,7 @@ export async function listAdminJobs(): Promise<AdminJobSummary[]> {
   return parsed.data.map((row) => {
     const customerDisplayName = row.customer_type === "member" ? row.member_display_name_snapshot : row.guest_display_name;
     if (!customerDisplayName) throw new Error("Admin job data is unavailable");
-    return { customerDisplayName, deadline: row.deadline, depositVerifiedAt: row.deposit_verified_at, id: row.id, serviceName: row.service_type_name_snapshot, statusKey: row.status_key, statusLabel: row.status_label };
+    return { customerDisplayName, customerType: row.customer_type, deadline: row.deadline, depositVerifiedAt: row.deposit_verified_at, id: row.id, serviceName: row.service_type_name_snapshot, statusKey: row.status_key, statusLabel: row.status_label };
   });
 }
 
