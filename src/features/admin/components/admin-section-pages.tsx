@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, ImagePlus, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, PenLine, Plus, Search, Send, Settings2, ShieldCheck, SlidersHorizontal, Trash2, Upload, UserRound } from "lucide-react";
+import { Archive, Check, ChevronDown, CircleDollarSign, Clock3, Download, Eye, FileText, Filter, ImagePlus, Mail, MessageSquarePlus, MoreHorizontal, PackagePlus, PenLine, Plus, Search, Send, Settings2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
@@ -52,14 +52,6 @@ export function AdminMessagesPage() {
   return <section className={styles.sectionPage}>
     <PageHeader action="ข้อความใหม่" description="พูดคุยกับสมาชิกและเก็บประวัติการติดต่อไว้กับงาน" icon={<Mail size={25} />} title="ข้อความ" />
     <div className={styles.inbox}><aside><label><Search size={17} /><input placeholder="ค้นหาข้อความ..." /></label>{threads.map(([name, preview, time], index) => <button aria-pressed={index === 0} key={name} type="button"><span>{name.slice(0,1)}</span><div><strong>{name}</strong><p>{preview}</p></div><time>{time}</time></button>)}</aside><section><header><div><strong>Kirana</strong><span>ออนไลน์ · Illustration / Full Body</span></div><button aria-label="ตัวเลือกข้อความ" type="button"><MoreHorizontal /></button></header><div className={styles.chatBody}><p data-side="customer">สวัสดีค่ะ อยากทราบว่าภาพร่างเป็นอย่างไรบ้างคะ</p><p data-side="admin">กำลังอัปเดตให้ค่ะ ภายในวันนี้จะส่งภาพร่างรอบใหม่ให้ตรวจนะคะ</p><p data-side="customer">ขอบคุณค่ะ รอตรวจนะคะ</p></div><footer><button aria-label="แนบไฟล์" type="button"><Upload size={18} /></button><input placeholder="พิมพ์ข้อความถึง Kirana..." /><button aria-label="ส่งข้อความ" type="button"><Send size={18} /></button></footer></section></div>
-  </section>;
-}
-
-export function AdminCatalogPage() {
-  const albums = [["Chibi", "2 รูปแบบ", "เปิดรับ"], ["Illustration", "4 รูปแบบ", "เปิดรับ"], ["VTuber", "1 รูปแบบ", "รับจำนวนจำกัด"], ["Skin Minecraft", "1 รูปแบบ", "เปิดรับ"]];
-  return <section className={styles.sectionPage}>
-    <PageHeader action="เพิ่มอัลบั้ม" description="จัดประเภทงาน รูปแบบย่อย เรทราคา และสถานะเปิดรับ" icon={<SlidersHorizontal size={25} />} title="อัลบั้มและราคา" />
-    <Toolbar placeholder="ค้นหาอัลบั้มหรือรูปแบบงาน..." /><div className={styles.catalogGrid}>{albums.map(([name, count, state], index) => <article key={name}><div className={styles.catalogCover} data-cover={index}><span>{name}</span></div><header><div><h2>{name}</h2><small>{count}</small></div><Status tone={state === "เปิดรับ" ? "success" : "warning"}>{state}</Status></header><footer><button type="button"><PenLine size={16} />แก้ไขอัลบั้ม</button><button aria-label={`ตัวเลือก ${name}`} type="button"><MoreHorizontal size={17} /></button></footer></article>)}</div>
   </section>;
 }
 

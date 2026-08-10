@@ -14,7 +14,6 @@ vi.mock("next/navigation", () => ({
 }));
 
 import {
-  AdminCatalogPage,
   AdminDocumentsPage,
   AdminEstimatesPage,
   AdminJobsPage,
@@ -31,7 +30,6 @@ const pages = [
   [AdminJobsPage, "งานและคิว", "เพิ่มคิว Guest"],
   [AdminPaymentsPage, "การชำระเงิน", "เพิ่มรายการชำระเงิน"],
   [AdminMessagesPage, "ข้อความ", "ข้อความใหม่"],
-  [AdminCatalogPage, "อัลบั้มและราคา", "เพิ่มอัลบั้ม"],
   [AdminPortfolioPage, "ผลงาน", "เพิ่มผลงาน"],
   [AdminDocumentsPage, "เอกสาร", "สร้างเอกสาร"],
   [AdminSettingsPage, "ตั้งค่า", "บันทึกการตั้งค่า"],
