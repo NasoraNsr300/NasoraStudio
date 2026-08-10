@@ -18,8 +18,8 @@ function paymentConfiguration(amountSatang: number) {
   return promptPayPayload;
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ quoteId: string }> }) {
-  const quoteId = z.uuid().safeParse((await params).quoteId);
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const quoteId = z.uuid().safeParse((await params).id);
   const requestId = z.uuid().safeParse(new URL(request.url).searchParams.get("requestId"));
   if (!quoteId.success || !requestId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   const client = await createClient();
@@ -38,8 +38,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
   }
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ quoteId: string }> }) {
-  const quoteId = z.uuid().safeParse((await params).quoteId);
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const quoteId = z.uuid().safeParse((await params).id);
   if (!quoteId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   const rejected = acceptsMutation(request);
   if (rejected) return Response.json({ error: rejected.error }, { status: rejected.status });

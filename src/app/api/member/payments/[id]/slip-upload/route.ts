@@ -33,8 +33,8 @@ async function readBoundedBody(request: Request) {
   return bytes;
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ paymentId: string }> }) {
-  const paymentId = z.uuid().safeParse((await params).paymentId);
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const paymentId = z.uuid().safeParse((await params).id);
   if (!paymentId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
   const rejected = acceptsSameOrigin(request);
   if (rejected) return Response.json({ error: rejected.error }, { status: rejected.status });

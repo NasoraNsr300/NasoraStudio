@@ -27,7 +27,9 @@ export async function runMaintenance(environment: MaintenanceEnvironment, fetche
     `${baseUrl.origin}${endpoint}`,
     { headers: { authorization: `Bearer ${secret}` }, method: "POST" },
   )));
-  if (responses.some((response) => !response.ok)) throw new Error("maintenance_request_failed");
+  if (responses.some((response, index) => !response.ok && !(index === 0 && response.status === 503))) {
+    throw new Error("maintenance_request_failed");
+  }
 }
 
 const maintenanceWorker = {

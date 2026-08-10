@@ -18,8 +18,8 @@ vi.mock("@/features/payments/data/payment-repository", () => ({ createPaymentRep
 vi.mock("@/features/payments/data/admin-payment-repository.server", () => ({ createAdminPaymentRepository: mocks.createAdminPaymentRepository }));
 vi.mock("@/features/payments/storage/r2-slip-storage.server", () => ({ createR2SlipStorage: mocks.createR2SlipStorage, normalizeEtag: (value: string) => value.replace(/^W\//, "").replace(/^\"|\"$/g, "").trim() }));
 
-import { GET as recoverIntent, POST as createIntent } from "@/app/api/member/payments/[quoteId]/intent/route";
-import { POST as uploadSlip } from "@/app/api/member/payments/[paymentId]/slip-upload/route";
+import { GET as recoverIntent, POST as createIntent } from "@/app/api/member/payments/[id]/intent/route";
+import { POST as uploadSlip } from "@/app/api/member/payments/[id]/slip-upload/route";
 import { POST as verifySlip } from "@/app/api/admin/payments/[paymentId]/verify/route";
 
 const quoteId = "bf49a462-ef33-44d4-95d4-1a0de68472c5";
@@ -67,7 +67,7 @@ beforeEach(() => {
 
 describe("payment mutation routes", () => {
   it("creates an idempotent deposit intent and server-generated PromptPay payload", async () => {
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ amountSatang: 50_000, paymentId, promptPayPayload: expect.stringMatching(/6304[0-9A-F]{4}$/) });
     expect(mocks.paymentRepository.createIntent).toHaveBeenCalledWith({ amountSatang: 50_000, idempotencyKey, quoteId, requestId });
@@ -75,55 +75,55 @@ describe("payment mutation routes", () => {
 
   it("fails safely when PromptPay is not configured", async () => {
     delete process.env.PROMPTPAY_ID;
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(503);
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
   });
 
   it("validates private R2 configuration before creating an intent", async () => {
     mocks.createR2SlipStorage.mockImplementationOnce(() => { throw new Error("r2_not_configured"); });
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(503);
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
   });
 
   it("validates the server-only Supabase secret before creating an intent", async () => {
     mocks.createPaymentGatewayClient.mockImplementationOnce(() => { throw new Error("payment_gateway_not_configured"); });
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(503);
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
   });
 
   it("uses only the request URL for same-origin validation and requires exact JSON", async () => {
     const spoofed = post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }, { "x-forwarded-host": "attacker.example" });
-    expect((await createIntent(spoofed, { params: Promise.resolve({ quoteId }) })).status).toBe(200);
+    expect((await createIntent(spoofed, { params: Promise.resolve({ id: quoteId }) })).status).toBe(200);
     const charset = post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }, { "content-type": "application/json; charset=utf-8" });
-    expect((await createIntent(charset, { params: Promise.resolve({ quoteId }) })).status).toBe(415);
+    expect((await createIntent(charset, { params: Promise.resolve({ id: quoteId }) })).status).toBe(415);
   });
 
   it("rejects malformed UUIDs and unknown JSON fields before mutation", async () => {
-    const badId = await createIntent(post("/api/member/payments/nope/intent", { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId: "nope" }) });
-    const extra = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, extra: true, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const badId = await createIntent(post("/api/member/payments/nope/intent", { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: "nope" }) });
+    const extra = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, extra: true, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(badId.status).toBe(400);
     expect(extra.status).toBe(400);
   });
 
   it("returns conflict when another idempotency key already owns the pending intent", async () => {
     mocks.paymentRepository.createIntent.mockRejectedValueOnce(new Error("payment_intent_pending"));
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(409);
   });
 
   it("does not return PromptPay data when an exact-key replay is already closed", async () => {
     mocks.paymentRepository.createIntent.mockResolvedValueOnce({ amountSatang: 50_000, id: paymentId, kind: "deposit", status: "closed" });
-    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ quoteId }) });
+    const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(409);
     expect(await response.json()).not.toHaveProperty("promptPayPayload");
   });
 
   it("recovers a canonical pending intent with a regenerated PromptPay payload", async () => {
     mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, slipStatus: "rejected", status: "pending" });
-    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ quoteId }) });
+    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, promptPayPayload: expect.stringMatching(/6304[0-9A-F]{4}$/), slipStatus: "rejected", status: "pending" });
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();
@@ -131,7 +131,7 @@ describe("payment mutation routes", () => {
 
   it("recovers active review state without returning obsolete PromptPay data", async () => {
     mocks.paymentRepository.recoverIntent.mockResolvedValue({ amountSatang: 50_000, id: paymentId, kind: "deposit", quoteId, slipStatus: "pending_review", status: "pending" });
-    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ quoteId }) });
+    const response = await recoverIntent(new Request(`https://nasora.example/api/member/payments/${quoteId}/intent?requestId=${requestId}`), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ amountSatang: 50_000, kind: "deposit", paymentId, quoteId, slipStatus: "pending_review", status: "pending" });
   });
@@ -140,7 +140,7 @@ describe("payment mutation routes", () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/025f6aa2-6227-4b74-a833-e9fca9db998a.png", status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
     mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.storage.putObject).toHaveBeenCalledOnce();
     expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String) }));
@@ -150,7 +150,7 @@ describe("payment mutation routes", () => {
   });
 
   it("rejects an oversized declared body before allocating or writing", async () => {
-    const response = await uploadSlip(upload(png, { "content-length": String(5 * 1024 * 1024 + 1) }), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png, { "content-length": String(5 * 1024 * 1024 + 1) }), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(413);
     expect(mocks.paymentRepository.allocateSlip).not.toHaveBeenCalled();
     expect(mocks.storage.putObject).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("payment mutation routes", () => {
 
   it("rejects spoofed or truncated image bytes before allocating", async () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: "payment-slips/private.png", status: "authorized" });
-    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(415);
     expect(mocks.paymentRepository.allocateSlip).toHaveBeenCalledBefore(mocks.paymentRepository.failSlip);
     expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: false, idempotencyKey, slipId, userId: "user-1" }));
@@ -168,7 +168,7 @@ describe("payment mutation routes", () => {
     const objectKey = "payment-slips/orphan.png";
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey, status: "authorized" });
     mocks.storage.deleteObject.mockRejectedValueOnce(new Error("r2_delete_failed"));
-    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(new Uint8Array([137, 80, 78, 71]), { "content-length": "4" }), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(415);
     expect(mocks.storage.deleteObject).toHaveBeenCalledWith(objectKey);
     expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
@@ -181,7 +181,7 @@ describe("payment mutation routes", () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ cleanupAttemptId: staleAttemptId, cleanupObjectKey: staleKey, id: slipId, objectKey: winnerKey, status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "winner-etag" });
     mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(200);
     expect(mocks.storage.deleteObject).toHaveBeenCalledWith(staleKey);
     expect(mocks.storage.deleteObject).not.toHaveBeenCalledWith(winnerKey);
@@ -192,7 +192,7 @@ describe("payment mutation routes", () => {
     const losingKey = "payment-slips/fenced-before-put.png";
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: losingKey, status: "authorized" });
     mocks.paymentRepository.beginPut.mockRejectedValue(new Error("payment_slip_attempt_lost"));
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(409);
     expect(mocks.storage.putObject).not.toHaveBeenCalled();
     expect(mocks.storage.deleteObject).toHaveBeenCalledWith(losingKey);
@@ -204,7 +204,7 @@ describe("payment mutation routes", () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey, status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
     mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("finalize_failed"));
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(400);
     expect(mocks.storage.deleteObject).not.toHaveBeenCalledWith(objectKey);
     expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
@@ -215,7 +215,7 @@ describe("payment mutation routes", () => {
     mocks.storage.putObject.mockResolvedValue({ etag: "etag-1" });
     mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("payment_slip_attempt_lost"));
     mocks.storage.deleteObject.mockRejectedValue(new Error("delete_failed"));
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     expect(response.status).toBe(409);
     expect(mocks.paymentRepository.failSlip).toHaveBeenCalledWith(expect.objectContaining({ attemptId: expect.any(String), cleanupRequired: true, idempotencyKey, slipId, userId: "user-1" }));
   });
@@ -228,8 +228,8 @@ describe("payment mutation routes", () => {
     mocks.storage.putObject.mockResolvedValue({ etag: "winner-etag" });
     mocks.paymentRepository.finalizeSlip.mockResolvedValue({ id: slipId, status: "pending_review" });
     const [winner, loser] = await Promise.all([
-      uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) }),
-      uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) }),
+      uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) }),
+      uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) }),
     ]);
     expect(winner.status).toBe(200);
     expect(loser.status).toBe(409);
@@ -243,7 +243,7 @@ describe("payment mutation routes", () => {
     mocks.paymentRepository.allocateSlip.mockResolvedValue({ id: slipId, objectKey: losingKey, status: "authorized" });
     mocks.storage.putObject.mockResolvedValue({ etag: "losing-etag" });
     mocks.paymentRepository.finalizeSlip.mockRejectedValue(new Error("payment_slip_attempt_lost"));
-    const response = await uploadSlip(upload(png), { params: Promise.resolve({ paymentId }) });
+    const response = await uploadSlip(upload(png), { params: Promise.resolve({ id: paymentId }) });
     const attemptId = mocks.paymentRepository.allocateSlip.mock.calls[0][0].attemptId;
     expect(response.status).toBe(409);
     expect(mocks.storage.deleteObject).toHaveBeenCalledWith(losingKey);

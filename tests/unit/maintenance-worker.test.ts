@@ -16,4 +16,12 @@ describe("Nasora maintenance Worker", () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
     await expect(runMaintenance({ CRON_SECRET: "secret", NASORA_BASE_URL: "https://nasora.example" }, fetcher)).rejects.toThrow("maintenance_request_failed");
   });
+
+  it("keeps cleanup healthy while email delivery is not configured", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await expect(runMaintenance({ CRON_SECRET: "secret", NASORA_BASE_URL: "https://nasora.example" }, fetcher)).resolves.toBeUndefined();
+  });
 });

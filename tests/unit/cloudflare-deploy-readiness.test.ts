@@ -26,4 +26,11 @@ describe("Cloudflare deploy readiness", () => {
     expect(worker).toContain("environment.CRON_SECRET");
     expect(config).not.toMatch(/CRON_SECRET|NASORA_BASE_URL/);
   });
+
+  it("uses one dynamic segment name for sibling payment routes", () => {
+    expect(existsSync("src/app/api/member/payments/[id]/intent/route.ts")).toBe(true);
+    expect(existsSync("src/app/api/member/payments/[id]/slip-upload/route.ts")).toBe(true);
+    expect(existsSync("src/app/api/member/payments/[quoteId]")).toBe(false);
+    expect(existsSync("src/app/api/member/payments/[paymentId]")).toBe(false);
+  });
 });

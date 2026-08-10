@@ -40,8 +40,8 @@
 - `src/features/payments/data/payment-repository.ts`: member payment-intent operations.
 - `src/features/payments/data/admin-payment-repository.server.ts`: admin verification operations.
 - `src/features/payments/storage/r2-slip-storage.server.ts`: private R2 write/read/delete operations and short-lived Admin preview signing.
-- `src/app/api/member/payments/[quoteId]/intent/route.ts`: deposit intent creation.
-- `src/app/api/member/payments/[paymentId]/slip-upload/route.ts`: same-origin 5 MiB Worker upload gateway with image signature validation.
+- `src/app/api/member/payments/[id]/intent/route.ts`: deposit intent creation.
+- `src/app/api/member/payments/[id]/slip-upload/route.ts`: same-origin 5 MiB Worker upload gateway with image signature validation.
 - `src/app/api/admin/payments/[paymentId]/verify/route.ts`: approve/reject endpoint.
 - `src/features/admin/jobs/data/admin-job-repository.server.ts`: real admin job/queue reads and mutations.
 - `src/features/queue/data/public-queue-repository.server.ts`: safe public queue view reads.
@@ -147,8 +147,8 @@
 - Create: `src/features/payments/data/payment-repository.ts`
 - Create: `src/features/payments/data/admin-payment-repository.server.ts`
 - Create: `src/features/payments/storage/r2-slip-storage.server.ts`
-- Create: `src/app/api/member/payments/[quoteId]/intent/route.ts`
-- Create: `src/app/api/member/payments/[paymentId]/slip-upload/route.ts`
+- Create: `src/app/api/member/payments/[id]/intent/route.ts`
+- Create: `src/app/api/member/payments/[id]/slip-upload/route.ts`
 - Create: `src/app/api/admin/payments/[paymentId]/verify/route.ts`
 - Modify: `src/app/(admin)/admin/payments/page.tsx`
 - Test: `tests/unit/payment-migration.test.ts`
