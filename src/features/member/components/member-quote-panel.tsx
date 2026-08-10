@@ -2,6 +2,7 @@
 
 import type { MemberQuote } from "@/features/member/data/member-quote-repository";
 import type { Locale } from "@/shared/i18n/locales";
+import { useState } from "react";
 
 import styles from "./member-pages.module.css";
 
@@ -27,6 +28,8 @@ const copy = {
     expires: "Expires",
     expired: "This quote has expired.",
     outstanding: "Outstanding after deposit",
+    paymentAmount: "Payment amount (THB)",
+    payMore: "Make payment",
     paymentUnavailable: "Deposit payment will be available here shortly.",
     payDeposit: "Pay deposit",
     proposedDeadline: "Proposed deadline",
@@ -40,6 +43,8 @@ const copy = {
     expires: "หมดอายุ",
     expired: "ใบเสนอราคานี้หมดอายุแล้ว",
     outstanding: "ยอดคงเหลือหลังชำระมัดจำ",
+    paymentAmount: "จำนวนเงินที่ต้องการชำระ (THB)",
+    payMore: "ชำระเพิ่มเติม",
     paymentUnavailable: "จะสามารถชำระเงินมัดจำได้ที่นี่เร็ว ๆ นี้",
     payDeposit: "ชำระมัดจำ",
     proposedDeadline: "กำหนดส่งงานที่เสนอ",
@@ -61,9 +66,13 @@ function formatApproximateUsd(satang: number) {
 
 export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPayDeposit, paymentBlocked = false, paymentPending = false, quote }: Props) {
   const text = copy[locale];
-  const isExpired = quote.status === "expired" || (quote.expiresAt !== null && new Date(quote.expiresAt).getTime() <= new Date(now).getTime());
+  const [installmentThb, setInstallmentThb] = useState(() => String(quote.outstandingSatang / 100));
+  const isExpired = quote.status === "expired" || (quote.status === "sent" && quote.expiresAt !== null && new Date(quote.expiresAt).getTime() <= new Date(now).getTime());
   const isReplaced = quote.status === "superseded";
-  const canPay = !paymentBlocked && !isExpired && !isReplaced && quote.status === "sent";
+  const canPayDeposit = !paymentBlocked && !isExpired && !isReplaced && quote.status === "sent";
+  const canPayInstallment = !paymentBlocked && quote.status === "accepted" && quote.outstandingSatang > 0;
+  const installmentSatang = Math.round(Number(installmentThb) * 100);
+  const installmentValid = Number.isInteger(installmentSatang) && installmentSatang > 0 && installmentSatang <= quote.outstandingSatang && (installmentSatang >= 10_000 || installmentSatang === quote.outstandingSatang);
   const unavailableMessage = isReplaced ? text.replaced : isExpired ? text.expired : null;
 
   return <section aria-label="Quote and deposit" className={styles.quotePanel}>
@@ -81,6 +90,7 @@ export function MemberQuotePanel({ locale, now = new Date().toISOString(), onPay
     </section>
     {quote.expiresAt ? <p className={styles.quoteMeta}>{text.expires}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(quote.expiresAt))}</p> : null}
     {quote.proposedDeadline ? <p className={styles.quoteMeta}>{text.proposedDeadline}: {new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium" }).format(new Date(`${quote.proposedDeadline}T00:00:00`))}</p> : null}
-    {canPay ? <div className={styles.quoteAction}><button aria-describedby={onPayDeposit ? undefined : "deposit-payment-unavailable"} className={styles.goldButton} disabled={!onPayDeposit || paymentPending} onClick={() => onPayDeposit?.({ depositSatang: quote.depositSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{paymentPending ? "…" : text.payDeposit}</button>{!onPayDeposit ? <small id="deposit-payment-unavailable">{text.paymentUnavailable}</small> : null}</div> : null}
+    {canPayDeposit ? <div className={styles.quoteAction}><button aria-describedby={onPayDeposit ? undefined : "deposit-payment-unavailable"} className={styles.goldButton} disabled={!onPayDeposit || paymentPending} onClick={() => onPayDeposit?.({ depositSatang: quote.depositSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{paymentPending ? "…" : text.payDeposit}</button>{!onPayDeposit ? <small id="deposit-payment-unavailable">{text.paymentUnavailable}</small> : null}</div> : null}
+    {canPayInstallment ? <div className={styles.quoteAction}><label>{text.paymentAmount}<input aria-label={text.paymentAmount} inputMode="decimal" max={quote.outstandingSatang / 100} min={Math.min(100, quote.outstandingSatang / 100)} onChange={(event) => setInstallmentThb(event.target.value)} step="0.01" type="number" value={installmentThb} /></label><button className={styles.goldButton} disabled={!onPayDeposit || paymentPending || !installmentValid} onClick={() => onPayDeposit?.({ depositSatang: installmentSatang, quoteId: quote.id, requestId: quote.requestId })} type="button">{paymentPending ? "…" : text.payMore}</button></div> : null}
   </section>;
 }

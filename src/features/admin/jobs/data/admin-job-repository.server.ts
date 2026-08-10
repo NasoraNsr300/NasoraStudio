@@ -11,6 +11,7 @@ type AdminJobClient = {
   auth: { getUser(): Promise<{ data: { user: { app_metadata?: Record<string, unknown>; email?: string | null } | null }; error?: unknown }> };
   rpc(name: "admin_list_jobs"): Promise<QueryResult>;
   rpc(name: "admin_create_manual_guest_job", args: Record<string, unknown>): Promise<QueryResult>;
+  rpc(name: "admin_change_job_status", args: Record<string, unknown>): Promise<QueryResult>;
 };
 
 const localizedSchema = z.object({ en: z.string().min(1), th: z.string().min(1) });
@@ -69,4 +70,12 @@ export async function createManualGuestJob(input: { categoryName: LocalizedText;
   const parsed = z.array(z.object({ job_id: z.string().min(1), queue_entry_id: z.string().min(1) })).length(1).safeParse(data);
   if (!parsed.success) throw new Error("Guest job result is unavailable");
   return { jobId: parsed.data[0].job_id, queueEntryId: parsed.data[0].queue_entry_id };
+}
+
+export async function updateAdminJobStatus(input: { jobId: string; publicNote: string | null; statusKey: string }) {
+  const parsed = z.object({ jobId: z.uuid(), publicNote: z.string().trim().max(1_000).nullable(), statusKey: z.enum(["waiting", "sketching", "coloring", "review", "delivery", "completed", "cancelled"]) }).safeParse(input);
+  if (!parsed.success) throw new Error("Invalid job status update");
+  const client = await adminClient();
+  const { error } = await client.rpc("admin_change_job_status", { p_job_id: parsed.data.jobId, p_public_note: parsed.data.publicNote, p_status_key: parsed.data.statusKey });
+  if (error) throw new Error("Unable to update job status");
 }

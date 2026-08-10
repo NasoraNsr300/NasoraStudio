@@ -19,7 +19,7 @@ const sections: MemberSection[] = ["jobs", "requests", "messages", "payments", "
 const icons = [FolderOpen, FileText, MessageSquareText, WalletCards, CircleUserRound];
 
 function hrefFor(locale: Locale, section: MemberSection) {
-  return section === "jobs" ? `/${locale}/member/jobs/demo` : `/${locale}/member/${section}`;
+  return `/${locale}/member/${section}`;
 }
 
 export function MemberSidebar({

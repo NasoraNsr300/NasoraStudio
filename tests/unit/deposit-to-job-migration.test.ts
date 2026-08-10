@@ -22,6 +22,17 @@ function replacementPrivateFunction(name: string) {
 }
 
 describe("verified deposit to job migration", () => {
+  it("prevents sent quotes with no payable deposit", () => {
+    const migration = sql();
+    expect(migration).toContain("create function private.protect_positive_sent_quote");
+    expect(migration).toContain("new.deposit_percent < 1");
+  });
+
+  it("keeps terminal jobs immutable so archived queues cannot diverge", () => {
+    const changeStatus = replacementPrivateFunction("change_job_status");
+    expect(changeStatus).toContain("v_current_status.is_terminal");
+    expect(changeStatus).toContain("terminal_job_status_immutable");
+  });
   it("atomically converts one verified deposit into the accepted quote, job, history, queue, and audit", () => {
     const migration = sql();
     const createJob = privateFunction("create_job_from_verified_deposit");
@@ -157,6 +168,8 @@ describe("verified deposit to job migration", () => {
     const historyGrant = migration.match(/grant select \(([^)]+)\) on public\.job_status_history to authenticated/)?.[1] ?? "";
     expect(historyGrant).toContain("public_note");
     expect(historyGrant).not.toContain("private_note");
+    expect(historyGrant).not.toContain("from_status_id");
+    expect(historyGrant).not.toContain("changed_by");
     const jobsGrants = [...migration.matchAll(/grant select \(([^)]+)\) on public\.jobs to authenticated/g)];
     const jobsGrant = jobsGrants.at(-1)?.[1] ?? "";
     expect(jobsGrant).not.toContain("guest_display_name");
@@ -207,6 +220,8 @@ describe("verified deposit to job migration", () => {
     expect(rpc).toContain("raise exception 'admin_required'");
     expect(migration).toMatch(/revoke all on function public\.admin_list_jobs\(\)[^;]+from public, anon, authenticated, service_role/);
     expect(migration).toMatch(/grant execute on function public\.admin_list_jobs\(\) to authenticated/);
+    expect(migration).toContain("create function public.admin_change_job_status");
+    expect(migration).toMatch(/grant execute on function public\.admin_change_job_status\(uuid, text, text\) to authenticated/);
   });
 
   it("adds the owner/time index used by the upload attempt quota", () => {

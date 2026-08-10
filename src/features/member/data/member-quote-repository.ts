@@ -12,6 +12,7 @@ export type MemberQuote = {
   id: string;
   items: MemberQuoteItem[];
   outstandingSatang: number;
+  paidSatang: number;
   proposedDeadline: string | null;
   requestId: string;
   scope: MemberQuoteLocalizedText;
@@ -49,7 +50,7 @@ export type MemberQuoteQuery = PromiseLike<QueryResult> & {
 };
 
 export type MemberQuoteClient = {
-  from(table: "commission_requests" | "quote_items" | "quotes"): MemberQuoteQuery;
+  from(table: "commission_requests" | "payments" | "quote_items" | "quotes"): MemberQuoteQuery;
 };
 
 const localizedTextSchema = z.object({ en: z.string(), th: z.string() });
@@ -85,6 +86,7 @@ const quoteItemRowSchema = z.object({
   quantity: z.number().int().positive(),
   unit_amount_satang: z.number().int(),
 });
+const paymentRowSchema = z.object({ amount_satang: z.number().int().positive() });
 
 function failure(error?: QueryError | unknown): MemberQuoteResult<never> {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string" && error.message.trim()) {
@@ -107,7 +109,6 @@ export function createMemberQuoteRepository(client: MemberQuoteClient) {
       const latestQuote = await client.from("quotes")
         .select("id,request_id,version,status,scope_summary,total_satang,deposit_percent,deposit_satang,free_revision_count,estimated_duration_min_days,estimated_duration_max_days,proposed_deadline,terms_document_slug,terms_document_version,expires_at")
         .eq("request_id", parsedRequestId.data)
-        .eq("status", "sent")
         .order("version", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -124,6 +125,15 @@ export function createMemberQuoteRepository(client: MemberQuoteClient) {
       if (itemResult.error) return failure(itemResult.error);
       const parsedItems = z.array(quoteItemRowSchema).safeParse(Array.isArray(itemResult.data) ? itemResult.data : []);
       if (!parsedItems.success) return failure(parsedItems.error);
+
+      const paymentResult = await client.from("payments")
+        .select("amount_satang")
+        .eq("quote_id", parsedQuote.data.id);
+      if (paymentResult.error) return failure(paymentResult.error);
+      const parsedPayments = z.array(paymentRowSchema).safeParse(Array.isArray(paymentResult.data) ? paymentResult.data : []);
+      if (!parsedPayments.success) return failure(parsedPayments.error);
+      const paidSatang = parsedPayments.data.reduce((total, payment) => total + payment.amount_satang, 0);
+      if (paidSatang > parsedQuote.data.total_satang) return failure();
 
       return {
         data: {
@@ -143,7 +153,8 @@ export function createMemberQuoteRepository(client: MemberQuoteClient) {
             quantity: item.quantity,
             unitAmountSatang: item.unit_amount_satang,
           })),
-          outstandingSatang: parsedQuote.data.total_satang - parsedQuote.data.deposit_satang,
+          outstandingSatang: parsedQuote.data.total_satang - paidSatang,
+          paidSatang,
           proposedDeadline: parsedQuote.data.proposed_deadline,
           requestId: parsedQuote.data.request_id,
           scope: parsedQuote.data.scope_summary,

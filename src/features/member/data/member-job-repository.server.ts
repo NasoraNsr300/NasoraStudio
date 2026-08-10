@@ -13,7 +13,7 @@ const statusSchema = z.union([
 const rowSchema = z.object({
   accepted_quote_id: z.string().min(1),
   category_name_snapshot: localizedSchema,
-  commission_requests: z.object({ usage_type: z.enum(["personal", "commercial"]) }).optional(),
+  commission_requests: z.object({ id: z.string().min(1), usage_type: z.enum(["personal", "commercial"]) }).optional(),
   deadline: z.string().nullable(),
   default_free_revisions: z.number().int().nonnegative(),
   id: z.string().min(1),
@@ -32,6 +32,8 @@ export type MemberJobView = {
   history: Array<{ changedAtLabel: string; id: string; publicNote: string | null; statusLabel: string }>;
   id: string;
   paidSatang: number;
+  quoteId: string;
+  requestId: string;
   statusLabel: string;
   title: string;
   totalSatang: number;
@@ -40,38 +42,48 @@ export type MemberJobView = {
 
 function oneStatus(value: z.infer<typeof statusSchema>) { return Array.isArray(value) ? value[0] : value; }
 
+function mapMemberJob(data: unknown, locale: Locale): MemberJobView {
+  const parsed = rowSchema.safeParse(data);
+  if (!parsed.success) throw new Error("Member job data is unavailable");
+  const row = parsed.data;
+  const paymentRows = row.quotes?.payments ?? row.payments;
+  const visibleHistory = [...row.job_status_history].filter((history) => oneStatus(history.status_definitions).customer_visible).sort((a, b) => a.changed_at.localeCompare(b.changed_at));
+  const currentStatus = visibleHistory.at(-1);
+  if (!currentStatus || !row.commission_requests) throw new Error("Member job data is unavailable");
+  return {
+    code: row.id.slice(0, 8).toUpperCase(), deadlineLabel: row.deadline ?? "—", freeRevisions: row.default_free_revisions,
+    history: visibleHistory.map((history) => ({ changedAtLabel: history.changed_at, id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
+    id: row.id, paidSatang: paymentRows.reduce((sum, payment) => sum + payment.amount_satang, 0), quoteId: row.accepted_quote_id,
+    requestId: row.commission_requests.id, statusLabel: oneStatus(currentStatus.status_definitions).label[locale],
+    title: `${row.category_name_snapshot[locale]} — ${row.service_type_name_snapshot[locale]}`, totalSatang: row.original_quote_total_satang,
+    usageType: row.commission_requests.usage_type,
+  };
+}
+
+const memberJobSelect = "id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,job_status_history(id,changed_at,public_note,status_definitions!to_status_id(label,customer_visible)),commission_requests!request_id(id,usage_type),quotes!accepted_quote_id(payments(amount_satang))";
+
 export async function getMemberJob(jobId: string, locale: Locale): Promise<MemberJobView | null> {
   const client = await createClient();
   const { data: authData, error: authError } = await client.auth.getUser();
   const user = authData.user;
   if (authError || !user) throw new Error("Authentication required");
   const { data, error } = await client.from("jobs")
-    .select("id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,job_status_history(id,changed_at,public_note,status_definitions!to_status_id(label,customer_visible)),commission_requests!request_id(usage_type),quotes!accepted_quote_id(payments(amount_satang))")
+    .select(memberJobSelect)
     .eq("id", jobId)
     .eq("user_id", user.id)
     .eq("customer_type", "member")
     .maybeSingle();
   if (error) throw new Error("Unable to load member job");
   if (!data) return null;
-  const parsed = rowSchema.safeParse(data);
-  if (!parsed.success) throw new Error("Member job data is unavailable");
-  const row = parsed.data;
-  const paymentRows = row.quotes?.payments ?? row.payments;
-  const visibleHistory = [...row.job_status_history]
-    .filter((history) => oneStatus(history.status_definitions).customer_visible)
-    .sort((a, b) => a.changed_at.localeCompare(b.changed_at));
-  const currentStatus = visibleHistory.at(-1);
-  if (!currentStatus) throw new Error("Member job data is unavailable");
-  return {
-    code: row.id.slice(0, 8).toUpperCase(),
-    deadlineLabel: row.deadline ?? "—",
-    freeRevisions: row.default_free_revisions,
-    history: visibleHistory.map((history) => ({ changedAtLabel: history.changed_at, id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
-    id: row.id,
-    paidSatang: paymentRows.reduce((sum, payment) => sum + payment.amount_satang, 0),
-    statusLabel: oneStatus(currentStatus.status_definitions).label[locale],
-    title: `${row.category_name_snapshot[locale]} — ${row.service_type_name_snapshot[locale]}`,
-    totalSatang: row.original_quote_total_satang,
-    usageType: row.commission_requests?.usage_type ?? "personal",
-  };
+  return mapMemberJob(data, locale);
+}
+
+export async function listMemberJobs(locale: Locale): Promise<MemberJobView[]> {
+  const client = await createClient();
+  const { data: authData, error: authError } = await client.auth.getUser();
+  const user = authData.user;
+  if (authError || !user) throw new Error("Authentication required");
+  const { data, error } = await client.from("jobs").select(memberJobSelect).eq("user_id", user.id).eq("customer_type", "member").order("created_at", { ascending: false });
+  if (error) throw new Error("Unable to load member jobs");
+  return (data ?? []).map((row) => mapMemberJob(row, locale));
 }

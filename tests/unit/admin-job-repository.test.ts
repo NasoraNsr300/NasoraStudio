@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 const supabase = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@/shared/supabase/server", () => supabase);
 
-import { createManualGuestJob, listAdminJobs } from "@/features/admin/jobs/data/admin-job-repository.server";
+import { createManualGuestJob, listAdminJobs, updateAdminJobStatus } from "@/features/admin/jobs/data/admin-job-repository.server";
 
 describe("admin job repository", () => {
   it("lists jobs through the guarded Admin RPC", async () => {
@@ -29,6 +29,13 @@ describe("admin job repository", () => {
     const jobs = await listAdminJobs();
     expect(rpc).toHaveBeenCalledWith("admin_list_jobs");
     expect(jobs).toEqual([expect.objectContaining({ customerDisplayName: "Mali", id: "job-1", statusKey: "waiting" })]);
+  });
+
+  it("changes a job status through the guarded Admin RPC", async () => {
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    supabase.createClient.mockResolvedValue({ auth: { getUser: vi.fn(async () => ({ data: { user: { app_metadata: { role: "admin" }, email: "nasora.nsr300@gmail.com" } } })) }, rpc });
+    await updateAdminJobStatus({ jobId: "00000000-0000-4000-8000-000000000111", publicNote: "Sketch started", statusKey: "sketching" });
+    expect(rpc).toHaveBeenCalledWith("admin_change_job_status", { p_job_id: "00000000-0000-4000-8000-000000000111", p_public_note: "Sketch started", p_status_key: "sketching" });
   });
 
   it("rejects non-admin sessions before querying", async () => {

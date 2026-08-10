@@ -128,7 +128,8 @@ export function MemberRequestsContent({ auth, locale, repository }: Omit<Props, 
               <div className={styles.requestMeta}><span>{th ? "งบประมาณ" : "Budget"}</span><strong>{formatBudget(request, locale)}</strong></div>
               <span className={`${styles.statusPill} ${statusClass(request.status)}`}>● {statusCopy[locale][request.status]}</span>
               {request.status === "quoted" ? <Link aria-label={`View quote ${request.requestCode}`} className={styles.rowButton} href={`/${locale}/member/requests/${request.id}`}>{th ? "ดูใบเสนอราคา" : "View quote"}</Link> : null}
-              {cancellable ? <button className={styles.rowButton} disabled={cancellingId === request.id} onClick={() => void cancelRequest(request)} type="button">{cancellingId === request.id ? (th ? "กำลังยกเลิก..." : "Cancelling...") : (th ? "ยกเลิกแบบประเมิน" : "Cancel request")}</button> : request.status === "quoted" ? null : <span />}
+              {request.status === "converted" ? <Link aria-label={`View job ${request.requestCode}`} className={styles.rowButton} href={`/${locale}/member/jobs`}>{th ? "ดูงาน" : "View job"}</Link> : null}
+              {cancellable ? <button className={styles.rowButton} disabled={cancellingId === request.id} onClick={() => void cancelRequest(request)} type="button">{cancellingId === request.id ? (th ? "กำลังยกเลิก..." : "Cancelling...") : (th ? "ยกเลิกแบบประเมิน" : "Cancel request")}</button> : request.status === "quoted" || request.status === "converted" ? null : <span />}
             </article>;
           })}
         </div>

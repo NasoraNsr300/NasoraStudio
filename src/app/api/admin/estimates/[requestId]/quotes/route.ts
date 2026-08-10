@@ -17,7 +17,7 @@ function isSatangInRange(value: string, minimum: bigint, maximum: bigint, patter
 }
 
 const signedSatangSchema = z.string().max(11).refine((value) => isSatangInRange(value, moneyMin, moneyMax, signedSatangPattern));
-const totalSatangSchema = z.string().max(10).refine((value) => isSatangInRange(value, zero, moneyMax, totalSatangPattern));
+const totalSatangSchema = z.string().max(10).refine((value) => isSatangInRange(value, BigInt(1), moneyMax, totalSatangPattern));
 const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   th: z.string().trim().min(1).max(2_000),
@@ -37,7 +37,7 @@ const quoteItemSchema = z.object({
 });
 
 const bodySchema = z.object({
-  depositPercent: z.number().int().min(0).max(100),
+  depositPercent: z.number().int().min(1).max(100),
   durationMaxDays: z.number().int().positive().max(3_650),
   durationMinDays: z.number().int().positive().max(3_650),
   expiresAt: z.iso.datetime({ offset: true }),

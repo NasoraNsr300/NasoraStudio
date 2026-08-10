@@ -118,10 +118,10 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
     if (!scope.en.trim() || !scope.th.trim()
       || !expiresAt || Number.isNaN(expiry.getTime())
       || !Number.isInteger(durationMinDays) || !Number.isInteger(durationMaxDays) || durationMinDays <= 0 || durationMaxDays < durationMinDays
-      || !Number.isInteger(depositPercent) || depositPercent < 0 || depositPercent > 100
+      || !Number.isInteger(depositPercent) || depositPercent < 1 || depositPercent > 100
       || !Number.isInteger(freeRevisions) || freeRevisions < 0
       || !termsSlug.trim() || !Number.isInteger(termsVersion) || termsVersion <= 0
-      || totalSatang === null || totalSatang < zero || totalSatang > moneyMax || hasInvalidItem) {
+      || totalSatang === null || totalSatang <= zero || totalSatang > moneyMax || hasInvalidItem) {
       setError("Complete a valid quote before sending.");
       return;
     }
@@ -189,7 +189,7 @@ export function AdminQuoteEditor({ requestId, requestedDeadline, serviceName }: 
       <button className={styles.addItem} onClick={() => setItems((current) => [...current, newAddition()])} type="button">Add quote item</button>
     </div>
     <div className={styles.fields}>
-      <label>Deposit percent<input max="100" min="0" onChange={(event) => setDepositPercent(Number(event.target.value))} type="number" value={depositPercent} /></label>
+      <label>Deposit percent<input max="100" min="1" onChange={(event) => setDepositPercent(Number(event.target.value))} type="number" value={depositPercent} /></label>
       <label>Free revisions<input min="0" onChange={(event) => setFreeRevisions(Number(event.target.value))} type="number" value={freeRevisions} /></label>
       <label>Minimum duration days<input min="1" onChange={(event) => setDurationMinDays(Number(event.target.value))} type="number" value={durationMinDays} /></label>
       <label>Maximum duration days<input min="1" onChange={(event) => setDurationMaxDays(Number(event.target.value))} type="number" value={durationMaxDays} /></label>

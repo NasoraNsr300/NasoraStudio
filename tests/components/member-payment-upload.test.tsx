@@ -16,7 +16,7 @@ const paymentId = "d75a0770-6178-4bb8-9a75-f076984ffac8";
 const quote: MemberQuote = {
   depositPercent: 50, depositSatang: 50_000, durationMaxDays: 14, durationMinDays: 7,
   expiresAt: "2026-09-01T12:00:00.000Z", freeRevisionCount: 4, id: quoteId, items: [],
-  outstandingSatang: 100_000, proposedDeadline: "2026-09-20", requestId,
+  outstandingSatang: 100_000, paidSatang: 0, proposedDeadline: "2026-09-20", requestId,
   scope: { en: "One illustration", th: "ภาพหนึ่งภาพ" }, status: "sent",
   termsDocument: { slug: "commission-terms", version: 1 }, totalSatang: 100_000, version: 1,
 };
@@ -33,6 +33,7 @@ describe("member payment slip upload", () => {
     render(<MemberRequestQuotePage locale="en" repository={repository as never} requestId={requestId} />);
     expect(await screen.findByText("One illustration")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Pay deposit" })).not.toBeInTheDocument();
+    await waitFor(() => expect(finishRecovery).toBeTypeOf("function"));
     finishRecovery();
     expect(await screen.findByRole("button", { name: "Pay deposit" })).toBeEnabled();
   });

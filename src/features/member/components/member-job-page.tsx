@@ -311,7 +311,7 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
 
       {activeSection === "requests" && <MemberRequestsContent locale={locale} />}
       {activeSection === "messages" && <MemberMessagesContent locale={locale} />}
-      {activeSection === "payments" && <MemberPaymentsContent locale={locale} />}
+      {activeSection === "payments" && <MemberPaymentsContent jobs={job ? [job] : []} locale={locale} />}
       {activeSection === "profile" && <MemberProfileContent locale={locale} />}
     </main>
   );

@@ -27,15 +27,10 @@ function safeHeaderValue(value: string | null) {
 
 function hasSameOrigin(request: Request) {
   const origin = safeHeaderValue(request.headers.get("origin"));
-  const forwardedHost = safeHeaderValue(request.headers.get("x-forwarded-host"));
-  const host = forwardedHost ?? safeHeaderValue(request.headers.get("host")) ?? new URL(request.url).host;
-  const forwardedProtocol = safeHeaderValue(request.headers.get("x-forwarded-proto"));
-  if (!origin || !host || (forwardedProtocol && !["http", "https"].includes(forwardedProtocol))) return false;
+  if (!origin) return false;
 
   try {
-    const requestUrl = new URL(request.url);
-    const protocol = forwardedProtocol ?? requestUrl.protocol.slice(0, -1);
-    return new URL(origin).origin === new URL(`${protocol}://${host}`).origin;
+    return new URL(origin).origin === new URL(request.url).origin;
   } catch {
     return false;
   }
@@ -47,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ req
   if (!requestId.success) return Response.json({ error: "Invalid request" }, { status: 400 });
 
   if (!hasSameOrigin(request)) return Response.json({ error: "Invalid request origin" }, { status: 403 });
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+  if (request.headers.get("content-type")?.trim().toLowerCase() !== "application/json") {
     return Response.json({ error: "Content-Type must be application/json" }, { status: 415 });
   }
 

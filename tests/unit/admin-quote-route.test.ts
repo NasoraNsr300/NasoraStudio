@@ -50,6 +50,10 @@ function client({ role = "admin", rpc = vi.fn(async () => ({ data: [{ quote_id: 
 }
 
 describe("POST /api/admin/estimates/:requestId/quotes", () => {
+  it("rejects a zero deposit that cannot enter the deposit-first workflow", async () => {
+    const response = await POST(request({ ...payload, depositPercent: 0 }), { params });
+    expect(response.status).toBe(400);
+  });
   it("rejects malformed request and idempotency UUIDs before mutation", async () => {
     const rpc = vi.fn();
     supabase.createClient.mockResolvedValue(client({ rpc }));

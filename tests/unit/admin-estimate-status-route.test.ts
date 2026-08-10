@@ -49,7 +49,7 @@ describe("POST /api/admin/estimates/:requestId/status", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("accepts the forwarded public origin when a reverse proxy supplies one unambiguous host and protocol", async () => {
+  it("does not trust caller-supplied forwarded origin headers", async () => {
     const rpc = vi.fn(async () => ({ data: [{ request_id: requestId, status: "reviewing" }], error: null }));
     supabase.createClient.mockResolvedValue(client({ rpc }));
     const forwardedRequest = new Request(`http://internal:3000/api/admin/estimates/${requestId}/status`, {
@@ -65,8 +65,8 @@ describe("POST /api/admin/estimates/:requestId/status", () => {
 
     const response = await POST(forwardedRequest, { params });
 
-    expect(response.status).toBe(200);
-    expect(rpc).toHaveBeenCalledOnce();
+    expect(response.status).toBe(403);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("requires an explicit application/json content type", async () => {
@@ -75,6 +75,14 @@ describe("POST /api/admin/estimates/:requestId/status", () => {
 
     const response = await POST(request({ status: "reviewing" }, { "content-type": "text/plain" }), { params });
 
+    expect(response.status).toBe(415);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects parameterized JSON media types", async () => {
+    const rpc = vi.fn();
+    supabase.createClient.mockResolvedValue(client({ rpc }));
+    const response = await POST(request({ status: "reviewing" }, { "content-type": "application/json; charset=utf-8" }), { params });
     expect(response.status).toBe(415);
     expect(rpc).not.toHaveBeenCalled();
   });

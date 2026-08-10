@@ -40,15 +40,18 @@ describe("MemberRequestsPage", () => {
       request({ id: "r1", requestCode: "REQ-ONE000000", status: "submitted" }),
       request({ id: "r2", requestCode: "REQ-TWO000000", status: "quoted" }),
       request({ id: "r3", requestCode: "REQ-THREE0000", status: "cancelled" }),
+      request({ id: "r4", requestCode: "REQ-FOUR00000", status: "converted" }),
     ], ok: true });
     render(<MemberRequestsPage auth={auth} locale="en" repository={repository} />);
 
     expect(await screen.findByText(/REQ-ONE000000/)).toBeVisible();
     expect(screen.getByText(/REQ-TWO000000/)).toBeVisible();
     expect(screen.getByText(/REQ-THREE0000/)).toBeVisible();
-    expect(screen.getAllByText("1")).toHaveLength(3);
-    expect(screen.getByText("3 items")).toBeVisible();
+    expect(screen.getAllByText("1")).toHaveLength(2);
+    expect(screen.getByText("2")).toBeVisible();
+    expect(screen.getByText("4 items")).toBeVisible();
     expect(screen.getByRole("link", { name: "View quote REQ-TWO000000" })).toHaveAttribute("href", "/en/member/requests/r2");
+    expect(screen.getByRole("link", { name: "View job REQ-FOUR00000" })).toHaveAttribute("href", "/en/member/jobs");
   });
 
   it("cancels only an awaiting request and updates it locally", async () => {
@@ -71,7 +74,7 @@ describe("MemberRequestsPage", () => {
   });
 });
 
-function request(overrides: { id: string; requestCode: string; status: "cancelled" | "quoted" | "submitted" }) {
+function request(overrides: { id: string; requestCode: string; status: "cancelled" | "converted" | "quoted" | "submitted" }) {
   return {
     budgetMaxSatang: 600_000,
     budgetMinSatang: 350_000,

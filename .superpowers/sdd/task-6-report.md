@@ -92,3 +92,20 @@ No local/live Supabase PostgreSQL runtime or deployment authorization was availa
 2. GREEN focused: `npm test -- --run tests/unit/deposit-to-job-migration.test.ts tests/unit/payment-routes.test.ts tests/unit/payment-migration.test.ts --maxWorkers=2` — PASS, 3 files / 50 tests.
 3. Full suite: `npm test -- --run --maxWorkers=2` — PASS, 78 files / 344 tests in 60.14s.
 4. `npm run typecheck`, `npm run lint`, and `npm run build` — PASS.
+
+## Product-path completion
+
+- Member quote loading now retains the accepted quote after deposit approval, sums verified payments, and exposes the real outstanding balance. Accepted quotes ignore their pre-acceptance expiry and support a member-selected installment (minimum 100 THB, except a smaller final remainder).
+- Added real member job index/payment views. The sidebar no longer points to `/jobs/demo`; converted requests lead to the member's jobs, and outstanding jobs lead back to the existing PromptPay intent/slip flow.
+- Admin Jobs now exposes working same-origin API routes and UI controls for manual Guest creation and status progression. Both server repositories and database wrappers repeat exact Admin authorization.
+- Sent quotes now require a positive total, deposit percentage, and deposit amount across editor, route, and a database trigger. The estimate-status route now uses exact JSON and normalized same-origin checks.
+- Removed `from_status_id` and `changed_by` from the member history column grant.
+- Terminal job states are immutable in SQL, preventing completed/cancelled jobs from returning to active status after their public queue row is archived. The Admin UI disables those terminal selectors and groups cancellations with closed work.
+
+### Completion verification
+
+1. RED tests reproduced all three whole-branch review findings.
+2. Focused member/admin/payment tests passed (including 26 route/editor tests and 10 accepted-quote/upload tests).
+3. Full suite: `npm test -- --run --maxWorkers=2` — PASS, 80 files / 357 tests after terminal-state hardening.
+4. `npm run typecheck`, `npm run lint`, `npm run build`, and `git diff --check` — PASS; Next.js 16.3.0 generated 42 static pages and the new member-jobs/Admin-jobs routes.
+5. Supabase migration execution, role simulation, advisors, and real R2/PromptPay verification remain deferred until deployment credentials/runtime are available.

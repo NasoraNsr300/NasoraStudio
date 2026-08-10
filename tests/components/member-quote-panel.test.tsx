@@ -47,6 +47,25 @@ describe("MemberQuotePanel", () => {
     expect(screen.getByText("This quote has been replaced by a newer version.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Pay deposit" })).not.toBeInTheDocument();
   });
+
+  it("lets an accepted quote pay a chosen installment while allowing a small final remainder", async () => {
+    const onPayDeposit = vi.fn();
+    const user = userEvent.setup();
+    render(<MemberQuotePanel locale="en" onPayDeposit={onPayDeposit} quote={quote({ outstandingSatang: 8_500, paidSatang: 91_500, status: "accepted" })} />);
+
+    const amount = screen.getByRole("spinbutton", { name: "Payment amount (THB)" });
+    await user.clear(amount);
+    await user.type(amount, "85");
+    await user.click(screen.getByRole("button", { name: "Make payment" }));
+
+    expect(onPayDeposit).toHaveBeenCalledWith({ depositSatang: 8_500, quoteId: "bf49a462-ef33-44d4-95d4-1a0de68472c5", requestId });
+  });
+
+  it("does not expire an accepted quote while its remaining balance is payable", () => {
+    render(<MemberQuotePanel locale="en" now="2026-09-02T00:00:00.000Z" onPayDeposit={vi.fn()} quote={quote({ outstandingSatang: 50_000, paidSatang: 50_000, status: "accepted" })} />);
+    expect(screen.getByRole("button", { name: "Make payment" })).toBeVisible();
+    expect(screen.queryByText("This quote has expired.")).not.toBeInTheDocument();
+  });
 });
 
 function quote(overrides: Partial<MemberQuote> = {}): MemberQuote {
@@ -60,6 +79,7 @@ function quote(overrides: Partial<MemberQuote> = {}): MemberQuote {
     id: "bf49a462-ef33-44d4-95d4-1a0de68472c5",
     items: [{ description: { en: "Flat colour", th: "ลงสีแบบเรียบ" }, id: "8204a3bf-a951-4a35-b8a0-0974f2b99327", itemType: "base", label: { en: "Full body", th: "เต็มตัว" }, lineTotalSatang: 100_000, quantity: 1, unitAmountSatang: 100_000 }],
     outstandingSatang: 50_000,
+    paidSatang: 0,
     proposedDeadline: "2026-09-20",
     requestId,
     scope: { en: "One full-body illustration", th: "ภาพประกอบเต็มตัว 1 ภาพ" },

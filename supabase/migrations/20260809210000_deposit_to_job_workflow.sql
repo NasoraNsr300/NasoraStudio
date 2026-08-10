@@ -4,6 +4,23 @@
 create index if not exists payment_slip_attempts_owner_created_idx
   on public.payment_slip_upload_attempts (user_id, created_at desc);
 
+create function private.protect_positive_sent_quote()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.status = 'sent' and (new.total_satang <= 0 or new.deposit_percent < 1 or new.deposit_satang <= 0) then
+    raise exception 'positive_deposit_required';
+  end if;
+  return new;
+end;
+$$;
+create trigger quotes_require_positive_deposit
+before insert or update of status, total_satang, deposit_percent, deposit_satang on public.quotes
+for each row execute function private.protect_positive_sent_quote();
+
 create function private.create_job_from_verified_deposit(p_payment_id uuid)
 returns table(job_id uuid, queue_entry_id uuid)
 language plpgsql
@@ -870,6 +887,7 @@ as $$
 declare
   v_before public.jobs%rowtype;
   v_after public.jobs%rowtype;
+  v_current_status public.status_definitions%rowtype;
   v_status public.status_definitions%rowtype;
 begin
   if not private.is_admin() then
@@ -878,6 +896,9 @@ begin
 
   select * into v_before from public.jobs where id = p_job_id for update;
   if not found then raise exception 'job_not_found'; end if;
+
+  select * into v_current_status from public.status_definitions where id = v_before.status_id;
+  if v_current_status.is_terminal then raise exception 'terminal_job_status_immutable'; end if;
 
   select * into v_status
   from public.status_definitions
@@ -925,6 +946,29 @@ begin
     auth.uid(), 'admin', 'change_status', 'job', p_job_id,
     to_jsonb(v_before), to_jsonb(v_after), p_private_note
   );
+end;
+$$;
+
+create function public.admin_change_job_status(
+  p_job_id uuid,
+  p_status_key text,
+  p_public_note text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_status_id uuid;
+begin
+  if not private.is_admin() then raise exception 'admin_required' using errcode = '42501'; end if;
+  select status.id into v_status_id
+  from public.jobs job
+  join public.status_definitions status on status.workflow_id = job.workflow_id
+  where job.id = p_job_id and status.stable_key = p_status_key and status.archived_at is null;
+  if v_status_id is null then raise exception 'status_not_in_job_workflow'; end if;
+  perform private.change_job_status(p_job_id, v_status_id, nullif(btrim(p_public_note), ''), null);
 end;
 $$;
 
@@ -982,7 +1026,7 @@ grant select (
   completed_at, cancelled_at, archived_at, created_at, updated_at
 ) on public.jobs to authenticated;
 grant select (
-  id, job_id, from_status_id, to_status_id, public_note, changed_by, changed_at
+  id, job_id, to_status_id, public_note, changed_at
 ) on public.job_status_history to authenticated;
 
 revoke all on function private.create_job_from_verified_deposit(uuid),
@@ -992,6 +1036,7 @@ revoke all on function private.create_job_from_verified_deposit(uuid),
   private.authorize_payment_slip(uuid, uuid, text, bigint, uuid, uuid),
   private.verify_payment_slip(uuid, uuid, text, text, uuid),
   private.create_manual_guest_job(text, jsonb, jsonb, date, bigint),
+  private.protect_positive_sent_quote(),
   private.protect_verified_deposit_conversion(),
   private.change_job_status(uuid, uuid, text, text)
   from public, anon, authenticated, service_role;
@@ -1089,6 +1134,8 @@ grant select (
 
 revoke all on function public.admin_list_jobs() from public, anon, authenticated, service_role;
 grant execute on function public.admin_list_jobs() to authenticated;
+revoke all on function public.admin_change_job_status(uuid, text, text) from public, anon, authenticated, service_role;
+grant execute on function public.admin_change_job_status(uuid, text, text) to authenticated;
 
 -- Runtime transaction, RLS-role, and concurrency simulation must be run against a
 -- deployed/local Supabase PostgreSQL instance; this migration is not applied here.

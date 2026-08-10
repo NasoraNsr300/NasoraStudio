@@ -130,6 +130,7 @@ describe("AdminQuoteEditor", () => {
       .mockResolvedValueOnce(new Response(null, { status: 201 }));
     vi.stubGlobal("fetch", fetch);
     render(<AdminQuoteEditor {...props} />);
+    await user.type(screen.getByRole("textbox", { name: "Unit price THB" }), "1000");
 
     await user.click(screen.getByRole("button", { name: "Save and send quote" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to send quote.");
@@ -150,6 +151,7 @@ describe("AdminQuoteEditor", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ quoteId: "2b50ea28-ef92-43de-8d43-e34d3e457a90", status: "sent", version: 2 }), { status: 201 }));
     vi.stubGlobal("fetch", fetch);
     render(<AdminQuoteEditor {...props} />);
+    await user.type(screen.getByRole("textbox", { name: "Unit price THB" }), "1000");
 
     await user.click(screen.getByRole("button", { name: "Save and send quote" }));
     await user.click(screen.getByRole("button", { name: "Save and send quote" }));

@@ -16,14 +16,16 @@ function query(result: { data: unknown; error: { message?: string } | null }) {
 }
 
 describe("createMemberQuoteRepository", () => {
-  it("reads only the latest sent quote after RLS confirms the member owns its request", async () => {
+  it("reads the latest customer-visible quote and derives outstanding from verified payments", async () => {
     const ownedRequest = query({ data: { id: requestId }, error: null });
     const quote = query({ data: quoteRow(), error: null });
     const items = query({ data: [quoteItemRow()], error: null });
+    const payments = query({ data: [{ amount_satang: 25_000 }, { amount_satang: 25_000 }], error: null });
     const from = vi.fn()
       .mockReturnValueOnce(ownedRequest)
       .mockReturnValueOnce(quote)
-      .mockReturnValueOnce(items);
+      .mockReturnValueOnce(items)
+      .mockReturnValueOnce(payments);
     const repository = createMemberQuoteRepository({ from });
 
     const result = await repository.load(requestId);
@@ -32,16 +34,18 @@ describe("createMemberQuoteRepository", () => {
       data: expect.objectContaining({
         depositSatang: 50_000,
         outstandingSatang: 50_000,
+        paidSatang: 50_000,
         requestId,
         totalSatang: 100_000,
       }),
       ok: true,
     });
     expect(ownedRequest.eq).toHaveBeenNthCalledWith(1, "id", requestId);
-    expect(quote.eq).toHaveBeenCalledWith("status", "sent");
+    expect(quote.eq).not.toHaveBeenCalledWith("status", "sent");
     expect(quote.order).toHaveBeenCalledWith("version", { ascending: false });
     expect(quote.limit).toHaveBeenCalledWith(1);
     expect(items.eq).toHaveBeenCalledWith("quote_id", "bf49a462-ef33-44d4-95d4-1a0de68472c5");
+    expect(payments.eq).toHaveBeenCalledWith("quote_id", "bf49a462-ef33-44d4-95d4-1a0de68472c5");
   });
 
   it("does not query quote data when RLS does not expose the request, including Guest requests", async () => {
