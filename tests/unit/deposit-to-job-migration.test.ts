@@ -157,8 +157,9 @@ describe("verified deposit to job migration", () => {
     const historyGrant = migration.match(/grant select \(([^)]+)\) on public\.job_status_history to authenticated/)?.[1] ?? "";
     expect(historyGrant).toContain("public_note");
     expect(historyGrant).not.toContain("private_note");
-    const jobsGrant = migration.match(/grant select \(([^)]+)\) on public\.jobs to authenticated/)?.[1] ?? "";
-    expect(jobsGrant).toContain("guest_display_name");
+    const jobsGrants = [...migration.matchAll(/grant select \(([^)]+)\) on public\.jobs to authenticated/g)];
+    const jobsGrant = jobsGrants.at(-1)?.[1] ?? "";
+    expect(jobsGrant).not.toContain("guest_display_name");
     const core = readFileSync("supabase/migrations/20260806052810_consolidate_core_commission_policies.sql", "utf8").toLowerCase().replace(/\s+/g, " ");
     expect(core).toContain("jobs_select_own");
     expect(core).toContain("auth.uid()) = user_id");
@@ -175,6 +176,37 @@ describe("verified deposit to job migration", () => {
     expect(changeStatus).toContain("if v_status.is_terminal then");
     expect(changeStatus.indexOf("if v_status.is_terminal then")).toBeGreaterThan(changeStatus.indexOf("end if;"));
     expect(changeStatus).toContain("set archived_at = coalesce(archived_at, now())");
+  });
+
+  it("keeps hidden workflow definitions and transitions out of the member Data API", () => {
+    const migration = sql();
+    expect(migration).toContain("drop policy if exists status_definitions_select_authenticated");
+    expect(migration).toMatch(/create policy status_definitions_select_authenticated[^;]+customer_visible/);
+    expect(migration).toMatch(/create policy job_status_history_select_own[^;]+status\.customer_visible/);
+    expect(migration).toContain("revoke all on public.status_definitions from anon, authenticated");
+    const statusGrant = migration.match(/grant select \(([^)]+)\) on public\.status_definitions to authenticated/)?.[1] ?? "";
+    expect(statusGrant).toContain("label");
+    expect(statusGrant).toContain("customer_visible");
+    expect(statusGrant).not.toContain("private_description");
+
+    const jobsGrants = [...migration.matchAll(/grant select \(([^)]+)\) on public\.jobs to authenticated/g)];
+    const jobsGrant = jobsGrants.at(-1)?.[1] ?? "";
+    expect(jobsGrant).not.toContain("status_id");
+    expect(jobsGrant).not.toContain("workflow_id");
+    expect(jobsGrant).not.toContain("guest_display_name");
+  });
+
+  it("exposes hidden Admin job status only through the guarded Admin RPC", () => {
+    const migration = sql();
+    expect(migration).toContain("create function public.admin_list_jobs");
+    const start = migration.indexOf("create function public.admin_list_jobs");
+    const rpc = migration.slice(start, migration.indexOf("$$;", start) + 3);
+    expect(rpc).toContain("security definer");
+    expect(rpc).toContain("set search_path = ''");
+    expect(rpc).toContain("private.is_admin()");
+    expect(rpc).toContain("raise exception 'admin_required'");
+    expect(migration).toMatch(/revoke all on function public\.admin_list_jobs\(\)[^;]+from public, anon, authenticated, service_role/);
+    expect(migration).toMatch(/grant execute on function public\.admin_list_jobs\(\) to authenticated/);
   });
 
   it("adds the owner/time index used by the upload attempt quota", () => {

@@ -62,6 +62,30 @@ No local/live Supabase PostgreSQL runtime or deployment authorization was availa
 - Slip authorization and verification use the same `request -> intent -> quote` mutation lock order as intent creation, avoiding an intent/request lock inversion during concurrent payment activity.
 - Queue archival is now independent from public-label visibility: a private terminal status archives the active queue row without replacing its last customer-safe label.
 
+## Hidden-status privacy remediation
+
+- Replaced the permissive status-definition policy with an exact-admin or
+  `customer_visible` policy and replaced broad table reads with explicit safe
+  columns. `private_description` is no longer selectable by authenticated
+  members through the Data API.
+- Member-owned history now permits only transitions whose destination status
+  is customer-visible. The member repository derives the displayed current
+  status from the latest visible history item and no longer selects the job's
+  internal status relationship.
+- Removed Guest display snapshots and internal workflow/status IDs from the
+  member `jobs` grant. Admin Jobs now reads through `public.admin_list_jobs()`,
+  a fixed-search-path definer RPC that repeats the exact Admin authorization
+  check and is executable only by authenticated callers.
+
+### Privacy-fix TDD and verification
+
+1. RED: 4 focused failures reproduced the broad policy/grant, direct Admin
+   table query, and member hidden-status exposure.
+2. GREEN focused: 3 files / 17 tests passed.
+3. Full suite: `npm test -- --run --maxWorkers=2` passed, 78 files / 346 tests.
+4. `npm run typecheck`, `npm run lint`, `npm run build`, and
+   `git diff --check` passed; Next.js 16.3.0 generated 41 static pages.
+
 ### Final re-review evidence
 
 1. RED: focused migration contracts failed for accepted-quote payment continuation and hidden terminal archival.

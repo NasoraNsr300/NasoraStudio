@@ -7,10 +7,9 @@ import { createClient } from "@/shared/supabase/server";
 
 type LocalizedText = { en: string; th: string };
 type QueryResult = { data: unknown; error: { message?: string } | null };
-type Query = { order(column: string, options?: { ascending?: boolean }): Promise<QueryResult>; select(columns: string): Query };
 type AdminJobClient = {
   auth: { getUser(): Promise<{ data: { user: { app_metadata?: Record<string, unknown>; email?: string | null } | null }; error?: unknown }> };
-  from(table: "jobs"): Query;
+  rpc(name: "admin_list_jobs"): Promise<QueryResult>;
   rpc(name: "admin_create_manual_guest_job", args: Record<string, unknown>): Promise<QueryResult>;
 };
 
@@ -23,7 +22,8 @@ const rowSchema = z.object({
   id: z.string().min(1),
   member_display_name_snapshot: z.string().nullable(),
   service_type_name_snapshot: localizedSchema,
-  status_definitions: z.union([z.object({ label: localizedSchema, stable_key: z.string().min(1) }), z.array(z.object({ label: localizedSchema, stable_key: z.string().min(1) })).length(1)]),
+  status_key: z.string().min(1),
+  status_label: localizedSchema,
 });
 
 export type AdminJobSummary = {
@@ -45,16 +45,14 @@ async function adminClient() {
 
 export async function listAdminJobs(): Promise<AdminJobSummary[]> {
   const client = await adminClient();
-  const query = client.from("jobs").select("id,customer_type,member_display_name_snapshot,guest_display_name,service_type_name_snapshot,deadline,deposit_verified_at,status_definitions!status_id(stable_key,label)");
-  const { data, error } = await query.order("deposit_verified_at", { ascending: true });
+  const { data, error } = await client.rpc("admin_list_jobs");
   if (error) throw new Error("Unable to load jobs");
   const parsed = z.array(rowSchema).safeParse(data);
   if (!parsed.success) throw new Error("Admin job data is unavailable");
   return parsed.data.map((row) => {
-    const status = Array.isArray(row.status_definitions) ? row.status_definitions[0] : row.status_definitions;
     const customerDisplayName = row.customer_type === "member" ? row.member_display_name_snapshot : row.guest_display_name;
     if (!customerDisplayName) throw new Error("Admin job data is unavailable");
-    return { customerDisplayName, deadline: row.deadline, depositVerifiedAt: row.deposit_verified_at, id: row.id, serviceName: row.service_type_name_snapshot, statusKey: status.stable_key, statusLabel: status.label };
+    return { customerDisplayName, deadline: row.deadline, depositVerifiedAt: row.deposit_verified_at, id: row.id, serviceName: row.service_type_name_snapshot, statusKey: row.status_key, statusLabel: row.status_label };
   });
 }
 

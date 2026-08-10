@@ -1003,5 +1003,92 @@ grant execute on function public.gateway_create_job_from_verified_deposit(uuid, 
 grant execute on function public.gateway_verify_payment_slip(uuid, uuid, text, text, uuid) to service_role;
 grant execute on function public.admin_create_manual_guest_job(text, jsonb, jsonb, date, bigint) to authenticated;
 
+-- Customer-facing identities can read only public workflow definitions. The
+-- broad grants from the core migration are replaced with safe columns so the
+-- Data API can never return private_description to a member.
+drop policy if exists status_definitions_select_authenticated on public.status_definitions;
+create policy status_definitions_select_authenticated
+on public.status_definitions for select to authenticated
+using ((select private.is_admin()) or (customer_visible and archived_at is null));
+
+drop policy if exists job_status_history_select_own on public.job_status_history;
+create policy job_status_history_select_own
+on public.job_status_history for select to authenticated
+using (
+  (select private.is_admin()) or (
+    exists (
+      select 1 from public.jobs job
+      where job.id = job_id and job.user_id = (select auth.uid())
+    )
+    and exists (
+      select 1 from public.status_definitions status
+      where status.id = to_status_id and status.customer_visible
+    )
+  )
+);
+
+revoke all on public.status_definitions from anon, authenticated;
+grant select (
+  id, workflow_id, stable_key, label, display_order, customer_visible,
+  starts_work, is_terminal, created_at, updated_at, archived_at
+) on public.status_definitions to authenticated;
+grant insert, update, delete on public.status_definitions to authenticated;
+
+-- Admin Jobs uses an exact-admin guarded RPC because hidden status labels and
+-- Guest display snapshots must not be exposed through member table grants.
+create function public.admin_list_jobs()
+returns table(
+  id uuid,
+  customer_type text,
+  member_display_name_snapshot text,
+  guest_display_name text,
+  service_type_name_snapshot jsonb,
+  deadline date,
+  deposit_verified_at timestamptz,
+  status_key text,
+  status_label jsonb
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not private.is_admin() then
+    raise exception 'admin_required' using errcode = '42501';
+  end if;
+
+  return query
+  select
+    job.id,
+    job.customer_type,
+    job.member_display_name_snapshot,
+    job.guest_display_name,
+    job.service_type_name_snapshot,
+    job.deadline,
+    job.deposit_verified_at,
+    status.stable_key,
+    status.label
+  from public.jobs job
+  join public.status_definitions status on status.id = job.status_id
+  order by job.deposit_verified_at nulls last, job.created_at, job.id;
+end;
+$$;
+
+-- Replace the owner job projection once Admin Jobs no longer depends on direct
+-- table access. Internal workflow IDs and Guest snapshots remain server-only.
+revoke all on public.jobs from authenticated;
+grant select (
+  id, request_id, accepted_quote_id, customer_type, user_id,
+  member_display_name_snapshot, category_slug, category_name_snapshot,
+  service_type_slug, service_type_name_snapshot,
+  original_quote_total_satang, current_total_satang, deposit_percent,
+  deposit_verified_at, default_free_revisions, deadline, work_started_at,
+  completed_at, cancelled_at, archived_at, created_at, updated_at
+) on public.jobs to authenticated;
+
+revoke all on function public.admin_list_jobs() from public, anon, authenticated, service_role;
+grant execute on function public.admin_list_jobs() to authenticated;
+
 -- Runtime transaction, RLS-role, and concurrency simulation must be run against a
 -- deployed/local Supabase PostgreSQL instance; this migration is not applied here.

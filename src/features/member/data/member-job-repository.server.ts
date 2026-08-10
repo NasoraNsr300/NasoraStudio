@@ -6,7 +6,10 @@ import type { Locale } from "@/shared/i18n/locales";
 import { createClient } from "@/shared/supabase/server";
 
 const localizedSchema = z.object({ en: z.string().min(1), th: z.string().min(1) });
-const statusSchema = z.union([z.object({ label: localizedSchema, stable_key: z.string().min(1).optional() }), z.array(z.object({ label: localizedSchema, stable_key: z.string().min(1).optional() })).length(1)]);
+const statusSchema = z.union([
+  z.object({ customer_visible: z.literal(true), label: localizedSchema }),
+  z.array(z.object({ customer_visible: z.literal(true), label: localizedSchema })).length(1),
+]);
 const rowSchema = z.object({
   accepted_quote_id: z.string().min(1),
   category_name_snapshot: localizedSchema,
@@ -20,7 +23,6 @@ const rowSchema = z.object({
   payments: z.array(z.object({ amount_satang: z.number().int().nonnegative() })).optional().default([]),
   quotes: z.object({ payments: z.array(z.object({ amount_satang: z.number().int().nonnegative() })).optional() }).optional(),
   service_type_name_snapshot: localizedSchema,
-  status_definitions: statusSchema,
 });
 
 export type MemberJobView = {
@@ -44,7 +46,7 @@ export async function getMemberJob(jobId: string, locale: Locale): Promise<Membe
   const user = authData.user;
   if (authError || !user) throw new Error("Authentication required");
   const { data, error } = await client.from("jobs")
-    .select("id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,status_definitions!status_id(stable_key,label),job_status_history(id,changed_at,public_note,status_definitions!to_status_id(label)),commission_requests!request_id(usage_type),quotes!accepted_quote_id(payments(amount_satang))")
+    .select("id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,job_status_history(id,changed_at,public_note,status_definitions!to_status_id(label,customer_visible)),commission_requests!request_id(usage_type),quotes!accepted_quote_id(payments(amount_satang))")
     .eq("id", jobId)
     .eq("user_id", user.id)
     .eq("customer_type", "member")
@@ -55,14 +57,19 @@ export async function getMemberJob(jobId: string, locale: Locale): Promise<Membe
   if (!parsed.success) throw new Error("Member job data is unavailable");
   const row = parsed.data;
   const paymentRows = row.quotes?.payments ?? row.payments;
+  const visibleHistory = [...row.job_status_history]
+    .filter((history) => oneStatus(history.status_definitions).customer_visible)
+    .sort((a, b) => a.changed_at.localeCompare(b.changed_at));
+  const currentStatus = visibleHistory.at(-1);
+  if (!currentStatus) throw new Error("Member job data is unavailable");
   return {
     code: row.id.slice(0, 8).toUpperCase(),
     deadlineLabel: row.deadline ?? "—",
     freeRevisions: row.default_free_revisions,
-    history: [...row.job_status_history].sort((a, b) => a.changed_at.localeCompare(b.changed_at)).map((history) => ({ changedAtLabel: history.changed_at, id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
+    history: visibleHistory.map((history) => ({ changedAtLabel: history.changed_at, id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
     id: row.id,
     paidSatang: paymentRows.reduce((sum, payment) => sum + payment.amount_satang, 0),
-    statusLabel: oneStatus(row.status_definitions).label[locale],
+    statusLabel: oneStatus(currentStatus.status_definitions).label[locale],
     title: `${row.category_name_snapshot[locale]} — ${row.service_type_name_snapshot[locale]}`,
     totalSatang: row.original_quote_total_satang,
     usageType: row.commission_requests?.usage_type ?? "personal",
