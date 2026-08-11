@@ -31,6 +31,7 @@ export type SaveAdminPortfolioItemInput = {
   id: string | null;
   mediaId: string;
   published: boolean;
+  showInHero: boolean;
   title: LocalizedPortfolioText;
 };
 
@@ -98,6 +99,7 @@ export async function saveAdminPortfolioItem(input: SaveAdminPortfolioItemInput)
     p_item_id: input.id,
     p_media_id: input.mediaId,
     p_published: input.published,
+    p_show_in_hero: input.showInHero,
     p_title: input.title,
   });
   if (error) throw new Error("Unable to save portfolio item");

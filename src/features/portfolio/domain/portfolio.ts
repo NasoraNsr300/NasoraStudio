@@ -29,6 +29,7 @@ export const portfolioItemRowSchema = z.object({
   featured: z.boolean(),
   id: z.uuid(),
   published: z.boolean(),
+  show_in_hero: z.boolean(),
   title: localizedTextSchema,
 }).strict();
 
@@ -49,6 +50,7 @@ export type PublicPortfolioItem = {
     id: string;
     width: number;
   };
+  showInHero: boolean;
   title: LocalizedPortfolioText;
 };
 
@@ -76,6 +78,7 @@ export function mapPublicPortfolioItem(row: PortfolioItemRow): PublicPortfolioIt
       id: row.commission_catalog_media.id,
       width: row.commission_catalog_media.width,
     },
+    showInHero: row.show_in_hero,
     title: row.title,
   };
 }

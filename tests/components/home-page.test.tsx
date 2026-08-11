@@ -104,4 +104,26 @@ describe("HomePage", () => {
     expect(screen.queryByRole("button", { name: "หยุดผลงานเด่น" })).not.toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: "ข้อมูลฉบับย่อ" })).toBeVisible();
   });
+
+  it("keeps the approved Home frame when live Hero and featured content are empty", () => {
+    render(<HomePage
+      featuredItems={[]}
+      heroItems={[]}
+      locale="th"
+      settings={{
+        businessHours: "11:00 – 22:00",
+        commissionsOpen: true,
+        discordContact: "nasora.studio",
+        homeDescription: { en: "Stories", th: "เรื่องราว" },
+        homeHeading: { en: "Draw your world", th: "รับวาดภาพในโลกของคุณ" },
+        particlesEnabled: true,
+        queueCapacity: 10,
+        shootingStarsEnabled: true,
+      }}
+    />);
+
+    expect(screen.getByRole("heading", { name: "รับวาดภาพในโลกของคุณ" })).toBeVisible();
+    expect(screen.getByText("เรื่องราว")).toBeVisible();
+    expect(screen.getByText("ยังไม่มีผลงานแนะนำ")).toBeVisible();
+  });
 });

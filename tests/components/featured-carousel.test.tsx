@@ -41,9 +41,9 @@ describe("FeaturedCarousel continuous loop", () => {
     expect(shortItems).toHaveLength(2);
   });
 
-  it("renders nothing when no featured work is published", () => {
-    const { container } = render(<FeaturedCarousel items={[]} locale="en" />);
-    expect(container).toBeEmptyDOMElement();
+  it("renders the approved empty state when no featured work is published", () => {
+    render(<FeaturedCarousel items={[]} locale="en" />);
+    expect(screen.getByText("No featured work yet")).toBeVisible();
   });
 
   it("localizes the region and destinations", () => {

@@ -1,5 +1,5 @@
 import { HomePage } from "@/features/home/components/home-page";
-import { getPublicContentRepository } from "@/data/fixture-public-content-repository";
+import { getLiveHomeContent } from "@/features/home/data/live-home-repository.server";
 import { isLocale } from "@/shared/i18n/locales";
 
 export function generateStaticParams() {
@@ -10,13 +10,14 @@ export default async function HomeRoute({ params }: Readonly<{ params: Promise<{
   const { locale } = await params;
   if (!isLocale(locale)) return null;
 
-  const home = await getPublicContentRepository().getHome(locale);
+  const home = await getLiveHomeContent(locale);
 
   return (
     <HomePage
       featuredItems={home.featured}
       heroItems={home.hero}
       locale={locale}
+      settings={home.settings}
     />
   );
 }

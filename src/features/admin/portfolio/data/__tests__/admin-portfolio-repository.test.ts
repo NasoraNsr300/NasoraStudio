@@ -35,6 +35,7 @@ const row = {
   featured: false,
   id: itemId,
   published: false,
+  show_in_hero: false,
   title: { en: "Moon", th: "จันทร์" },
 };
 
@@ -66,6 +67,7 @@ describe("admin portfolio repository", () => {
       id: null,
       mediaId,
       published: false,
+      showInHero: false,
       title: { en: "New", th: "ใหม่" },
     })).rejects.toThrow("Admin access required");
     expect(from).not.toHaveBeenCalled();
@@ -86,6 +88,7 @@ describe("admin portfolio repository", () => {
       id: null,
       mediaId,
       published: true,
+      showInHero: true,
       title: { en: "Star", th: "ดาว" },
     })).resolves.toBe(itemId);
     await archiveAdminPortfolioItem({ archived: true, itemId, reason: "hide" });
@@ -93,6 +96,7 @@ describe("admin portfolio repository", () => {
     expect(rpc).toHaveBeenCalledWith("admin_save_portfolio_item", expect.objectContaining({
       p_album_id: albumId,
       p_media_id: mediaId,
+      p_show_in_hero: true,
       p_title: { en: "Star", th: "ดาว" },
     }));
     expect(rpc).toHaveBeenCalledWith("admin_set_portfolio_item_archive", {

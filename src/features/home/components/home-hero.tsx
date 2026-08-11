@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { selectHero } from "@/features/home/lib/select-hero";
 import type { Locale } from "@/shared/i18n/locales";
 import type { HeroItem } from "@/shared/types/public-content";
+import type { PublicSiteSettings } from "@/features/site-settings/domain/site-settings";
 
 import styles from "./home.module.css";
 
@@ -14,6 +15,7 @@ export type HomeHeroProps = {
   locale: Locale;
   /** Injected by component tests; production selection uses browser Web Crypto. */
   randomValue?: number;
+  settings?: PublicSiteSettings;
 };
 
 const HERO_IMAGE_SIZES = "(min-width: 900px) 52vw, 100vw";
@@ -49,7 +51,7 @@ function getClientRandomValue() {
   return value[0] / 2 ** 32;
 }
 
-export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
+export function HomeHero({ heroItems, locale, randomValue, settings }: HomeHeroProps) {
   // This deterministic first item is emitted during static rendering. The
   // one-time client effect replaces it after mount without changing the frame.
   const [fallbackHero] = useState(() => heroItems[0]);
@@ -58,6 +60,7 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
   const initialRandomValue = useRef(randomValue);
 
   useEffect(() => {
+    if (initialHeroItems.current.length === 0) return;
     const selectedHero = selectHero(
       initialHeroItems.current,
       initialRandomValue.current ?? getClientRandomValue(),
@@ -65,15 +68,30 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
     setMediaHero(selectedHero);
   }, []);
 
+  const labels = copy[locale];
+  const customHeading = settings?.homeHeading[locale];
+  const description = settings?.homeDescription[locale] ?? fallbackHero?.description[locale];
+
   if (!fallbackHero || !mediaHero) {
-    throw new Error("HomeHero requires at least one Hero item");
+    return <section aria-labelledby="home-hero-title" className={styles.hero} data-home-hero="true">
+      <div className={styles.heroCopy}>
+        <p className={styles.eyebrow}>{labels.studio}</p>
+        <h1 id="home-hero-title">{customHeading ?? `${labels.headlineLead} ${labels.headlineSub} ${labels.headlineAccent}`}</h1>
+        <p className={styles.heroServices}>{labels.services}</p>
+        {description ? <p className={styles.heroDescription}>{description}</p> : null}
+        <div className={styles.heroActions}>
+          <a className={styles.primaryAction} href={`/${locale}/commission`}>{labels.commission}</a>
+          <a className={styles.secondaryAction} href="#featured-work">{labels.explore}</a>
+        </div>
+      </div>
+      <div aria-label={locale === "th" ? "พื้นที่ภาพผลงาน" : "Artwork placeholder"} className={`${styles.heroArtwork} ${styles.heroArtworkEmpty}`} role="img">✦</div>
+    </section>;
   }
 
   const mediaStyle = {
     "--hero-aspect-ratio": fallbackHero.crop.aspectRatio,
     objectPosition: mediaHero.crop.objectPosition,
   } as CSSProperties;
-  const labels = copy[locale];
 
   return (
     <section aria-labelledby="home-hero-title" className={styles.hero} data-home-hero="true">
@@ -86,15 +104,15 @@ export function HomeHero({ heroItems, locale, randomValue }: HomeHeroProps) {
       />
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{labels.studio}</p>
-        <h1 id="home-hero-title">
+        <h1 id="home-hero-title">{customHeading ?? <>
           <span className={styles.heroLine}>{labels.headlineLead}</span>{" "}
           <span className={styles.heroLine}>
             {labels.headlineSub}{" "}
             <span className={styles.heroAccent}>{labels.headlineAccent}</span>
           </span>
-        </h1>
+        </>}</h1>
         <p className={styles.heroServices}>{labels.services}</p>
-        <p className={styles.heroDescription}>{fallbackHero.description[locale]}</p>
+        <p className={styles.heroDescription}>{description}</p>
         <div className={styles.heroActions}>
           <a className={styles.primaryAction} href={`/${locale}/commission`}>{labels.commission}</a>
           <a className={styles.secondaryAction} href="#featured-work">{labels.explore}</a>

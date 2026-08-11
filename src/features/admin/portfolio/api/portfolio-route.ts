@@ -12,6 +12,7 @@ export const portfolioBodySchema = z.object({
   featured: z.boolean(),
   mediaId: z.uuid(),
   published: z.boolean(),
+  showInHero: z.boolean(),
   title: localizedTitle,
 }).strict();
 
@@ -45,5 +46,8 @@ export function portfolioMutationError(error: unknown) {
 
 export function revalidatePortfolio() {
   revalidatePath("/admin/portfolio");
-  for (const locale of ["th", "en"] as const) revalidatePath(`/${locale}/portfolio`);
+  for (const locale of ["th", "en"] as const) {
+    revalidatePath(`/${locale}/portfolio`);
+    revalidatePath(`/${locale}`);
+  }
 }

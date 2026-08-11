@@ -27,6 +27,7 @@ const item: AdminPortfolioItem = {
   },
   mediaId: "00000000-0000-4000-8000-000000000403",
   published: true,
+  showInHero: false,
   title: { en: "Moon Garden", th: "สวนจันทร์" },
 };
 

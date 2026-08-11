@@ -19,7 +19,7 @@ type PortfolioClient = {
 };
 
 export const portfolioSelect = `
-  id,title,featured,display_order,published,archived_at,
+  id,title,featured,show_in_hero,display_order,published,archived_at,
   commission_albums(id,slug,name),
   commission_catalog_media(id,alt,content_type,width,height)
 `;

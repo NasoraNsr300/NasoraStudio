@@ -27,6 +27,7 @@ function itemRow(overrides: Record<string, unknown> = {}) {
     featured: true,
     id: itemId,
     published: true,
+    show_in_hero: false,
     title: { en: "Starlight", th: "แสงดาว" },
     ...overrides,
   };

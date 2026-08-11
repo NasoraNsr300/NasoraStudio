@@ -3,12 +3,13 @@
 import { useId, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
+import type { PublicSiteSettings } from "@/features/site-settings/domain/site-settings";
 
 import styles from "./home.module.css";
 
 type TabKey = "about" | "queue" | "terms" | "contact";
 
-type QuickInfoPanelProps = { locale: Locale };
+type QuickInfoPanelProps = { locale: Locale; settings?: PublicSiteSettings };
 
 const copy: Record<Locale, Record<TabKey, { label: string; title: string; body: string }>> = {
   en: {
@@ -44,10 +45,13 @@ const studioFacts = {
   ],
 } as const;
 
-export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
+export function QuickInfoPanel({ locale, settings }: QuickInfoPanelProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("about");
   const baseId = useId();
   const activeCopy = copy[locale][activeTab];
+  const activeBody = activeTab === "contact" && settings
+    ? `${activeCopy.body} Discord: ${settings.discordContact}`
+    : activeCopy.body;
 
   return (
     <section aria-labelledby={`${baseId}-title`} className={styles.quickInfo} id="quick-info">
@@ -69,13 +73,13 @@ export function QuickInfoPanel({ locale }: QuickInfoPanelProps) {
       <div aria-labelledby={`${baseId}-${activeTab}`} className={styles.infoContent} id={`${baseId}-panel`} role="tabpanel">
         <p className={styles.eyebrow}>{panelCopy[locale].eyebrow}</p>
         <h2 id={`${baseId}-title`}>{activeCopy.title}</h2>
-        <p>{activeCopy.body}</p>
+        <p>{activeBody}</p>
         {activeTab === "about" ? (
           <div className={styles.studioFacts}>
-            {studioFacts[locale].map((fact) => (
+            {studioFacts[locale].map((fact, index) => (
               <div className={styles.studioFact} key={fact.label}>
                 <span aria-hidden="true" className={styles.factIcon}>{fact.icon}</span>
-                <span><strong>{fact.label}</strong><small>{fact.value}</small></span>
+                <span><strong>{fact.label}</strong><small>{index === 0 && settings ? settings.businessHours : fact.value}</small></span>
               </div>
             ))}
           </div>

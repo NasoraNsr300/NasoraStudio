@@ -22,6 +22,7 @@ const body = {
   featured: true,
   mediaId,
   published: true,
+  showInHero: true,
   title: { en: "Star", th: "ดาว" },
 };
 

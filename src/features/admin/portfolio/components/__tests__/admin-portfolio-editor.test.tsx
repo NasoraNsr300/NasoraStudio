@@ -13,7 +13,7 @@ const itemId = "00000000-0000-4000-8000-000000000412";
 const mediaId = "00000000-0000-4000-8000-000000000413";
 const item: AdminPortfolioItem = {
   albumId: album.id, archivedAt: null, category: album.slug, categoryName: album.name,
-  displayOrder: 1, featured: true, id: itemId,
+  displayOrder: 1, featured: true, id: itemId, showInHero: true,
   media: { alt: { en: "Moon", th: "จันทร์" }, cardSrc: `/api/portfolio/media/${mediaId}`, contentType: "image/webp", detailSrc: `/api/portfolio/media/${mediaId}`, height: 1600, id: mediaId, width: 1200 },
   mediaId, published: true, title: { en: "Moon Garden", th: "สวนจันทร์" },
 };
@@ -36,6 +36,7 @@ describe("AdminPortfolioEditor", () => {
 
     await user.type(screen.getByLabelText("ชื่อผลงาน (TH)"), "สวนจันทร์");
     await user.type(screen.getByLabelText("Title (EN)"), "Moon Garden");
+    await user.click(screen.getByRole("checkbox", { name: "แสดงใน Hero" }));
     await user.upload(screen.getByLabelText("รูปผลงาน"), new File([new Uint8Array([137, 80, 78, 71])], "moon.png", { type: "image/png" }));
     await user.click(screen.getByRole("button", { name: "อัปโหลดรูปผลงาน" }));
     await screen.findByText("อัปโหลดรูปแล้ว");
@@ -43,7 +44,7 @@ describe("AdminPortfolioEditor", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const payload = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
-    expect(payload).toEqual(expect.objectContaining({ albumId: album.id, mediaId, title: { en: "Moon Garden", th: "สวนจันทร์" } }));
+    expect(payload).toEqual(expect.objectContaining({ albumId: album.id, mediaId, showInHero: true, title: { en: "Moon Garden", th: "สวนจันทร์" } }));
     expect(navigation.replace).toHaveBeenCalledWith(`/admin/portfolio/${itemId}`);
   });
 

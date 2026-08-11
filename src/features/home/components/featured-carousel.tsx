@@ -15,10 +15,12 @@ export type FeaturedCarouselProps = {
 
 const carouselCopy = {
   en: {
+    empty: "No featured work yet",
     label: "Featured work",
     view: (title: string) => `View ${title}`,
   },
   th: {
+    empty: "ยังไม่มีผลงานแนะนำ",
     label: "ผลงานแนะนำ",
     view: (title: string) => `ดู ${title}`,
   },
@@ -75,7 +77,7 @@ export function FeaturedCarousel({
 }: FeaturedCarouselProps) {
   const copy = carouselCopy[locale];
 
-  if (items.length === 0) return null;
+  if (items.length === 0) return <section aria-label={copy.label} className={`${styles.carousel} ${styles.emptyCarousel}`} id="featured-work" role="region"><p>{copy.empty}</p></section>;
 
   const renderItems = items.length >= 4
     ? items

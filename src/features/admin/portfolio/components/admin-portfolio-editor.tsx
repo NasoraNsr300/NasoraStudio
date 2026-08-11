@@ -23,6 +23,7 @@ export function AdminPortfolioEditor({ albums, initialItem }: { albums: Portfoli
   const [displayOrder, setDisplayOrder] = useState(String(initialItem?.displayOrder ?? 0));
   const [featured, setFeatured] = useState(initialItem?.featured ?? false);
   const [published, setPublished] = useState(initialItem?.published ?? false);
+  const [showInHero, setShowInHero] = useState(initialItem?.showInHero ?? false);
   const [mediaId, setMediaId] = useState(initialItem?.mediaId ?? "");
   const [src, setSrc] = useState(initialItem?.media.cardSrc ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -53,7 +54,7 @@ export function AdminPortfolioEditor({ albums, initialItem }: { albums: Portfoli
       if (!albumId) throw new Error("เลือกอัลบั้มคอมมิชชัน");
       if (!Number.isInteger(order) || order < 0 || order > 10_000) throw new Error("ลำดับแสดงไม่ถูกต้อง");
       const response = await fetch(initialItem ? `/api/admin/portfolio/items/${initialItem.id}` : "/api/admin/portfolio/items", {
-        body: JSON.stringify({ albumId, displayOrder: order, featured, mediaId, published, title: { en: titleEn, th: titleTh } }),
+        body: JSON.stringify({ albumId, displayOrder: order, featured, mediaId, published, showInHero, title: { en: titleEn, th: titleTh } }),
         headers: { "content-type": "application/json" }, method: initialItem ? "PATCH" : "POST",
       });
       const body = await json(response);
@@ -87,7 +88,7 @@ export function AdminPortfolioEditor({ albums, initialItem }: { albums: Portfoli
       <label>Title (EN)<input maxLength={200} onChange={(event) => setTitleEn(event.target.value)} required value={titleEn} /></label>
       <label>อัลบั้มคอมมิชชัน<select onChange={(event) => setAlbumId(event.target.value)} required value={albumId}><option disabled value="">เลือกอัลบั้ม</option>{albums.map((album) => <option key={album.id} value={album.id}>{album.name.th}{album.published ? "" : " (ยังไม่เผยแพร่)"}</option>)}</select></label>
       <label>ลำดับแสดง<input min="0" max="10000" onChange={(event) => setDisplayOrder(event.target.value)} required type="number" value={displayOrder} /></label>
-      <div className={styles.checks}><label><input checked={published} onChange={(event) => setPublished(event.target.checked)} type="checkbox" />เผยแพร่บนหน้าเว็บ</label><label><input checked={featured} onChange={(event) => setFeatured(event.target.checked)} type="checkbox" />ผลงานเด่น</label></div>
+      <div className={styles.checks}><label><input checked={published} onChange={(event) => setPublished(event.target.checked)} type="checkbox" />เผยแพร่บนหน้าเว็บ</label><label><input checked={showInHero} onChange={(event) => setShowInHero(event.target.checked)} type="checkbox" />แสดงใน Hero</label><label><input checked={featured} onChange={(event) => setFeatured(event.target.checked)} type="checkbox" />แสดงในผลงานเด่น</label></div>
       <div className={styles.upload}><div className={styles.preview} style={src ? { backgroundImage: `url(${src})` } : undefined}>{src ? null : <ImageUp size={40} />}</div><div><label>รูปผลงาน<input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" /></label><button disabled={busy || !file} onClick={upload} type="button"><ImageUp size={17} />อัปโหลดรูปผลงาน</button></div></div>
     </div><footer><Link href="/admin/portfolio">ยกเลิก</Link><button disabled={busy} type="submit"><Save size={17} />{busy ? "กำลังบันทึก..." : "บันทึกผลงาน"}</button></footer></section></form>
   </section>;

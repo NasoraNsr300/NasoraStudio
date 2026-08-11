@@ -321,3 +321,6 @@
 @keyframes featured-loop {
   to { transform: translateX(calc(-50% - var(--loop-gap) / 2)); }
 }
+.heroArtworkEmpty { align-items: center; background: linear-gradient(145deg, rgba(108, 83, 174, .2), rgba(246, 200, 95, .08)); color: var(--brand-gold); display: flex; font-size: clamp(42px, 8vw, 100px); justify-content: center; min-height: 320px; }
+.emptyCarousel { align-items: center; border: 1px dashed var(--border-subtle); display: flex; justify-content: center; min-height: 250px; }
+.emptyCarousel p { color: var(--text-secondary); font-size: 1rem; }
