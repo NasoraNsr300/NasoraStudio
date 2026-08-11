@@ -26,11 +26,11 @@
 :global(html[data-theme="autumn"]) .adminShell { --admin-bg: #f3eadc; --admin-panel: #fffaf1; --admin-panel-2: #f8efe1; --admin-border: #cdbb9f; --admin-muted: #735f4e; background: #f3eadc; color: #2b2118; }
 :global(html[data-theme="autumn"]) .sidebar { background: #eadcc8; }:global(html[data-theme="autumn"]) .topbar { background: #fff8ec; }:global(html[data-theme="autumn"]) .globalSearch, :global(html[data-theme="autumn"]) .queueHeader select, :global(html[data-theme="autumn"]) .statusButton, :global(html[data-theme="autumn"]) .editButton { background: #fffdf8; color: #2b2118; }:global(html[data-theme="autumn"]) .globalSearch input { color: #2b2118; }:global(html[data-theme="autumn"]) .globalSearch input::placeholder { color: #735f4e; }:global(html[data-theme="autumn"]) .summaryCard, :global(html[data-theme="autumn"]) .panel, :global(html[data-theme="autumn"]) .railPanel { background: #fffaf1; }
 
-.main { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 260px; padding: 10px 16px 10px 28px; }.primaryColumn { min-width: 0; }.pageHeading { align-items: center; display: flex; gap: 10px; height: 42px; }.pageHeading h1 { font-size: 24px; margin: 0 10px 0 0; }.pageHeading span { color: var(--admin-muted); font-size: 13px; }
+.main { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); padding: 10px 16px 10px 28px; }.primaryColumn { min-width: 0; }.pageHeading { align-items: center; display: flex; gap: 10px; height: 42px; }.pageHeading h1 { font-size: 24px; margin: 0 10px 0 0; }.pageHeading span { color: var(--admin-muted); font-size: 13px; }
 .dashboardShell { height: 100dvh; min-height: 0; overflow: hidden; }
 .dashboardShell .sidebar { height: 100dvh; min-height: 0; }
 .dashboardShell .workspace { height: 100dvh; min-height: 0; overflow: hidden; }
-.dashboardShell .main { height: calc(100dvh - 72px); overflow: hidden; }
+.dashboardShell .main { grid-template-columns: minmax(0, 1fr) 260px; height: calc(100dvh - 72px); overflow: hidden; }
 .dashboardShell .primaryColumn { display: grid; gap: 12px; grid-template-rows: 42px 94px 300px minmax(0, 1fr); height: 100%; }
 .dashboardShell .middleGrid, .dashboardShell .queuePanel { height: 100%; margin-top: 0; }
 .dashboardShell .middleGrid { min-height: 0; }
