@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<{
   json(): Promise<{ commissionsOpen?: boolean; error?: string }>;
@@ -22,6 +22,15 @@ export function CommissionAvailabilityToggle({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    function sync(event: Event) {
+      const detail = (event as CustomEvent<{ open?: unknown }>).detail;
+      if (typeof detail?.open === "boolean") setOpen(detail.open);
+    }
+    window.addEventListener("nasora:commission-availability", sync);
+    return () => window.removeEventListener("nasora:commission-availability", sync);
+  }, []);
+
   async function toggle() {
     if (saving) return;
     const previous = open;
@@ -40,6 +49,7 @@ export function CommissionAvailabilityToggle({
         throw new Error(body.error ?? "บันทึกสถานะไม่สำเร็จ");
       }
       setOpen(body.commissionsOpen);
+      window.dispatchEvent(new CustomEvent("nasora:commission-availability", { detail: { open: body.commissionsOpen } }));
     } catch (cause) {
       setOpen(previous);
       setError(cause instanceof Error ? cause.message : "บันทึกสถานะไม่สำเร็จ");

@@ -69,3 +69,19 @@ export async function saveAdminCommissionAvailability(open: boolean, clientOverr
   if (!parsed.success) throw new Error("Commission availability result is unavailable");
   return parsed.data;
 }
+
+export async function saveAdminPersonalNote(note: string, clientOverride?: AdminSettingsClient) {
+  const value = z.string().trim().max(2_000).parse(note);
+  const current = await getAdminSiteSettings(clientOverride);
+  return saveAdminSiteSettings({
+    adminNote: value,
+    businessHours: current.businessHours,
+    commissionsOpen: current.commissionsOpen,
+    discordContact: current.discordContact,
+    homeDescription: current.homeDescription,
+    homeHeading: current.homeHeading,
+    particlesEnabled: current.particlesEnabled,
+    queueCapacity: current.queueCapacity,
+    shootingStarsEnabled: current.shootingStarsEnabled,
+  }, clientOverride);
+}
