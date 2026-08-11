@@ -62,7 +62,10 @@ function failure(error?: QueryError | unknown): RepositoryResult<never> {
   const message = error && typeof error === "object" && "message" in error && typeof error.message === "string"
     ? error.message
     : "Unable to complete the request";
-  return { message, ok: false };
+  return {
+    message: message.includes("commissions_closed") ? "ขณะนี้ปิดรับแบบประเมินใหม่" : message,
+    ok: false,
+  };
 }
 
 function firstRow(data: unknown) {

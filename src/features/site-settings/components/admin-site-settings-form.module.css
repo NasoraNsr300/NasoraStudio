@@ -1,0 +1,7 @@
+.feedback { color: #58d17a; font-size: 11px; margin: 0; }
+.error { color: #ef6675; font-size: 11px; margin: 0; }
+.textarea { background: #0a1629; border: 1px solid var(--admin-border, #253551); border-radius: 6px; color: inherit; font: inherit; min-height: 78px; padding: 9px 10px; resize: vertical; }
+.switch[aria-checked="false"] { background: #526078; }
+.switch[aria-checked="false"] i { margin-left: 0; }
+.visualChecks { display: grid; gap: 10px; }
+:global(html[data-theme="autumn"]) .textarea { background: #fffdf8; color: #2b2118; }

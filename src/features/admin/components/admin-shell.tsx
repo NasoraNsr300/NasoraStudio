@@ -22,6 +22,7 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
 
 import type { ThemeName } from "@/shared/theme/theme";
+import { CommissionAvailabilityToggle } from "@/features/site-settings/components/commission-availability-toggle";
 
 import styles from "./admin-dashboard.module.css";
 
@@ -51,7 +52,7 @@ function pathIsActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({ children, initialCommissionsOpen = true }: { children: ReactNode; initialCommissionsOpen?: boolean }) {
   const pathname = usePathname();
   const isDashboard = pathname === "/admin";
   const theme = useSyncExternalStore(subscribeToTheme, currentTheme, () => "night");
@@ -82,7 +83,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <button aria-label="เปิดเมนู" className={styles.menuButton} type="button"><Menu size={25} /></button>
         <label className={styles.globalSearch}><Search size={22} /><input placeholder="ค้นหาลูกค้า, งาน, แบบประเมิน, สลิป..." /><kbd>Ctrl /</kbd></label>
         <div className={styles.topActions}>
-          <span>เปิดรับงาน</span><button aria-label="สถานะเปิดรับงาน" aria-pressed="true" className={styles.toggle} type="button"><i /></button>
+          <CommissionAvailabilityToggle className={styles.toggle} initialOpen={initialCommissionsOpen} showStatusLabel />
           <div aria-label="ธีมหลังบ้าน" className={styles.adminThemeControls} role="group">
             <button aria-pressed={theme === "night"} onClick={() => setTheme("night")} type="button"><Moon size={15} />Night</button>
             <button aria-pressed={theme === "autumn"} onClick={() => setTheme("autumn")} type="button"><Leaf size={15} />Autumn</button>

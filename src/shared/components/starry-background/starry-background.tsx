@@ -51,7 +51,7 @@ const STAR_COLORS_NIGHT = [
 
 const MAX_ACTIVE_SHOOTING_STARS = 4;
 
-export function StarryBackground() {
+export function StarryBackground({ shootingStarsEnabled = true }: { shootingStarsEnabled?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export function StarryBackground() {
     };
 
     const triggerShootingStar = () => {
-      if (isReducedMotion || !isNightTheme || document.hidden) return;
+      if (!shootingStarsEnabled || isReducedMotion || !isNightTheme || document.hidden) return;
 
       const shootingStarColors = ["#f6c85f", "#c4b5fd", "#38bdf8", "#f472b6", "#ffffff"];
       const availableSlots = MAX_ACTIVE_SHOOTING_STARS - shootingStars.length;
@@ -196,7 +196,7 @@ export function StarryBackground() {
     };
 
     const scheduleShootingStar = () => {
-      if (shootingStarTimer || isReducedMotion || !isNightTheme || document.hidden) return;
+      if (!shootingStarsEnabled || shootingStarTimer || isReducedMotion || !isNightTheme || document.hidden) return;
       const delay = Math.random() * 6000 + 6000;
       shootingStarTimer = setTimeout(() => {
         shootingStarTimer = null;
@@ -426,7 +426,7 @@ export function StarryBackground() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       motionQuery.removeEventListener("change", handleReducedMotionChange);
     };
-  }, []);
+  }, [shootingStarsEnabled]);
 
   return (
     <div aria-hidden="true" className={styles.container}>

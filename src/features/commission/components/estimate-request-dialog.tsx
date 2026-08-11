@@ -21,6 +21,7 @@ import type { AuthIdentity, AuthStatus } from "@/shared/auth/auth-types";
 import type { Locale } from "@/shared/i18n/locales";
 import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 import type { ServiceType } from "@/shared/types/public-content";
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 
 import { GuestEstimateIdentity, MemberEstimateIdentity } from "./estimate-request-identity";
 import styles from "./commission.module.css";
@@ -30,6 +31,7 @@ type UsageType = "personal" | "commercial";
 
 type EstimateRequestDialogProps = {
   auth?: { status: AuthStatus; user: AuthIdentity | null };
+  commissionsOpen?: boolean;
   locale: Locale;
   onClose(): void;
   repository?: ReturnType<typeof createCommissionRequestRepository>;
@@ -179,8 +181,10 @@ function newSubmissionKey() {
   });
 }
 
-export function EstimateRequestDialog({ auth, locale, onClose, repository, service }: EstimateRequestDialogProps) {
+export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOverride, locale, onClose, repository, service }: EstimateRequestDialogProps) {
   const labels = copy[locale];
+  const publicSettings = useOptionalPublicSiteSettings();
+  const commissionsOpen = commissionsOpenOverride ?? publicSettings?.commissionsOpen ?? true;
   const contextualAuth = useOptionalAuthSession();
   const session = auth ?? contextualAuth ?? { status: "signedOut" as const, user: null };
   const customerMode: CustomerMode = session.status === "signedIn" ? "member" : "guest";
@@ -203,7 +207,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
   const [submissionKey] = useState(newSubmissionKey);
   const identityLoading = session.status === "loading"
     || (session.status === "signedIn" && loadedIdentityUserId !== session.user?.id);
-  const disabled = session.status === "loading" || submitting || requestCode !== null;
+  const disabled = !commissionsOpen || session.status === "loading" || submitting || requestCode !== null;
 
   useEffect(() => {
     if (repository) repositoryRef.current = repository;
@@ -240,7 +244,7 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (submitting || requestCode) return;
+    if (!commissionsOpen || submitting || requestCode) return;
     setError(null);
     const form = new FormData(event.currentTarget);
     try {
@@ -295,6 +299,9 @@ export function EstimateRequestDialog({ auth, locale, onClose, repository, servi
       </header>
 
       <p className={styles.estimateNotice}><Info aria-hidden="true" size={16} />{labels.notice}</p>
+      {!commissionsOpen ? <p className={styles.estimateFeedback} role="status">
+        {locale === "th" ? "ขณะนี้ปิดรับแบบประเมินใหม่" : "New estimate requests are currently closed."}
+      </p> : null}
 
       <form className={styles.estimateForm} onSubmit={submit}>
         <section className={styles.estimatePanel}>

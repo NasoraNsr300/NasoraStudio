@@ -100,6 +100,18 @@ describe("commission request repository", () => {
     await expect(repository.cancel("request-1")).resolves.toEqual({ data: undefined, ok: true });
     await expect(repository.cancel("request-2")).resolves.toEqual({ message: "request_not_cancellable", ok: false });
   });
+
+  it("maps the closed commission database error to customer-safe Thai copy", async () => {
+    const repository = createCommissionRequestRepository({
+      from: vi.fn(),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: "commissions_closed" } }),
+    });
+
+    await expect(repository.submit(payload)).resolves.toEqual({
+      message: "ขณะนี้ปิดรับแบบประเมินใหม่",
+      ok: false,
+    });
+  });
 });
 
 function chainResult(result: { data: unknown; error: { message?: string } | null }) {

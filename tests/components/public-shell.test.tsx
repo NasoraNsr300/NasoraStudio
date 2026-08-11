@@ -37,6 +37,23 @@ afterEach(cleanup);
 navigation.useSearchParams.mockImplementation(() => navigation.params);
 
 describe("PublicShell", () => {
+  it("renders the persisted closed commission availability", () => {
+    navigation.pathname = "/th";
+    navigation.usePathname.mockImplementation(() => navigation.pathname);
+    render(<PublicShell authClient={createAuthClient()} locale="th" settings={{
+      businessHours: "11:00 – 22:00",
+      commissionsOpen: false,
+      discordContact: "nasora.studio",
+      homeDescription: { en: "Stories", th: "เรื่องราว" },
+      homeHeading: { en: "Draw your world", th: "รับวาดภาพในโลกของคุณ" },
+      particlesEnabled: false,
+      queueCapacity: 10,
+      shootingStarsEnabled: false,
+    }}><main>Page content</main></PublicShell>);
+
+    expect(screen.getByText("CLOSED")).toBeVisible();
+  });
+
   it("renders the shared public controls without a footer or navbar login", () => {
     navigation.pathname = "/en";
     navigation.usePathname.mockImplementation(() => navigation.pathname);

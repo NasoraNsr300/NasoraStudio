@@ -25,6 +25,13 @@ function createRepository(overrides: Partial<Repository> = {}): Repository {
 }
 
 describe("EstimateRequestDialog", () => {
+  it("blocks new Guest and member submissions while commissions are closed", () => {
+    render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} commissionsOpen={false} locale="th" onClose={() => undefined} repository={createRepository()} service={service} />);
+
+    expect(screen.getByText("ขณะนี้ปิดรับแบบประเมินใหม่")).toBeVisible();
+    expect(screen.getByRole("button", { name: "ตรวจสอบและส่ง" })).toBeDisabled();
+  });
+
   it("automatically shows Guest fields when signed out and hides reference upload", () => {
     render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
 

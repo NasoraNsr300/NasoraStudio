@@ -33,4 +33,11 @@ describe("AdminShell", () => {
     expect(document.documentElement).toHaveAttribute("data-theme", "autumn");
     expect(window.localStorage.getItem("nasora-theme")).toBe("autumn");
   });
+
+  it("renders the persisted commission availability", () => {
+    render(<AdminShell initialCommissionsOpen={false}><h1>Dashboard</h1></AdminShell>);
+
+    expect(screen.getByRole("switch", { name: "สถานะเปิดรับงาน" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByText("ปิดรับงาน")).toBeVisible();
+  });
 });
