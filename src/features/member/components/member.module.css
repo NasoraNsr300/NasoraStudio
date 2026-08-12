@@ -15,3 +15,4 @@
 .deliveryStatus { align-items:center; background:var(--surface-strong); border:1px solid var(--border); border-radius:.45rem; color:var(--text-secondary); display:flex; font-size:.7rem; gap:.45rem; min-height:2.6rem; padding:0 .8rem; }
 
 @media (max-width: 1100px) { .memberPage { grid-template-columns: 1fr; }.memberRail { min-height: auto; }.memberRail nav { grid-template-columns: repeat(5, 1fr); }.memberHelp { display: none; }.jobGrid { grid-template-columns: 1fr; } }
+.timeline article > span { margin-left: .45rem; }

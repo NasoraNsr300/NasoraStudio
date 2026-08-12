@@ -23,5 +23,6 @@ describe("member workspace layout", () => {
   it("lays out timeline dates without negative translation overlap", () => {
     expect(jobCss).toMatch(/\.timeline article\s*\{[^}]*grid-template-columns:\s*7rem\s+1\.8rem\s+minmax\(0,\s*1fr\)/i);
     expect(jobCss).not.toMatch(/\.timeline article\s*\{[^}]*transform:\s*translateX/i);
+    expect(jobCss).toMatch(/\.timeline article > span\s*\{[^}]*margin-left:\s*\.45rem/i);
   });
 });
