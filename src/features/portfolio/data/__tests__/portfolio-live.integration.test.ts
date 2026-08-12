@@ -28,12 +28,16 @@ describeLive("live portfolio infrastructure", () => {
     expect(Array.isArray(await response.json())).toBe(true);
   });
 
-  it("uploads and removes a portfolio image in private R2", async () => {
-    const objectKey = `portfolio/${randomUUID()}.png`;
+  it("uploads, reads, and removes a real workspace image in private R2", async () => {
+    const objectKey = `portfolio/${randomUUID()}.jpg`;
     const storage = createR2PrivateAssetsStorage(liveEnvironment);
-    const image = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
-    const result = await storage.putImage(objectKey, image, "image/png"); cleanupKey = objectKey;
-    expect(result.contentType).toBe("image/png"); expect(result.etag).toBeTruthy();
+    const image = new Uint8Array(readFileSync(join(process.cwd(), "..", "..", "Img", "615926480_1367631994643508_5264380239726292867_n.jpg")));
+    const result = await storage.putImage(objectKey, image, "image/jpeg"); cleanupKey = objectKey;
+    expect(result.contentType).toBe("image/jpeg"); expect(result.etag).toBeTruthy();
+    await expect(storage.headObject(objectKey)).resolves.toMatchObject({ contentType: "image/jpeg", sizeBytes: image.byteLength });
+    const downloaded = await storage.getObject(objectKey);
+    expect(downloaded?.contentType).toBe("image/jpeg");
+    expect(new Uint8Array(await new Response(downloaded!.body).arrayBuffer())).toEqual(image);
     await storage.deleteObject(objectKey); cleanupKey = "";
   });
 });

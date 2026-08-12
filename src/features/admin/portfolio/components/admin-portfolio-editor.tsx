@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import type { AdminPortfolioItem, LocalizedPortfolioText } from "@/features/portfolio/domain/portfolio";
+import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
 
 import styles from "./admin-portfolio-editor.module.css";
 
@@ -35,9 +36,8 @@ export function AdminPortfolioEditor({ albums, initialItem, presentation = "page
     if (!file) { setError("เลือกรูปก่อนอัปโหลด"); return; }
     setBusy(true); setError(""); setNotice("");
     try {
-      const bitmap = await createImageBitmap(file);
-      const data = new FormData(); data.set("file", file); data.set("altTh", titleTh); data.set("altEn", titleEn);
-      data.set("width", String(bitmap.width)); data.set("height", String(bitmap.height)); bitmap.close();
+      const normalized = await normalizeImageForUpload(file);
+      const data = new FormData(); data.set("file", normalized.file); data.set("altTh", titleTh); data.set("altEn", titleEn);
       const response = await fetch("/api/admin/portfolio/media", { body: data, method: "POST" });
       const body = await json(response);
       if (!response.ok || !body.mediaId) throw new Error(body.error ?? "อัปโหลดรูปไม่สำเร็จ");

@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 
 import type { AdminCatalogAlbum, AdminCatalogService } from "@/features/catalog/domain/catalog";
 import { AdminModalShell } from "@/features/admin/modal/admin-modal-shell";
+import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
 
 import styles from "./admin-album-editor.module.css";
 
@@ -39,10 +40,9 @@ function CatalogCoverUpload({ altEn, altTh, initialSrc, label, onUploaded }: {
     if (!file) { setMessage("เลือกไฟล์ภาพก่อน"); return; }
     setBusy(true); setMessage("");
     try {
-      const bitmap = await createImageBitmap(file);
+      const normalized = await normalizeImageForUpload(file);
       const data = new FormData();
-      data.set("file", file); data.set("altTh", altTh); data.set("altEn", altEn);
-      data.set("width", String(bitmap.width)); data.set("height", String(bitmap.height)); bitmap.close();
+      data.set("file", normalized.file); data.set("altTh", altTh); data.set("altEn", altEn);
       const response = await fetch("/api/admin/catalog/media", { body: data, method: "POST" });
       const body = await responseBody(response);
       if (!response.ok || !body.mediaId) throw new Error(body.error ?? "อัปโหลดภาพไม่สำเร็จ");

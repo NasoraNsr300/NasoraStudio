@@ -46,6 +46,14 @@ afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   navigation.useRouter.mockReturnValue({ refresh: navigation.refresh, replace: navigation.replace });
+  vi.stubGlobal("OffscreenCanvas", class {
+    constructor(public width: number, public height: number) {}
+    getContext = vi.fn(() => ({ drawImage: vi.fn() }));
+    convertToBlob = vi.fn(async () => {
+      const bytes = new Uint8Array([82,73,70,70,22,0,0,0,87,69,66,80,86,80,56,88,10,0,0,0,0,0,0,0,175,4,0,219,5,0]);
+      return new Blob([bytes], { type: "image/webp" });
+    });
+  });
 });
 
 describe("AdminAlbumEditor", () => {

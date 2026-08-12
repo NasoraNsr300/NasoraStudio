@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
 import type { ConversationView } from "@/features/collaboration/data/collaboration-repository.server";
+import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
 
 import styles from "./admin-messages-workspace.module.css";
 
@@ -39,7 +40,8 @@ export function AdminMessagesWorkspace({ conversations, fetcher = fetch }: { con
     if (!selected || !body.trim() || saving) return;
     setSaving(true); setError("");
     try {
-      const payload = messageImage ? (() => { const data = new FormData(); data.set("body", body); data.set("image", messageImage); return data; })() : JSON.stringify({ body });
+      const normalized = messageImage ? await normalizeImageForUpload(messageImage) : null;
+      const payload = normalized ? (() => { const data = new FormData(); data.set("body", body); data.set("image", normalized.file); return data; })() : JSON.stringify({ body });
       const response = await fetcher(`/api/admin/jobs/${selected.jobId}/messages`, { body: payload, ...(messageImage ? {} : { headers: { "content-type": "application/json" } }), method: "POST" });
       if (!response.ok) throw new Error("send_failed");
       setBody(""); setMessageImage(null); router.refresh();
@@ -70,6 +72,7 @@ export function AdminMessagesWorkspace({ conversations, fetcher = fetch }: { con
     try {
       const data = new FormData(event.currentTarget); const image = data.get("image");
       const hasImage = image instanceof File && image.size > 0;
+      if (hasImage) data.set("image", (await normalizeImageForUpload(image)).file);
       const response = await fetcher(`/api/admin/jobs/${selected.jobId}/progress`, { body: hasImage ? data : JSON.stringify({ body: progressBody, title: progressTitle }), ...(hasImage ? {} : { headers: { "content-type": "application/json" } }), method: "POST" });
       if (!response.ok) throw new Error("progress_failed");
       setProgressTitle(""); setProgressBody(""); setProgressOpen(false); router.refresh();

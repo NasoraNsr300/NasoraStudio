@@ -7,6 +7,7 @@ import { type FormEvent, useMemo, useState } from "react";
 
 import type { ConversationView } from "@/features/collaboration/data/collaboration-repository.server";
 import type { Locale } from "@/shared/i18n/locales";
+import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
 
 import { MemberSidebar, type MemberSection } from "./member-sidebar";
 import styles from "./member-pages.module.css";
@@ -29,7 +30,8 @@ export function MemberMessagesContent({ conversations = [], fetcher = fetch, loc
     if (!selected || !body.trim() || sending) return;
     setSending(true); setError("");
     try {
-      const payload = image ? (() => { const data = new FormData(); data.set("body", body); data.set("image", image); return data; })() : JSON.stringify({ body });
+      const normalized = image ? await normalizeImageForUpload(image) : null;
+      const payload = normalized ? (() => { const data = new FormData(); data.set("body", body); data.set("image", normalized.file); return data; })() : JSON.stringify({ body });
       const response = await fetcher(`/api/member/jobs/${selected.jobId}/messages`, { body: payload, ...(image ? {} : { headers: { "content-type": "application/json" } }), method: "POST" });
       if (!response.ok) throw new Error("send_failed");
       setBody(""); setImage(null); router.refresh();
