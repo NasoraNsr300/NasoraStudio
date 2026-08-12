@@ -10,4 +10,9 @@ describe("admin shell content width", () => {
     expect(css).toMatch(/\.main \{[^}]*grid-template-columns: minmax\(0, 1fr\);/);
     expect(css).toMatch(/\.dashboardShell \.main \{[^}]*grid-template-columns: minmax\(0, 1fr\) 260px;/);
   });
+
+  it("renders the topbar availability switch grey and left-aligned when commissions are closed", () => {
+    expect(css).toMatch(/\.toggle\[aria-checked="false"\] \{[^}]*background: #536078;/);
+    expect(css).toMatch(/\.toggle\[aria-checked="false"\] i \{[^}]*margin-left: 0;/);
+  });
 });
