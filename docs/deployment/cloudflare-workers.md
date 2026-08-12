@@ -1,25 +1,26 @@
 # Cloudflare Workers deployment gate
 
-Deployment target: Cloudflare Workers through OpenNext. Do not merge or deploy this branch until the package lock conflict from the parallel UI task is resolved.
+Deployment target: Cloudflare Workers through OpenNext. Production deployment remains blocked until every gate in this document passes.
 
 ## Verified locally
 
 - Next.js 16.3.0 and OpenNext Cloudflare 1.20.2 produce a Worker bundle.
 - Node `proxy.ts` was replaced by Edge `middleware.ts` because OpenNext does not support Node middleware yet.
-- Main Worker dry-run: 9,819.38 KiB raw / 1,911.86 KiB gzip. This is below the Workers Free compressed limit of 3 MiB.
-- Maintenance Worker dry-run: 1.26 KiB raw / 0.63 KiB gzip.
+- Main Worker dry-run (13 Aug 2026): 11,445.21 KiB raw / 2,196.30 KiB gzip.
+- Maintenance Worker dry-run (13 Aug 2026): 1.36 KiB raw / 0.67 KiB gzip.
 - Worker observability is enabled.
 - Public fixture media is pre-generated WebP. Runtime image conversion remains disabled to protect Free-plan CPU.
 
 ## Merge gate
 
-1. Resolve `package.json` and `package-lock.json` together. `npm ci` currently reports an `esbuild` 0.28.1/0.28.2 mismatch in the parallel working changes.
-2. Run the full test, typecheck, lint, Next build, OpenNext build, and both Wrangler dry-runs on Linux CI.
-3. Merge the feature commits only after the dirty UI task is committed or moved away.
+1. Run the full test, typecheck, lint, Next build, OpenNext build, Browser E2E suite, and both Wrangler dry-runs.
+2. Confirm all visual baselines on desktop and mobile. Do not accept a broken layout as a new baseline.
+3. Configure every required Worker secret. As of 13 Aug 2026, `BREVO_API_KEY` and `ADMIN_EMAIL_SENDER` are missing locally, so production deployment is blocked.
+4. Merge only after the working tree contains no unresolved runtime or visual changes.
 
 ## Supabase
 
-Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). It is not linked to this worktree.
+Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). The worktree is linked and all 27 local migrations match the remote migration history as of 13 Aug 2026.
 
 ```bash
 npx supabase link --project-ref rmcxkrqgbggaxqptxubd
@@ -29,12 +30,16 @@ npx supabase db push
 
 Review the migration list before `db push`. Run database advisors and member/Admin/anonymous RLS checks after apply.
 
+`supabase db lint --linked --level warning --fail-on error` currently exits successfully. It reports only unused PL/pgSQL variable warnings; no schema error blocks deployment.
+
 ## R2
 
 Create two private buckets:
 
 - payment slips: configure 30-day lifecycle expiry;
 - private assets: messages, progress images, and deliveries; app cleanup controls retention.
+
+Verified 13 Aug 2026: the payment bucket has an enabled `payment-slips/` 30-day expiry rule. The private-assets bucket keeps only the default incomplete multipart cleanup because the application owns per-record retention and cleanup.
 
 Main Worker secrets/variables:
 
