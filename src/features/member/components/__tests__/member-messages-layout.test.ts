@@ -11,5 +11,8 @@ describe("member messages layout", () => {
     expect(css).toMatch(/\.messagesLayout\s*\{[^}]*height:\s*100%[^}]*min-height:\s*0/);
     expect(css).toMatch(/\.conversationList\s*\{[^}]*overflow-y:\s*auto/);
     expect(css).toMatch(/\.chatBody\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/);
+    expect(css).toMatch(/\.chatBody\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
+    expect(css).not.toMatch(/\.chatBody\s*\{[^}]*align-content:\s*end/);
+    expect(css).toMatch(/\.chatBody\s*>\s*\.bubble:first-child\s*\{[^}]*margin-top:\s*auto/);
   });
 });
