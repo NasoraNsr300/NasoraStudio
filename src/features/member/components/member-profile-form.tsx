@@ -23,6 +23,7 @@ export function MemberProfileForm({
   const [preferredLocale, setPreferredLocale] = useState<"th" | "en">(initialProfile.preferredLocale);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -40,15 +41,9 @@ export function MemberProfileForm({
         {th ? "ข้อมูลส่วนตัว" : "Personal information"}
       </h2>
       <div className={styles.avatarEditor}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- existing fixture avatar */}
-        <img alt={nickname} src="/fixtures/derivatives/moonlit-thumbnail.webp" />
+        <span aria-hidden="true" className={styles.avatarFallback}>{initial}</span>
         <div>
           <strong>{nickname}</strong>
-          <p>
-            <button disabled type="button">
-              {th ? "เปลี่ยนรูปโปรไฟล์ (เร็ว ๆ นี้)" : "Change avatar (coming soon)"}
-            </button>
-          </p>
         </div>
       </div>
       <form onSubmit={submit}>

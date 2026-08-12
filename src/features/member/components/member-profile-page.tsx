@@ -79,7 +79,7 @@ export function MemberProfileContent({ locale, profileClient }: { locale: Locale
           return result;
         }} />
         {user.email && <MemberPasswordForm email={user.email} locale={locale} onReauthenticate={signIn} onUpdatePassword={updatePassword} />}
-        <section className={`${styles.surface} ${styles.profileCard}`}><h2><ShieldCheck size={18} />{th ? "บัญชีและความปลอดภัย" : "Account and security"}</h2><p>{th ? "ระบบป้องกันพื้นที่สมาชิกด้วยบัญชี Supabase และแจ้งผลเมื่อมีการเปลี่ยนข้อมูลสำคัญ" : "Your member area is protected by your Supabase account, with feedback for important account changes."}</p><label className={styles.field}>Email<input disabled value={user.email ?? ""} /></label><div className={styles.profileActions}><button className={styles.outlineButton} disabled type="button">{th ? "ขอลบบัญชีผ่านผู้ดูแล (เร็ว ๆ นี้)" : "Request assisted deletion (coming soon)"}</button></div></section>
+        <section className={`${styles.surface} ${styles.profileCard}`}><h2><ShieldCheck size={18} />{th ? "บัญชีและความปลอดภัย" : "Account and security"}</h2><p>{th ? "ระบบป้องกันพื้นที่สมาชิกด้วยบัญชี Supabase และแจ้งผลเมื่อมีการเปลี่ยนข้อมูลสำคัญ" : "Your member area is protected by your Supabase account, with feedback for important account changes."}</p><label className={styles.field}>Email<input disabled value={user.email ?? ""} /></label></section>
       </div>}
     </section>
   );

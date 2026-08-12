@@ -32,13 +32,13 @@ export function MemberSidebar({
   onSelectSection?: (section: MemberSection) => void;
 }) {
   const { user } = useAuthSession();
-  const nickname = user?.nickname ?? "Stardust";
+  const nickname = user?.nickname ?? "Member";
+  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.identity}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- fixture avatar */}
-        <img alt={nickname} src="/fixtures/derivatives/moonlit-thumbnail.webp" />
+        <span aria-hidden="true" className={styles.avatarFallback}>{initial}</span>
         <strong>{nickname}</strong>
         <span>{locale === "th" ? "สมาชิก" : "Member"}</span>
       </div>
@@ -59,7 +59,6 @@ export function MemberSidebar({
             >
               <Icon size={19} />
               {labels[locale][index]}
-              {section === "messages" ? <b>3</b> : null}
             </Link>
           );
         })}

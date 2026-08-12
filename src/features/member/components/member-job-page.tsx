@@ -6,7 +6,6 @@ import {
   Clock3,
   HelpCircle,
   LockKeyhole,
-  MessageSquareText,
   RefreshCcw,
   Send,
   Sparkles,
@@ -89,7 +88,7 @@ const copy = {
   },
 } as const;
 
-export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | null; locale: Locale }) {
+export function MemberJobPage({ job, locale }: { job: MemberJobView; locale: Locale }) {
   const labels = copy[locale];
   const [activeSection, setActiveSection] = useState<MemberSection>("jobs");
 
@@ -100,13 +99,13 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
       {activeSection === "jobs" && (
         <section className={styles.jobWorkspace}>
           <header className={styles.jobHeader}>
-            <h1>{job?.title ?? labels.title}</h1>
+            <h1>{job.title}</h1>
             <div>
-              <span>{job ? `${locale === "th" ? "งาน" : "Job"} #${job.code}` : labels.job}</span>
-              <b>● {job?.statusLabel ?? labels.status}</b>
+              <span>{locale === "th" ? "งาน" : "Job"} #{job.code}</span>
+              <b>● {job.statusLabel}</b>
               <span>
                 <CalendarDays size={15} />
-                {job ? `${locale === "th" ? "กำหนดส่ง" : "Due"}: ${job.deadlineLabel}` : labels.deadline}
+                {locale === "th" ? "กำหนดส่ง" : "Due"}: {job.deadlineLabel}
               </span>
             </div>
           </header>
@@ -126,81 +125,16 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
             <section className={styles.timelineCard}>
               <h2>{labels.progress}</h2>
               <div className={styles.timeline}>
-                {job?.history.map((event) => <article key={event.id}>
+                {job.history.map((event) => <article key={event.id}>
                   <time>{event.changedAtLabel}</time>
                   <span className={styles.eventDone}><Check size={15} /></span>
                   <div><strong>{event.statusLabel}</strong>{event.publicNote && <p>{event.publicNote}</p>}</div>
                 </article>)}
-                {job?.progressUpdates?.map((progress) => <article key={progress.id}>
+                {job.progressUpdates?.map((progress) => <article key={progress.id}>
                   <time>{new Date(progress.createdAt).toLocaleString(locale)}</time>
                   <span className={styles.eventActive}><Sparkles size={15} /></span>
                   <div><strong>{progress.title}</strong><p>{progress.body}</p>{progress.imageId ? <a className={styles.progressImage} href={`/api/member/progress-images/${progress.imageId}`} target="_blank"><Image alt={progress.title} height={256} src={`/api/member/progress-images/${progress.imageId}`} unoptimized width={480} /></a> : null}</div>
                 </article>)}
-                {!job && <>
-                <article>
-                  <time>
-                    20 พ.ค. 2026
-                    <br />
-                    10:21
-                  </time>
-                  <span className={styles.eventDone}>
-                    <Check size={15} />
-                  </span>
-                  <div>
-                    <strong>ลูกค้ายืนยันราคางาน</strong>
-                    <p>ยืนยันราคา 6,500 THB</p>
-                  </div>
-                </article>
-                <article>
-                  <time>
-                    20 พ.ค. 2026
-                    <br />
-                    10:36
-                  </time>
-                  <span className={styles.eventDone}>
-                    <Check size={15} />
-                  </span>
-                  <div>
-                    <strong>ตรวจสอบมัดจำแล้ว</strong>
-                    <p>
-                      มัดจำ 3,250 THB (50%) <em>Verified</em>
-                    </p>
-                  </div>
-                </article>
-                <article>
-                  <time>
-                    21 พ.ค. 2026
-                    <br />
-                    15:42
-                  </time>
-                  <span className={styles.eventActive}>
-                    <Sparkles size={15} />
-                  </span>
-                  <div>
-                    <strong>อัปเดตร่าง — ภาพร่างขั้นต้น</strong>
-                    <p>อัปโหลดภาพร่างขั้นต้น</p>
-                    <button className={styles.progressImage} type="button">
-                      {/* eslint-disable-next-line @next/next/no-img-element -- fixture image */}
-                      <img alt="ภาพร่างขั้นต้น" src="/fixtures/derivatives/forest-card.webp" />
-                      <Sparkles size={18} />
-                    </button>
-                  </div>
-                </article>
-                <article>
-                  <time>
-                    21 พ.ค. 2026
-                    <br />
-                    18:07
-                  </time>
-                  <span className={styles.eventMessage}>
-                    <MessageSquareText size={14} />
-                  </span>
-                  <div>
-                    <strong>ข้อความจากคุณ</strong>
-                    <p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง และเปลี่ยนรูปดาวด้านหลังเป็นพระจันทร์เต็มดวงได้ไหมคะ?</p>
-                  </div>
-                </article>
-                </>}
               </div>
             </section>
 
@@ -214,17 +148,17 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                   <dl>
                     <div>
                       <dt>{labels.total}</dt>
-                      <dd>{job ? `${(job.totalSatang / 100).toLocaleString()} THB` : "6,500 THB"}</dd>
+                      <dd>{(job.totalSatang / 100).toLocaleString()} THB</dd>
                     </div>
                     <div>
                       <dt>{labels.paid}</dt>
                       <dd className={styles.paid}>
-                        {job ? `${(job.paidSatang / 100).toLocaleString()} THB` : <>3,250 THB <small>(50%)</small></>}
+                        {(job.paidSatang / 100).toLocaleString()} THB
                       </dd>
                     </div>
                     <div>
                       <dt>{labels.balance}</dt>
-                      <dd className={styles.balance}>{job ? `${((job.totalSatang - job.paidSatang) / 100).toLocaleString()} THB` : "3,250 THB"}</dd>
+                      <dd className={styles.balance}>{((job.totalSatang - job.paidSatang) / 100).toLocaleString()} THB</dd>
                     </div>
                   </dl>
                   <p>
@@ -237,9 +171,9 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                   <button onClick={() => setActiveSection("payments")} type="button">
                     {labels.payMore}
                   </button>
-                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("payments"); }}>
+                  <button className={styles.textButton} onClick={() => setActiveSection("payments")} type="button">
                     วิธีชำระเงิน
-                  </Link>
+                  </button>
                 </aside>
               </section>
 
@@ -252,48 +186,34 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                         <UserRound size={15} />
                         {labels.usage}
                       </dt>
-                      <dd>{labels.personal}</dd>
+                      <dd>{job.usageType === "personal" ? (locale === "th" ? "ใช้ส่วนตัว (Personal Use)" : "Personal Use") : (locale === "th" ? "เชิงพาณิชย์ (Commercial Use)" : "Commercial Use")}</dd>
                     </div>
                     <div>
                       <dt>
                         <Clock3 size={15} />
                         {labels.due}
                       </dt>
-                      <dd>28 ส.ค. 2026</dd>
+                      <dd>{job.deadlineLabel}</dd>
                     </div>
                     <div>
                       <dt>
                         <RefreshCcw size={15} />
                         {labels.revisions}
                       </dt>
-                      <dd>{labels.revisionsValue}</dd>
+                      <dd>{job.freeRevisions} {locale === "th" ? "ครั้ง (รวมในราคาแล้ว)" : "rounds (included)"}</dd>
                     </div>
                   </dl>
-                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("requests"); }}>
+                  <button className={styles.textButton} onClick={() => setActiveSection("requests")} type="button">
                     {labels.viewQuote} →
-                  </Link>
+                  </button>
                 </section>
 
                 <section className={styles.messageCard}>
-                  <h2>
-                    {labels.latest}
-                    <b>3</b>
-                  </h2>
-                  <div>
-                    <small>
-                      จากทีมงาน <time>15:42</time>
-                    </small>
-                    <p>อัปเดตร่าง — ภาพร่างขั้นต้น</p>
-                  </div>
-                  <div>
-                    <small>
-                      จากคุณ <time>18:07</time>
-                    </small>
-                    <p>ขอปรับท่าคุณให้ยาวขึ้นนิดนึง...</p>
-                  </div>
-                  <Link href="#" onClick={(e) => { e.preventDefault(); setActiveSection("messages"); }}>
+                  <h2>{labels.latest}</h2>
+                  <p>{locale === "th" ? "เปิดห้องสนทนาเพื่อดูข้อความล่าสุดของงานนี้" : "Open the conversation to view latest messages for this job."}</p>
+                  <button className={styles.textButton} onClick={() => setActiveSection("messages")} type="button">
                     {labels.openMessages}
-                  </Link>
+                  </button>
                 </section>
               </div>
 
@@ -303,15 +223,15 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
                     <LockKeyhole size={18} />
                     {labels.delivery}
                   </h2>
-                  {job?.deliveries?.length ? job.deliveries.map((delivery) => <p key={delivery.id}>
+                  {job.deliveries?.length ? job.deliveries.map((delivery) => <p key={delivery.id}>
                     <Link href={`/api/member/deliveries/${delivery.id}/download`}>{delivery.displayName}</Link>
                     {" · "}{locale === "th" ? "ใช้ได้ถึง" : "Available until"} {new Date(delivery.expiresAt).toLocaleDateString(locale)}
                   </p>) : <p>{labels.deliveryHint}</p>}
                 </div>
-                <button disabled={!job?.deliveries?.length} type="button">
+                <span className={styles.deliveryStatus}>
                   <Send size={17} />
-                  {labels.locked}
-                </button>
+                  {job.deliveries?.length ? (locale === "th" ? "พร้อมดาวน์โหลด" : "Ready to download") : labels.locked}
+                </span>
               </section>
             </div>
           </div>
@@ -320,7 +240,7 @@ export function MemberJobPage({ job = null, locale }: { job?: MemberJobView | nu
 
       {activeSection === "requests" && <MemberRequestsContent locale={locale} />}
       {activeSection === "messages" && <MemberMessagesContent locale={locale} />}
-      {activeSection === "payments" && <MemberPaymentsContent jobs={job ? [job] : []} locale={locale} />}
+      {activeSection === "payments" && <MemberPaymentsContent jobs={[job]} locale={locale} />}
       {activeSection === "profile" && <MemberProfileContent locale={locale} />}
     </main>
   );

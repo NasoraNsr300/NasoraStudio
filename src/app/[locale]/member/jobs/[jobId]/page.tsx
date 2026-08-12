@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 export default async function MemberJobRoute({ params }: Readonly<{ params: Promise<{ jobId: string; locale: string }> }>) {
   const { jobId, locale } = await params;
   if (!isLocale(locale)) return null;
-  if (jobId === "demo") return <MemberJobPage locale={locale} />;
   const job = await getMemberJob(jobId, locale);
   if (!job) notFound();
   return <MemberJobPage job={job} locale={locale} />;

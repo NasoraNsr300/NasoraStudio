@@ -2,7 +2,6 @@
 
 import { ArrowLeft, Bell, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 import type { Locale } from "@/shared/i18n/locales";
 
@@ -14,8 +13,9 @@ type NotificationPanelProps = { locale: Locale; notifications?: AccountNotificat
 
 export function AccountMenu({ isAdmin, locale, nickname, onClose, onShowNotifications, onSignOut, unreadCount = 0 }: AccountMenuProps) {
   const th = locale === "th";
+  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
   return <section aria-label={th ? "เมนูบัญชี" : "Account menu"} className={styles.accountPanel}>
-    <header className={styles.accountSummary}><Image alt={nickname} height={44} src="/fixtures/derivatives/moonlit-thumbnail.webp" width={44} /><span><strong>{nickname}</strong><small>{th ? "สมาชิก" : "Member"}</small></span></header>
+    <header className={styles.accountSummary}><i aria-hidden="true" className={styles.accountAvatarFallback}>{initial}</i><span><strong>{nickname}</strong><small>{th ? "สมาชิก" : "Member"}</small></span></header>
     <div className={styles.accountMenuList}>
       <button className={styles.accountMenuItem} onClick={onShowNotifications} type="button"><Bell size={19} /><span>{th ? "แจ้งเตือน" : "Notifications"}</span>{unreadCount > 0 ? <b aria-label={th ? `${unreadCount} รายการที่ยังไม่ได้อ่าน` : `${unreadCount} unread`}>{unreadCount}</b> : null}</button>
       <Link className={styles.accountMenuItem} href={`/${locale}/member/requests`} onClick={onClose}><LayoutDashboard size={19} /><span>{th ? "พื้นที่สมาชิก" : "Member area"}</span></Link>
