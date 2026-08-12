@@ -125,6 +125,17 @@ describe("PublicShell", () => {
 });
 
 describe("PublicShell sidebar", () => {
+  it("hides the login action after the shared session signs in", async () => {
+    const user = userEvent.setup();
+    navigation.pathname = "/th";
+    navigation.usePathname.mockImplementation(() => navigation.pathname);
+    render(<PublicShell authClient={createAuthClient(true)} locale="th"><main>Page content</main></PublicShell>);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: getDictionary("th").account })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: getDictionary("th").menu }));
+    expect(screen.queryByRole("button", { name: getDictionary("th").login })).not.toBeInTheDocument();
+  });
+
   it("localizes Thai navigation and opens the real authentication dialog", async () => {
     const user = userEvent.setup();
     const th = getDictionary("th");

@@ -10,6 +10,7 @@ import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import { IconButton } from "@/shared/components/primitives/icon-button";
 import { useAuthDialog } from "@/shared/auth/auth-dialog-controller";
+import { useAuthSession } from "@/shared/auth/auth-session-provider";
 
 import styles from "./public-shell.module.css";
 
@@ -24,6 +25,7 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
   const openerRef = useRef<HTMLElement | null>(null);
   const dictionary = getDictionary(locale);
   const { open: authOpen, show } = useAuthDialog();
+  const { status } = useAuthSession();
   const authOpenRef = useRef(authOpen);
   const pathname = usePathname();
   const links = [
@@ -97,9 +99,11 @@ export function Sidebar({ locale, open, onClose }: SidebarProps) {
         <nav className={styles.sidebarNav}>
           {links.map(({ href, label }) => <Link aria-current={href === activeHref ? "page" : undefined} href={href} key={href} onClick={onClose}>{label}</Link>)}
         </nav>
-        <button className={styles.sidebarLogin} onClick={(event) => show(event.currentTarget)} type="button">
-          {dictionary.login}
-        </button>
+        {status !== "signedIn" ? (
+          <button className={styles.sidebarLogin} onClick={(event) => show(event.currentTarget)} type="button">
+            {dictionary.login}
+          </button>
+        ) : null}
       </aside>
     </div>
   );
