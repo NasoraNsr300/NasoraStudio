@@ -11,6 +11,13 @@ describe("member workspace layout", () => {
     expect(pagesCss).toMatch(/\.rowButton\s*\{[^}]*display:\s*inline-flex[^}]*justify-self:\s*end/i);
   });
 
+  it("keeps request status and action columns aligned across every row", () => {
+    expect(pagesCss).toMatch(
+      /\.requestRow\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(9rem,\s*\.8fr\)\s+9rem/i,
+    );
+    expect(pagesCss).toMatch(/\.requestRow > \.rowButton\s*\{[^}]*width:\s*100%/i);
+  });
+
   it("right-aligns the payment action instead of stretching it across the card", () => {
     expect(pagesCss).toMatch(/\.paymentActions\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*flex-end/i);
   });
