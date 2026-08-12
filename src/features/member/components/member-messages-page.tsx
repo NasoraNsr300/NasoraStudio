@@ -39,7 +39,7 @@ export function MemberMessagesContent({ conversations = [], fetcher = fetch, loc
     finally { setSending(false); }
   }
 
-  return <section className={styles.pagePanel}>
+  return <section className={`${styles.pagePanel} ${styles.messagePanel}`}>
     <header className={styles.pageHeader}><div><h1>{th ? "ข้อความ" : "Messages"}</h1><p>{th ? "พูดคุยและติดตามรายละเอียดของงานที่กำลังดำเนินการ" : "Discuss and follow the details of your active jobs."}</p></div></header>
     <div className={styles.messagesLayout}>
       <section className={`${styles.surface} ${styles.conversationList}`}>
