@@ -72,5 +72,5 @@ export function MemberMessagesContent({ conversations = [], fetcher = fetch, loc
 }
 
 export function MemberMessagesPage({ conversations = [], locale, onSelectSection }: { conversations?: ConversationView[]; locale: Locale; onSelectSection?: (section: MemberSection) => void }) {
-  return <main className={`${styles.memberArea} ${styles.messageArea}`}><MemberSidebar active="messages" locale={locale} onSelectSection={onSelectSection} /><MemberMessagesContent conversations={conversations} locale={locale} /></main>;
+  return <main className={styles.memberArea}><MemberSidebar active="messages" locale={locale} onSelectSection={onSelectSection} /><MemberMessagesContent conversations={conversations} locale={locale} /></main>;
 }
