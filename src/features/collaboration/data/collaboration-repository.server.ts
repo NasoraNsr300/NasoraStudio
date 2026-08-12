@@ -21,28 +21,36 @@ const conversationRowSchema = z.object({
   id: z.string().min(1),
   job_id: z.string().min(1),
   jobs: jobRelationSchema,
+  last_message_at: z.string().nullable(),
   messages: z.array(z.object({ body: z.string(), created_at: z.string(), id: z.string().min(1), message_assets: z.array(z.object({ id: z.string().min(1) })).optional().default([]), sender_role: z.enum(["member", "admin", "system"]) })).default([]),
+  conversation_reads: z.array(z.object({ last_read_at: z.string(), user_id: z.string().min(1) })).default([]),
 });
 
 export type ConversationView = {
   customerName?: string;
   id: string;
   jobId: string;
+  lastMessageAt: string | null;
   messages: Array<{ body: string; createdAt: string; id: string; imageAssetId?: string; senderRole: "member" | "admin" | "system" }>;
   title: string;
+  unreadCount: number;
 };
 
 function one<T>(value: T | T[]) { return Array.isArray(value) ? value[0] : value; }
-function mapConversation(value: unknown, locale: "th" | "en", admin: boolean): ConversationView {
+function mapConversation(value: unknown, locale: "th" | "en", admin: boolean, currentUserId: string): ConversationView {
   const row = conversationRowSchema.parse(value);
   const job = one(row.jobs);
   const messages = [...row.messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const lastReadAt = row.conversation_reads.find((read) => read.user_id === currentUserId)?.last_read_at ?? null;
+  const unreadCount = messages.filter((message) => (admin ? message.sender_role === "member" : message.sender_role !== "member") && (!lastReadAt || message.created_at > lastReadAt)).length;
   return {
     ...(admin ? { customerName: job.member_display_name_snapshot ?? "Member" } : {}),
     id: row.id,
     jobId: row.job_id,
+    lastMessageAt: row.last_message_at ?? messages.at(-1)?.created_at ?? null,
     messages: messages.map((message) => ({ body: message.body, createdAt: message.created_at, id: message.id, ...(message.message_assets[0] ? { imageAssetId: message.message_assets[0].id } : {}), senderRole: message.sender_role })),
     title: `${job.category_name_snapshot[locale]} — ${job.service_type_name_snapshot[locale]}`,
+    unreadCount,
   };
 }
 
@@ -66,6 +74,12 @@ async function adminClient() {
   const result = await userClient();
   if (!isNasoraAdmin(result.user)) throw new Error("Admin access required");
   return result.client;
+}
+
+async function adminContext() {
+  const result = await userClient();
+  if (!isNasoraAdmin(result.user)) throw new Error("Admin access required");
+  return result;
 }
 
 export async function postMemberJobMessage(input: { body: string; jobId: string }) {
@@ -142,7 +156,7 @@ export async function getMemberDeliveryDownload(deliveryId: string) {
   return deliverySchema.parse({ external_url: asset.external_url, id: deliveryId, kind: asset.asset_kind, object_key: asset.object_key });
 }
 
-const conversationSelect = "id,job_id,jobs!job_id(member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot),messages(id,body,sender_role,created_at,message_assets(id))";
+const conversationSelect = "id,job_id,last_message_at,jobs!job_id(member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot),messages(id,body,sender_role,created_at,message_assets(id)),conversation_reads(user_id,last_read_at)";
 
 async function privateAsset(kind: "delivery" | "message_asset" | "progress_image", id: string) {
   const parsedId = z.uuid().parse(id); const { user } = await userClient(); const gateway = createPaymentGatewayClient();
@@ -155,17 +169,17 @@ export async function getMemberMessageAssetKey(assetId: string) { return (await 
 export async function getMemberProgressImageKey(progressId: string) { return (await privateAsset("progress_image", progressId))?.object_key ?? null; }
 
 export async function listMemberConversations(locale: "th" | "en"): Promise<ConversationView[]> {
-  const { client } = await userClient();
+  const { client, user } = await userClient();
   const queryClient = client as unknown as { from(name: string): { select(columns: string): { order(column: string, options: { ascending: boolean }): Promise<QueryResult> } } };
   const { data, error } = await queryClient.from("conversations").select(conversationSelect).order("last_message_at", { ascending: false });
   if (error) throw new Error("Unable to load messages");
-  return z.array(z.unknown()).parse(data ?? []).map((row) => mapConversation(row, locale, false));
+  return z.array(z.unknown()).parse(data ?? []).map((row) => mapConversation(row, locale, false, user.id));
 }
 
 export async function listAdminConversations(): Promise<ConversationView[]> {
-  const client = await adminClient();
+  const { client, user } = await adminContext();
   const queryClient = client as unknown as { from(name: string): { select(columns: string): { order(column: string, options: { ascending: boolean }): Promise<QueryResult> } } };
   const { data, error } = await queryClient.from("conversations").select(conversationSelect).order("last_message_at", { ascending: false });
   if (error) throw new Error("Unable to load messages");
-  return z.array(z.unknown()).parse(data ?? []).map((row) => mapConversation(row, "th", true));
+  return z.array(z.unknown()).parse(data ?? []).map((row) => mapConversation(row, "th", true, user.id));
 }

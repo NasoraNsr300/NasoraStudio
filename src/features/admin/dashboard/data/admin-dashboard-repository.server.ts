@@ -9,12 +9,14 @@ import { getAdminSiteSettings } from "@/features/site-settings/data/admin-site-s
 import type { AdminSiteSettings } from "@/features/site-settings/domain/site-settings";
 import { isNasoraAdmin } from "@/shared/auth/admin-access";
 import { createClient } from "@/shared/supabase/server";
+import { listAdminConversations } from "@/features/collaboration/data/collaboration-repository.server";
 
 type DashboardDependencies = {
   listEstimates(): Promise<AdminEstimateSummary[]>;
   listJobs(): Promise<AdminJobSummary[]>;
   listPendingSlips(): Promise<AdminDashboardSlip[]>;
   loadSettings(): Promise<AdminSiteSettings>;
+  listUnreadMessages?(): Promise<number>;
 };
 
 const progressByStatus: Record<string, number> = {
@@ -49,14 +51,16 @@ const defaultDependencies: DashboardDependencies = {
   listJobs: listAdminJobs,
   listPendingSlips,
   loadSettings: getAdminSiteSettings,
+  listUnreadMessages: async () => (await listAdminConversations()).reduce((total, conversation) => total + conversation.unreadCount, 0),
 };
 
 export async function getAdminDashboard(dependencies: DashboardDependencies = defaultDependencies): Promise<AdminDashboardViewModel> {
-  const [estimates, jobs, slips, settings] = await Promise.all([
+  const [estimates, jobs, slips, settings, unreadMessages] = await Promise.all([
     dependencies.listEstimates(),
     dependencies.listJobs(),
     dependencies.listPendingSlips(),
     dependencies.loadSettings(),
+    dependencies.listUnreadMessages?.() ?? Promise.resolve(0),
   ]);
   const activeJobs = jobs
     .filter((job) => !["cancelled", "completed"].includes(job.statusKey))
@@ -71,7 +75,7 @@ export async function getAdminDashboard(dependencies: DashboardDependencies = de
       activeJobs: active,
       pendingSlips: slips.length,
       submittedEstimates: estimates.filter((estimate) => estimate.status === "submitted").length,
-      unreadMessages: 0,
+      unreadMessages,
     },
     pendingSlips: slips.slice(0, 2),
     personalNote: settings.adminNote,

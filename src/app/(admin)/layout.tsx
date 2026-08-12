@@ -9,6 +9,7 @@ import { isNasoraAdmin } from "@/shared/auth/admin-access";
 import { createClient } from "@/shared/supabase/server";
 import { ThemeScript } from "@/shared/theme/theme-script";
 import { getPublicSiteSettings } from "@/features/site-settings/data/public-site-settings-repository.server";
+import { getAdminShellData } from "@/features/admin/notifications/data/admin-notification-repository.server";
 
 export const metadata: Metadata = { title: "Nasora Admin" };
 
@@ -16,7 +17,10 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
   const client = await createClient();
   const { data, error } = await client.auth.getUser();
   if (error || !isNasoraAdmin(data.user)) redirect("/th?auth=1");
-  const settings = await getPublicSiteSettings();
+  const [settings, shellData] = await Promise.all([
+    getPublicSiteSettings(),
+    getAdminShellData({ adminEmail: data.user.email!, adminImageUrl: typeof data.user.user_metadata?.avatar_url === "string" ? data.user.user_metadata.avatar_url : null }),
+  ]);
 
-  return <html className={`${sora.variable} ${notoSansThai.variable}`} lang="th" suppressHydrationWarning><head><ThemeScript /></head><body><AdminShell initialCommissionsOpen={settings.commissionsOpen}>{children}</AdminShell></body></html>;
+  return <html className={`${sora.variable} ${notoSansThai.variable}`} lang="th" suppressHydrationWarning><head><ThemeScript /></head><body><AdminShell data={shellData} initialCommissionsOpen={settings.commissionsOpen}>{children}</AdminShell></body></html>;
 }

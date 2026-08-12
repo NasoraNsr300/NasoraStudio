@@ -10,8 +10,10 @@ import { MemberMessagesContent } from "@/features/member/components/member-messa
 const conversation = {
   id: "conversation-1",
   jobId: "00000000-0000-4000-8000-000000000111",
+  lastMessageAt: "2026-08-10T10:00:00Z",
   messages: [{ body: "ภาพร่างพร้อมตรวจแล้วค่ะ", createdAt: "2026-08-10T10:00:00Z", id: "message-1", senderRole: "admin" as const }],
   title: "Illustration — Full Body",
+  unreadCount: 0,
 };
 
 describe("job collaboration UI", () => {
