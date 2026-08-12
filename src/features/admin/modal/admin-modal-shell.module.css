@@ -1,0 +1,105 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(2 8 24 / 76%);
+  backdrop-filter: blur(10px);
+}
+
+.panel {
+  position: relative;
+  width: min(900px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border: 1px solid rgb(124 112 216 / 45%);
+  border-radius: 22px;
+  background: #08162d;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+  outline: none;
+}
+
+.backdrop[data-mode="fullscreen"] {
+  padding: 12px;
+}
+
+.backdrop[data-mode="fullscreen"] .panel {
+  width: min(1500px, calc(100vw - 24px));
+  height: calc(100vh - 24px);
+  max-height: none;
+  border-radius: 18px;
+}
+
+.heading {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgb(113 132 178 / 25%);
+  background: rgb(8 22 45 / 94%);
+  backdrop-filter: blur(14px);
+}
+
+.heading h2 {
+  margin: 0;
+  color: #f8f7ff;
+  font-size: 1rem;
+}
+
+.heading button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  margin-left: auto;
+  place-items: center;
+  border: 1px solid rgb(153 164 205 / 32%);
+  border-radius: 999px;
+  color: #dce3fb;
+  background: rgb(20 34 64 / 88%);
+  cursor: pointer;
+}
+
+.content {
+  min-height: 0;
+}
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(1 5 17 / 72%);
+}
+
+.confirm {
+  width: min(430px, 100%);
+  padding: 24px;
+  border: 1px solid rgb(248 192 78 / 42%);
+  border-radius: 18px;
+  color: #eef2ff;
+  background: #0b1931;
+  box-shadow: 0 18px 60px rgb(0 0 0 / 50%);
+}
+
+.confirm h2,
+.confirm p { margin: 0; }
+.confirm p { margin-top: 8px; color: #aebbd7; }
+.confirm div { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.confirm button { padding: 10px 14px; border: 1px solid #465374; border-radius: 10px; color: #e8edff; background: #142341; cursor: pointer; }
+.confirm .danger { border-color: #e87171; color: #fff; background: #8f3038; }
+
+@media (max-width: 760px) {
+  .backdrop,
+  .backdrop[data-mode="fullscreen"] { padding: 0; }
+  .panel,
+  .backdrop[data-mode="fullscreen"] .panel { width: 100vw; height: 100dvh; max-height: none; border-radius: 0; }
+}

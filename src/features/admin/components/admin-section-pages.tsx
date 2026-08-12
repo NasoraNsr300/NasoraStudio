@@ -34,8 +34,8 @@ export function AdminEstimatesPage({ detail, requests = [] }: { detail?: AdminEs
   </section>;
 }
 
-export function AdminJobsPage({ jobs = [] }: { jobs?: AdminJobSummary[] }) {
-  return <AdminJobsManager jobs={jobs} />;
+export function AdminJobsPage({ initialShowGuest = false, jobs = [] }: { initialShowGuest?: boolean; jobs?: AdminJobSummary[] }) {
+  return <AdminJobsManager initialShowGuest={initialShowGuest} jobs={jobs} />;
 }
 
 export function AdminPaymentsPage() {

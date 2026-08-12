@@ -15,7 +15,7 @@ async function json(response: Response) {
   return await response.json().catch(() => ({})) as { error?: string; itemId?: string; mediaId?: string; src?: string };
 }
 
-export function AdminPortfolioEditor({ albums, initialItem }: { albums: PortfolioAlbumOption[]; initialItem: AdminPortfolioItem | null }) {
+export function AdminPortfolioEditor({ albums, initialItem, presentation = "page" }: { albums: PortfolioAlbumOption[]; initialItem: AdminPortfolioItem | null; presentation?: "modal" | "page" }) {
   const router = useRouter();
   const [titleTh, setTitleTh] = useState(initialItem?.title.th ?? "");
   const [titleEn, setTitleEn] = useState(initialItem?.title.en ?? "");
@@ -79,7 +79,7 @@ export function AdminPortfolioEditor({ albums, initialItem }: { albums: Portfoli
   }
 
   return <section className={styles.page}>
-    <header><div><Link aria-label="กลับหน้าผลงาน" href="/admin/portfolio"><ArrowLeft /></Link><div><small>ผลงาน</small><h1>{initialItem ? `แก้ไข ${initialItem.title.th}` : "เพิ่มผลงาน"}</h1></div></div>
+    <header><div>{presentation === "page" ? <Link aria-label="กลับหน้าผลงาน" href="/admin/portfolio"><ArrowLeft /></Link> : null}<div><small>ผลงาน</small><h1>{initialItem ? `แก้ไข ${initialItem.title.th}` : "เพิ่มผลงาน"}</h1></div></div>
       {initialItem ? initialItem.archivedAt ? <button disabled={busy} onClick={() => setArchived(false)} type="button"><RotateCcw size={17} />กู้คืน</button> : <button disabled={busy} onClick={() => setArchived(true)} type="button"><Archive size={17} />เก็บถาวร</button> : null}
     </header>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}{notice ? <p className={styles.notice}>{notice}</p> : null}
@@ -90,6 +90,6 @@ export function AdminPortfolioEditor({ albums, initialItem }: { albums: Portfoli
       <label>ลำดับแสดง<input min="0" max="10000" onChange={(event) => setDisplayOrder(event.target.value)} required type="number" value={displayOrder} /></label>
       <div className={styles.checks}><label><input checked={published} onChange={(event) => setPublished(event.target.checked)} type="checkbox" />เผยแพร่บนหน้าเว็บ</label><label><input checked={showInHero} onChange={(event) => setShowInHero(event.target.checked)} type="checkbox" />แสดงใน Hero</label><label><input checked={featured} onChange={(event) => setFeatured(event.target.checked)} type="checkbox" />แสดงในผลงานเด่น</label></div>
       <div className={styles.upload}><div className={styles.preview} style={src ? { backgroundImage: `url(${src})` } : undefined}>{src ? null : <ImageUp size={40} />}</div><div><label>รูปผลงาน<input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" /></label><button disabled={busy || !file} onClick={upload} type="button"><ImageUp size={17} />อัปโหลดรูปผลงาน</button></div></div>
-    </div><footer><Link href="/admin/portfolio">ยกเลิก</Link><button disabled={busy} type="submit"><Save size={17} />{busy ? "กำลังบันทึก..." : "บันทึกผลงาน"}</button></footer></section></form>
+    </div><footer>{presentation === "page" ? <Link href="/admin/portfolio">ยกเลิก</Link> : <span />}<button disabled={busy} type="submit"><Save size={17} />{busy ? "กำลังบันทึก..." : "บันทึกผลงาน"}</button></footer></section></form>
   </section>;
 }

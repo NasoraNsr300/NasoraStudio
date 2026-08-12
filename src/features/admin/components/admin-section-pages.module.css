@@ -14,3 +14,4 @@
 @media (max-width: 760px) { .detailGrid { grid-template-columns: 1fr; }.detailPanel > header { align-items: flex-start; gap: 8px; }.detailPanel > footer { flex-wrap: wrap; } }
 .quoteSummary { background: rgb(91 67 142 / 15%); border-top: 1px solid var(--admin-border, #253551); color: var(--brand-violet); font-size: 11px; padding: 11px 17px; }
 .dataPanel td a { color:var(--brand-gold); text-decoration:none; }.searchEmpty { color:var(--admin-muted,#9aa7be); padding:5rem 2rem; text-align:center; }
+.modalForm { display:grid; gap:.85rem; padding:1.15rem; }.modalForm h2,.modalForm p { margin:0; }.modalForm label { display:grid; gap:.35rem; color:var(--admin-muted,#9aa7be); font-size:.78rem; }.modalForm input { min-height:42px; border:1px solid var(--admin-border,#253551); border-radius:.5rem; padding:0 .7rem; color:inherit; background:#071329; }.modalForm > div { display:flex; justify-content:flex-end; }

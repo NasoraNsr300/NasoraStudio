@@ -1,11 +1,12 @@
 "use client";
 
-import { Archive, ArrowLeft, Plus, RotateCcw, Save, X } from "lucide-react";
+import { Archive, ArrowLeft, Plus, RotateCcw, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import type { AdminCatalogAlbum, AdminCatalogService } from "@/features/catalog/domain/catalog";
+import { AdminModalShell } from "@/features/admin/modal/admin-modal-shell";
 
 import styles from "./admin-album-editor.module.css";
 
@@ -57,7 +58,7 @@ function CatalogCoverUpload({ altEn, altTh, initialSrc, label, onUploaded }: {
   </div>;
 }
 
-export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogAlbum | null }) {
+export function AdminAlbumEditor({ initialAlbum, presentation = "page" }: { initialAlbum: AdminCatalogAlbum | null; presentation?: "modal" | "page" }) {
   const router = useRouter();
   const [nameTh, setNameTh] = useState(initialAlbum?.name.th ?? "");
   const [nameEn, setNameEn] = useState(initialAlbum?.name.en ?? "");
@@ -127,7 +128,7 @@ export function AdminAlbumEditor({ initialAlbum }: { initialAlbum: AdminCatalogA
 
   return <section className={styles.page}>
     <header className={styles.header}>
-      <div><Link aria-label="กลับหน้าอัลบั้ม" href="/admin/catalog"><ArrowLeft /></Link><div><small>อัลบั้มและราคา</small><h1>{initialAlbum ? `แก้ไข ${initialAlbum.name.th}` : "เพิ่มอัลบั้ม"}</h1></div></div>
+      <div>{presentation === "page" ? <Link aria-label="กลับหน้าอัลบั้ม" href="/admin/catalog"><ArrowLeft /></Link> : null}<div><small>อัลบั้มและราคา</small><h1>{initialAlbum ? `แก้ไข ${initialAlbum.name.th}` : "เพิ่มอัลบั้ม"}</h1></div></div>
       {initialAlbum ? initialAlbum.archivedAt
         ? <button disabled={busy} onClick={() => setAlbumArchived(false)} type="button"><RotateCcw size={17} />กู้คืนอัลบั้ม</button>
         : <button disabled={busy} onClick={() => setAlbumArchived(true)} type="button"><Archive size={17} />เก็บถาวร</button> : null}
@@ -227,8 +228,8 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
     finally { setBusy(false); }
   }
 
-  return <div aria-modal="true" className={styles.modal} role="dialog"><form aria-label={service ? `แก้ไข ${service.name.th}` : "เพิ่มรูปแบบย่อย"} className={styles.serviceEditor} onSubmit={save}>
-    <header><div><h2>{service ? `แก้ไข ${service.name.th}` : "เพิ่มรูปแบบย่อย"}</h2><p>ข้อมูลนี้ซิงค์กับหน้าเว็บและแบบประเมิน</p></div><button aria-label="ปิดตัวแก้ไขรูปแบบย่อย" onClick={onClose} type="button"><X /></button></header>
+  return <AdminModalShell mode="center" onClose={onClose} title={service ? `แก้ไข ${service.name.th}` : "เพิ่มรูปแบบย่อย"}><form aria-label={service ? `แก้ไข ${service.name.th}` : "เพิ่มรูปแบบย่อย"} className={styles.serviceEditor} onSubmit={save}>
+    <header><div><h2>{service ? `แก้ไข ${service.name.th}` : "เพิ่มรูปแบบย่อย"}</h2><p>ข้อมูลนี้ซิงค์กับหน้าเว็บและแบบประเมิน</p></div></header>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     <div className={styles.twoColumns}>
       <label>ชื่อรูปแบบ (TH)<input onChange={(event) => setNameTh(event.target.value)} required value={nameTh} /></label><label>Service name (EN)<input onChange={(event) => setNameEn(event.target.value)} required value={nameEn} /></label>
@@ -241,6 +242,6 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
     <fieldset><legend>ราคาอ้างอิง</legend><div className={styles.priceGrid}>{variants.map((variant) => { const key = `${variant.usage}:${variant.pace}`; return <label key={key}>ราคา {variant.labelEn} (THB)<input inputMode="decimal" onChange={(event) => setPrices((current) => ({ ...current, [key]: event.target.value }))} placeholder="เว้นว่างถ้ายังไม่กำหนด" value={prices[key] ?? ""} /></label>; })}</div></fieldset>
     <label className={styles.publishCheck}><input checked={published} onChange={(event) => setPublished(event.target.checked)} type="checkbox" />เผยแพร่รูปแบบนี้</label>
     <footer>{service ? service.archivedAt ? <button disabled={busy} onClick={() => setArchived(false)} type="button"><RotateCcw size={16} />กู้คืน</button> : <button disabled={busy} onClick={() => setArchived(true)} type="button"><Archive size={16} />เก็บถาวร</button> : <span />}
-      <div><button onClick={onClose} type="button">ยกเลิก</button><button className={styles.saveButton} disabled={busy} type="submit"><Save size={16} />{busy ? "กำลังบันทึก..." : "บันทึกรูปแบบย่อย"}</button></div></footer>
-  </form></div>;
+      <div><button className={styles.saveButton} disabled={busy} type="submit"><Save size={16} />{busy ? "กำลังบันทึก..." : "บันทึกรูปแบบย่อย"}</button></div></footer>
+  </form></AdminModalShell>;
 }

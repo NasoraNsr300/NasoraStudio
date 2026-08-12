@@ -1,15 +1,17 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const navigation = vi.hoisted(() => ({
   pathname: "/admin/estimates",
   push: vi.fn(),
+  back: vi.fn(),
   searchParams: new URLSearchParams(),
 }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
-  useRouter: () => ({ push: navigation.push }),
+  useRouter: () => ({ back: navigation.back, push: navigation.push }),
   useSearchParams: () => navigation.searchParams,
 }));
 
@@ -36,5 +38,13 @@ describe("admin management pages", () => {
     render(<Page />);
     expect(screen.getByRole("heading", { name: heading })).toBeVisible();
     expect(screen.getByRole("button", { name: action })).toBeVisible();
+  });
+
+  it("opens the Guest job form as a modal", async () => {
+    const user = userEvent.setup();
+    render(<AdminJobsPage />);
+    await user.click(screen.getByRole("button", { name: "เพิ่มคิว Guest" }));
+    expect(screen.getByRole("dialog", { name: "เพิ่มงาน Guest" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "ชื่อลูกค้า" })).toBeVisible();
   });
 });
