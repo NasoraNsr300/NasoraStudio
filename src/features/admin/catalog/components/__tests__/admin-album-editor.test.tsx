@@ -45,6 +45,7 @@ afterEach(cleanup);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   navigation.useRouter.mockReturnValue({ refresh: navigation.refresh, replace: navigation.replace });
   vi.stubGlobal("OffscreenCanvas", class {
     constructor(public width: number, public height: number) {}
@@ -107,6 +108,7 @@ describe("AdminAlbumEditor", () => {
     expect(JSON.parse(String(priceCall?.[1]?.body))).toEqual(expect.objectContaining({
       prices: expect.arrayContaining([expect.objectContaining({ amountSatang: 150025, pace: "normal", usage: "personal" })]),
     }));
+    expect(localStorage.getItem("nasora:catalog-updated")).toBeTruthy();
   });
 
   it("uploads a real album cover and saves its media id on the album", async () => {

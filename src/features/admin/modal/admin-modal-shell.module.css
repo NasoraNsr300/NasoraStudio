@@ -11,9 +11,11 @@
 
 .panel {
   position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(900px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid rgb(124 112 216 / 45%);
   border-radius: 22px;
   background: #08162d;
@@ -68,7 +70,17 @@
 
 .content {
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, #9b82ff 72%, transparent) rgb(7 18 39 / 55%);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
+
+.content::-webkit-scrollbar { width: .65rem; }
+.content::-webkit-scrollbar-track { background: rgb(7 18 39 / 55%); }
+.content::-webkit-scrollbar-thumb { border: 2px solid rgb(7 18 39 / 55%); border-radius: 999px; background: linear-gradient(180deg, #b79cff, #6e55ba); background-clip: padding-box; }
+.content::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #d0bcff, #8d70dc); background-clip: padding-box; }
 
 .confirmBackdrop {
   position: fixed;

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import type { AdminCatalogAlbum, AdminCatalogService } from "@/features/catalog/domain/catalog";
+import { notifyCatalogUpdated } from "@/features/catalog/client/catalog-sync";
 import { AdminModalShell } from "@/features/admin/modal/admin-modal-shell";
 import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
 import { FileDropzone } from "@/shared/upload/file-dropzone";
@@ -102,6 +103,7 @@ export function AdminAlbumEditor({ initialAlbum, presentation = "page" }: { init
         if (!body.albumId) throw new Error("ไม่ได้รับรหัสอัลบั้ม");
         router.replace(`/admin/catalog/${body.albumId}`);
       }
+      notifyCatalogUpdated();
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "บันทึกอัลบั้มไม่สำเร็จ");
@@ -121,6 +123,7 @@ export function AdminAlbumEditor({ initialAlbum, presentation = "page" }: { init
       });
       const body = await responseBody(response);
       if (!response.ok) throw new Error(body.error ?? "อัปเดตอัลบั้มไม่สำเร็จ");
+      notifyCatalogUpdated();
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "อัปเดตอัลบั้มไม่สำเร็จ");
@@ -214,6 +217,7 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
       const priceResponse = await fetch(`/api/admin/catalog/services/${savedServiceId}/prices`, { body: JSON.stringify({ prices: priceRows }), headers: { "content-type": "application/json" }, method: "PUT" });
       const priceBody = await responseBody(priceResponse);
       if (!priceResponse.ok) throw new Error(priceBody.error ?? "บันทึกราคาไม่สำเร็จ");
+      notifyCatalogUpdated();
       onSaved();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "บันทึกรูปแบบย่อยไม่สำเร็จ"); }
     finally { setBusy(false); }
@@ -224,7 +228,7 @@ function ServiceEditor({ albumId, onClose, onSaved, service }: { albumId: string
     setBusy(true); setError("");
     try {
       const response = await fetch(`/api/admin/catalog/services/${service.id}/archive`, { body: JSON.stringify({ archived, reason: archived ? "Archived from service editor" : null }), headers: { "content-type": "application/json" }, method: "POST" });
-      const body = await responseBody(response); if (!response.ok) throw new Error(body.error ?? "อัปเดตรูปแบบย่อยไม่สำเร็จ"); onSaved();
+      const body = await responseBody(response); if (!response.ok) throw new Error(body.error ?? "อัปเดตรูปแบบย่อยไม่สำเร็จ"); notifyCatalogUpdated(); onSaved();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "อัปเดตรูปแบบย่อยไม่สำเร็จ"); }
     finally { setBusy(false); }
   }

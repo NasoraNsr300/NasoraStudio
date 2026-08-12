@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { useCatalogSync } from "@/features/catalog/client/use-catalog-sync";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceCategory, ServiceType } from "@/shared/types/public-content";
 
@@ -25,6 +26,7 @@ function normalized(value: string, locale: Locale) {
 }
 
 export function CommissionSearch({ categories, locale, services }: CommissionSearchProps) {
+  useCatalogSync();
   const query = useSearchParams().get("q") ?? "";
   const term = normalized(query, locale);
   const publishedCategories = categories.filter((category) => category.published);

@@ -1,19 +1,26 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { serviceCategories, serviceTypes } from "@/data/fixtures/public-content";
 
-const { useSearchParams } = vi.hoisted(() => ({
+const { refresh, useRouter, useSearchParams } = vi.hoisted(() => ({
+  refresh: vi.fn(),
+  useRouter: vi.fn(),
   useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
-vi.mock("next/navigation", () => ({ useSearchParams }));
+vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
 
 import { CommissionSearch } from "@/features/commission/components/commission-search";
 
 afterEach(cleanup);
 
 describe("CommissionSearch", () => {
+  beforeEach(() => {
+    refresh.mockClear();
+    useRouter.mockReturnValue({ refresh });
+  });
+
   it("finds published categories and subtypes from the contextual q parameter", () => {
     useSearchParams.mockReturnValue(new URLSearchParams("q=illustration"));
     render(<CommissionSearch categories={serviceCategories} locale="en" services={serviceTypes} />);
@@ -30,5 +37,14 @@ describe("CommissionSearch", () => {
     render(<CommissionSearch categories={serviceCategories} locale="th" services={serviceTypes} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("ไม่พบหมวดหมู่หรือรูปแบบงานที่ตรงกับคำค้น");
+  });
+
+  it("refreshes an open public catalog tab when Admin saves catalog data", () => {
+    useSearchParams.mockReturnValue(new URLSearchParams());
+    render(<CommissionSearch categories={serviceCategories} locale="en" services={serviceTypes} />);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "nasora:catalog-updated" }));
+
+    expect(refresh).toHaveBeenCalledOnce();
   });
 });

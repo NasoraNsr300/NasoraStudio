@@ -7,6 +7,7 @@ import type { Locale } from "@/shared/i18n/locales";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { ServiceCategory, ServiceType } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
+import { useCatalogSync } from "@/features/catalog/client/use-catalog-sync";
 
 import { ServiceCard } from "./service-card";
 import { ServiceDetailDialog } from "./service-detail-dialog";
@@ -26,6 +27,7 @@ const copy = {
 } as const;
 
 export function ServiceCategoryPage({ category, locale, onBack, services }: ServiceCategoryPageProps) {
+  useCatalogSync();
   const [filter, setFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list" | "gallery">("grid");
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);

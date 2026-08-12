@@ -1,14 +1,30 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const navigation = vi.hoisted(() => ({ refresh: vi.fn(), useRouter: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: navigation.useRouter }));
 
 import { serviceCategories, serviceTypes } from "@/data/fixtures/public-content";
 import { CommissionAlbumsPage } from "@/features/commission/components/commission-albums-page";
 import { ServiceCategoryPage } from "@/features/commission/components/service-category-page";
 
 afterEach(cleanup);
+beforeEach(() => {
+  navigation.refresh.mockClear();
+  navigation.useRouter.mockReturnValue({ refresh: navigation.refresh });
+});
 
 describe("Commission albums", () => {
+  it("refreshes a directly opened sub-album when Admin saves catalog data", () => {
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    if (!chibi) throw new Error("Expected Chibi category");
+    render(<ServiceCategoryPage category={chibi} locale="en" services={serviceTypes.filter((service) => service.categorySlug === chibi.slug)} />);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "nasora:catalog-updated" }));
+
+    expect(navigation.refresh).toHaveBeenCalledOnce();
+  });
   it("renders image-led album tiles with title, subtype count, availability, and recommendation without prices or requests", () => {
     const firstCategory = serviceCategories[0];
     if (!firstCategory?.coverMedia) throw new Error("Expected fixture cover media");
