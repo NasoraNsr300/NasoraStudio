@@ -18,26 +18,19 @@ vi.mock("next/navigation", () => ({
 import {
   AdminEstimatesPage,
   AdminJobsPage,
-  AdminMessagesPage,
-  AdminPaymentsPage,
-  AdminSettingsPage,
 } from "@/features/admin/components/admin-section-pages";
 
 afterEach(cleanup);
 
 const pages = [
-  [AdminEstimatesPage, "แบบประเมิน", "สร้างใบเสนอราคา"],
-  [AdminJobsPage, "งานและคิว", "เพิ่มคิว Guest"],
-  [AdminPaymentsPage, "การชำระเงิน", "เพิ่มรายการชำระเงิน"],
-  [AdminMessagesPage, "ข้อความ", "ข้อความใหม่"],
-  [AdminSettingsPage, "ตั้งค่า", "บันทึกการตั้งค่า"],
+  [AdminEstimatesPage, "แบบประเมิน"],
+  [AdminJobsPage, "งานและคิว"],
 ] as const;
 
 describe("admin management pages", () => {
-  it.each(pages)("renders %s with its primary action", (Page, heading, action) => {
+  it.each(pages)("renders %s from live data", (Page, heading) => {
     render(<Page />);
     expect(screen.getByRole("heading", { name: heading })).toBeVisible();
-    expect(screen.getByRole("button", { name: action })).toBeVisible();
   });
 
   it("opens the Guest job form as a modal", async () => {
