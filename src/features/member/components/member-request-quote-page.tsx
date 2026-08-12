@@ -15,6 +15,7 @@ import {
 import { useOptionalAuthSession } from "@/shared/auth/auth-session-provider";
 import type { Locale } from "@/shared/i18n/locales";
 import { createSupabaseBrowserClient } from "@/shared/supabase/client";
+import { FileDropzone } from "@/shared/upload/file-dropzone";
 
 import { MemberSidebar } from "./member-sidebar";
 import styles from "./member-pages.module.css";
@@ -50,7 +51,7 @@ export function MemberRequestQuotePage({
   const slipRetryRef = useRef<{ fingerprint: string; key: string } | null>(
     null,
   );
-  const slipInputRef = useRef<HTMLInputElement>(null);
+  const [slipFile, setSlipFile] = useState<File | null>(null);
   const th = locale === "th";
 
   useEffect(() => {
@@ -160,7 +161,7 @@ export function MemberRequestQuotePage({
           : "Slip upload failed. Please try again.",
       );
     } finally {
-      if (slipInputRef.current) slipInputRef.current.value = "";
+      setSlipFile(null);
       setPaymentPending(false);
     }
   }
@@ -222,19 +223,7 @@ export function MemberRequestQuotePage({
                   ? "ใช้ข้อมูล QR ด้านล่างชำระยอดตามจำนวนที่ระบุ แล้วอัปโหลดสลิป"
                   : "Pay the exact amount using the QR data below, then upload your slip."}</p>
                 <code>{paymentIntent.promptPayPayload}</code>
-                <label>
-                  {th ? "อัปโหลดสลิป" : "Upload slip"}
-                  <input
-                    accept="image/png,image/jpeg,image/webp"
-                    disabled={paymentPending}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void uploadSlip(file);
-                    }}
-                    ref={slipInputRef}
-                    type="file"
-                  />
-                </label>
+                <FileDropzone accept="image/png,image/jpeg,image/webp" disabled={paymentPending} file={slipFile} label={th ? "อัปโหลดสลิป" : "Upload slip"} maxBytes={5 * 1024 * 1024} onFileChange={(file) => { setSlipFile(file); if (file) void uploadSlip(file); }} />
               </>
             )}
           </section>

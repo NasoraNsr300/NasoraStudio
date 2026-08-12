@@ -1,12 +1,13 @@
 "use client";
 
-import { MessageSquarePlus, Send, Sparkles, X } from "lucide-react";
+import { ImagePlus, MessageSquarePlus, Send, Sparkles, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
 import type { ConversationView } from "@/features/collaboration/data/collaboration-repository.server";
 import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
+import { FileDropzone } from "@/shared/upload/file-dropzone";
 
 import styles from "./admin-messages-workspace.module.css";
 
@@ -87,12 +88,13 @@ export function AdminMessagesWorkspace({ conversations, fetcher = fetch }: { con
       <section className={styles.thread}>
         <header><strong>{selected?.customerName ?? "เลือกห้องสนทนา"}</strong><span>{selected?.title}</span></header>
         <div className={styles.messages}>{selected?.messages.map((message) => <article data-side={message.senderRole === "admin" ? "admin" : "member"} key={message.id}>{message.imageAssetId ? <button aria-label="ขยายรูปภาพในข้อความ" className={styles.messageImageButton} onClick={() => setLightboxAssetId(message.imageAssetId!)} type="button"><Image alt="รูปภาพในข้อความ" height={320} src={`/api/member/message-assets/${message.imageAssetId}`} unoptimized width={480} /></button> : null}<p>{message.body}</p><time>{new Date(message.createdAt).toLocaleString("th-TH")}</time></article>)}</div>
-        <form className={styles.composer} onSubmit={sendMessage}><label>รูป<input accept="image/png,image/jpeg,image/webp" hidden onChange={(event) => setMessageImage(event.target.files?.[0] ?? null)} type="file" /></label><input disabled={!selected || saving} onChange={(event) => setBody(event.target.value)} placeholder="พิมพ์ข้อความ..." value={body} /><button aria-label={saving ? "กำลังส่ง" : "ส่งข้อความ"} disabled={!selected || !body.trim() || saving} type="submit"><Send size={18} /></button></form>
+        <form className={styles.composer} onSubmit={sendMessage}><label aria-label="แนบรูป" className={styles.attachmentButton} title="แนบรูป"><ImagePlus size={18} /><input accept="image/png,image/jpeg,image/webp" hidden onChange={(event) => setMessageImage(event.target.files?.[0] ?? null)} type="file" /></label><input disabled={!selected || saving} onChange={(event) => setBody(event.target.value)} placeholder="พิมพ์ข้อความ..." value={body} /><button aria-label={saving ? "กำลังส่ง" : "ส่งข้อความ"} disabled={!selected || !body.trim() || saving} type="submit"><Send size={18} /></button></form>
+        {messageImage ? <small className={styles.attachmentName}>{messageImage.name}</small> : null}
         {error && !progressOpen ? <p role="alert">{error}</p> : null}
       </section>
     </div>
 
-    {progressOpen ? <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) requestProgressClose(); }}><section aria-label="เพิ่มความคืบหน้า" aria-modal="true" className={styles.progressModal} role="dialog"><header><div><span>อัปเดตงาน</span><h2>เพิ่มความคืบหน้า</h2></div><button aria-label="ปิด" onClick={requestProgressClose} type="button"><X size={22} /></button></header><form onSubmit={postProgress}><label>หัวข้อความคืบหน้า<input maxLength={160} name="title" onChange={(event) => setProgressTitle(event.target.value)} value={progressTitle} /></label><label>รายละเอียดความคืบหน้า<textarea maxLength={4000} name="body" onChange={(event) => setProgressBody(event.target.value)} value={progressBody} /></label><label>รูปภาพ (ถ้ามี)<input accept="image/png,image/jpeg,image/webp" name="image" type="file" /></label>{error ? <p role="alert">{error}</p> : null}<div><button disabled={saving} onClick={requestProgressClose} type="button">ยกเลิก</button><button disabled={saving || !progressTitle.trim() || !progressBody.trim()} type="submit">{saving ? "กำลังบันทึก..." : "บันทึกความคืบหน้า"}</button></div></form></section></div> : null}
+    {progressOpen ? <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) requestProgressClose(); }}><section aria-label="เพิ่มความคืบหน้า" aria-modal="true" className={styles.progressModal} role="dialog"><header><div><span>อัปเดตงาน</span><h2>เพิ่มความคืบหน้า</h2></div><button aria-label="ปิด" onClick={requestProgressClose} type="button"><X size={22} /></button></header><form onSubmit={postProgress}><label>หัวข้อความคืบหน้า<input maxLength={160} name="title" onChange={(event) => setProgressTitle(event.target.value)} value={progressTitle} /></label><label>รายละเอียดความคืบหน้า<textarea maxLength={4000} name="body" onChange={(event) => setProgressBody(event.target.value)} value={progressBody} /></label><FileDropzone accept="image/png,image/jpeg,image/webp" label="รูปภาพ (ถ้ามี)" maxBytes={5 * 1024 * 1024} name="image" />{error ? <p role="alert">{error}</p> : null}<div><button disabled={saving} onClick={requestProgressClose} type="button">ยกเลิก</button><button disabled={saving || !progressTitle.trim() || !progressBody.trim()} type="submit">{saving ? "กำลังบันทึก..." : "บันทึกความคืบหน้า"}</button></div></form></section></div> : null}
     {lightboxAssetId ? <div aria-label="รูปภาพในข้อความ" aria-modal="true" className={styles.lightbox} onMouseDown={(event) => { if (event.currentTarget === event.target) setLightboxAssetId(null); }} role="dialog"><button aria-label="ปิดรูปภาพ" onClick={() => setLightboxAssetId(null)} type="button"><X size={24} /></button><Image alt="รูปภาพในข้อความขนาดเต็ม" fill sizes="90vw" src={`/api/member/message-assets/${lightboxAssetId}`} unoptimized /></div> : null}
   </section>;
 }

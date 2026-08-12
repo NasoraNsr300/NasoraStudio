@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 
 import type { AdminPortfolioItem, LocalizedPortfolioText } from "@/features/portfolio/domain/portfolio";
 import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
+import { FileDropzone } from "@/shared/upload/file-dropzone";
 
 import styles from "./admin-portfolio-editor.module.css";
 
@@ -89,7 +90,7 @@ export function AdminPortfolioEditor({ albums, initialItem, presentation = "page
       <label>อัลบั้มคอมมิชชัน<select onChange={(event) => setAlbumId(event.target.value)} required value={albumId}><option disabled value="">เลือกอัลบั้ม</option>{albums.map((album) => <option key={album.id} value={album.id}>{album.name.th}{album.published ? "" : " (ยังไม่เผยแพร่)"}</option>)}</select></label>
       <label>ลำดับแสดง<input min="0" max="10000" onChange={(event) => setDisplayOrder(event.target.value)} required type="number" value={displayOrder} /></label>
       <div className={styles.checks}><label><input checked={published} onChange={(event) => setPublished(event.target.checked)} type="checkbox" />เผยแพร่บนหน้าเว็บ</label><label><input checked={showInHero} onChange={(event) => setShowInHero(event.target.checked)} type="checkbox" />แสดงใน Hero</label><label><input checked={featured} onChange={(event) => setFeatured(event.target.checked)} type="checkbox" />แสดงในผลงานเด่น</label></div>
-      <div className={styles.upload}><div className={styles.preview} style={src ? { backgroundImage: `url(${src})` } : undefined}>{src ? null : <ImageUp size={40} />}</div><div><label>รูปผลงาน<input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" /></label><button disabled={busy || !file} onClick={upload} type="button"><ImageUp size={17} />อัปโหลดรูปผลงาน</button></div></div>
+      <div className={styles.upload}><div className={styles.preview} style={src ? { backgroundImage: `url(${src})` } : undefined}>{src ? null : <ImageUp size={40} />}</div><div><FileDropzone accept="image/png,image/jpeg,image/webp" file={file} label="รูปผลงาน" maxBytes={5 * 1024 * 1024} onFileChange={setFile} /><button disabled={busy || !file} onClick={upload} type="button"><ImageUp size={17} />อัปโหลดรูปผลงาน</button></div></div>
     </div><footer>{presentation === "page" ? <Link href="/admin/portfolio">ยกเลิก</Link> : <span />}<button disabled={busy} type="submit"><Save size={17} />{busy ? "กำลังบันทึก..." : "บันทึกผลงาน"}</button></footer></section></form>
   </section>;
 }

@@ -8,6 +8,7 @@ import { FormEvent, useState } from "react";
 import type { AdminCatalogAlbum, AdminCatalogService } from "@/features/catalog/domain/catalog";
 import { AdminModalShell } from "@/features/admin/modal/admin-modal-shell";
 import { normalizeImageForUpload } from "@/features/media/client/normalize-image-for-upload";
+import { FileDropzone } from "@/shared/upload/file-dropzone";
 
 import styles from "./admin-album-editor.module.css";
 
@@ -52,7 +53,7 @@ function CatalogCoverUpload({ altEn, altTh, initialSrc, label, onUploaded }: {
   }
   return <div className={`${styles.coverUpload} ${styles.wide}`}>
     <div className={styles.coverPreview} style={src ? { backgroundImage: `url(${src})` } : undefined}><span>{src ? "" : "ยังไม่มีภาพ"}</span></div>
-    <div><label>{label}<input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" /></label>
+    <div><FileDropzone accept="image/png,image/jpeg,image/webp" file={file} label={label} maxBytes={5 * 1024 * 1024} onFileChange={setFile} />
       <button disabled={busy || !file} onClick={upload} type="button">{busy ? "กำลังอัปโหลด..." : `อัปโหลด${label}`}</button>
       {message ? <small>{message}</small> : null}</div>
   </div>;
