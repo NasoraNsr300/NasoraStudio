@@ -15,10 +15,14 @@ type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<{
 
 function toEditableSettings(settings: AdminSiteSettings): SaveAdminSiteSettingsInput {
   return {
+    aboutBiography: settings.aboutBiography ?? { en: "Nasora is an independent illustrator creating character-led artwork, stories, and commission pieces with a warm, atmospheric finish.", th: "Nasora เป็นนักวาดอิสระที่สร้างสรรค์งานตัวละคร เรื่องราว และคอมมิชชันในบรรยากาศอบอุ่นนุ่มนวล" },
+    aboutContact: settings.aboutContact ?? { en: "For commission questions, availability, or a friendly hello, start with Discord.", th: "หากมีคำถามเกี่ยวกับคอมมิชชัน คิว หรืออยากทักทาย เริ่มต้นพูดคุยที่ Discord ได้เลย" },
     adminNote: settings.adminNote,
     businessHours: settings.businessHours,
     commissionsOpen: settings.commissionsOpen,
     discordContact: settings.discordContact,
+    contactEmail: settings.contactEmail ?? "nasora.nsr300@gmail.com",
+    instagramUrl: settings.instagramUrl ?? "",
     homeDescription: settings.homeDescription,
     homeHeading: settings.homeHeading,
     particlesEnabled: settings.particlesEnabled,
@@ -94,7 +98,13 @@ export function AdminSiteSettingsForm({
       <section>
         <header><MessageSquarePlus size={20} /><div><h2>ช่องทางติดต่อ</h2><p>ข้อมูลที่แสดงในหน้า Home และเกี่ยวกับ</p></div></header>
         <label>Discord<input maxLength={200} onChange={(event) => update("discordContact", event.target.value)} required value={settings.discordContact} /></label>
+        <label>Email<input maxLength={320} onChange={(event) => update("contactEmail", event.target.value)} required type="email" value={settings.contactEmail} /></label>
+        <label>Instagram URL<input maxLength={500} onChange={(event) => update("instagramUrl", event.target.value)} placeholder="https://www.instagram.com/..." type="url" value={settings.instagramUrl} /></label>
         <label>เวลาทำการ<input maxLength={120} onChange={(event) => update("businessHours", event.target.value)} required value={settings.businessHours} /></label>
+        <label>ประวัติ (TH)<textarea className={styles.textarea} maxLength={1000} onChange={(event) => update("aboutBiography", { ...settings.aboutBiography, th: event.target.value })} required value={settings.aboutBiography.th} /></label>
+        <label>Biography (EN)<textarea className={styles.textarea} maxLength={1000} onChange={(event) => update("aboutBiography", { ...settings.aboutBiography, en: event.target.value })} required value={settings.aboutBiography.en} /></label>
+        <label>ข้อความติดต่อ (TH)<textarea className={styles.textarea} maxLength={1000} onChange={(event) => update("aboutContact", { ...settings.aboutContact, th: event.target.value })} required value={settings.aboutContact.th} /></label>
+        <label>Contact copy (EN)<textarea className={styles.textarea} maxLength={1000} onChange={(event) => update("aboutContact", { ...settings.aboutContact, en: event.target.value })} required value={settings.aboutContact.en} /></label>
       </section>
       <section>
         <header><ShieldCheck size={20} /><div><h2>ลูกเล่นพื้นหลัง</h2><p>เปิดหรือปิดเอฟเฟกต์สำหรับผู้ใช้ทั่วไป</p></div></header>

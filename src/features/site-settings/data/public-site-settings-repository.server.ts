@@ -16,9 +16,13 @@ type Query = {
 type SiteSettingsClient = { from(table: "site_settings"): Query };
 
 export const publicSiteSettingsColumns = [
+  "about_biography",
+  "about_contact",
   "business_hours",
   "commissions_open",
   "discord_contact",
+  "contact_email",
+  "instagram_url",
   "home_description",
   "home_heading",
   "particles_enabled",

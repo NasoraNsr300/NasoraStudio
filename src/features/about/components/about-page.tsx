@@ -1,8 +1,9 @@
 import type { Locale } from "@/shared/i18n/locales";
+import type { PublicSiteSettings } from "@/features/site-settings/domain/site-settings";
 
 import styles from "./about.module.css";
 
-export type AboutPageProps = { locale: Locale };
+export type AboutPageProps = { locale: Locale; settings: PublicSiteSettings };
 
 export const aboutFixture = {
   en: {
@@ -19,14 +20,13 @@ export const aboutFixture = {
   },
 } as const;
 
-const channels = [
-  { label: "Discord", href: "https://discord.com/" },
-  { label: "Email", href: "mailto:hello@nasora.example" },
-  { label: "Instagram", href: "https://www.instagram.com/" },
-] as const;
-
-export function AboutPage({ locale }: AboutPageProps) {
-  const content = aboutFixture[locale];
+export function AboutPage({ locale, settings }: AboutPageProps) {
+  const content = { ...aboutFixture[locale], biography: settings.aboutBiography?.[locale] ?? aboutFixture[locale].biography, contact: settings.aboutContact?.[locale] ?? aboutFixture[locale].contact };
+  const channels = [
+    { label: "Discord", href: `https://discord.com/users/${encodeURIComponent(settings.discordContact)}` },
+    settings.contactEmail ? { label: "Email", href: `mailto:${settings.contactEmail}` } : null,
+    settings.instagramUrl ? { label: "Instagram", href: settings.instagramUrl } : null,
+  ].filter((channel): channel is { label: string; href: string } => channel !== null);
   return <main className={styles.about}>
     <header className={styles.heading}><p>{content.eyebrow}</p><h1>{content.title}</h1><span>{content.biography}</span></header>
     <section aria-labelledby="contact-heading" className={styles.card}>

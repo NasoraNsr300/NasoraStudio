@@ -37,7 +37,7 @@ function parseAdminSettings(data: unknown): AdminSiteSettings {
 
 export async function getAdminSiteSettings(clientOverride?: AdminSettingsClient) {
   const client = await adminClient(clientOverride);
-  const { data, error } = await client.rpc("admin_get_site_settings");
+  const { data, error } = await client.rpc("admin_get_site_settings_v2");
   if (error) throw new Error("Unable to load Admin site settings");
   return parseAdminSettings(data);
 }
@@ -45,11 +45,15 @@ export async function getAdminSiteSettings(clientOverride?: AdminSettingsClient)
 export async function saveAdminSiteSettings(input: SaveAdminSiteSettingsInput, clientOverride?: AdminSettingsClient) {
   const parsed = saveAdminSiteSettingsSchema.parse(input);
   const client = await adminClient(clientOverride);
-  const { data, error } = await client.rpc("admin_save_site_settings", {
+  const { data, error } = await client.rpc("admin_save_site_settings_v2", {
+    p_about_biography: parsed.aboutBiography,
+    p_about_contact: parsed.aboutContact,
     p_admin_note: parsed.adminNote,
     p_business_hours: parsed.businessHours,
     p_commissions_open: parsed.commissionsOpen,
     p_discord_contact: parsed.discordContact,
+    p_contact_email: parsed.contactEmail,
+    p_instagram_url: parsed.instagramUrl,
     p_home_description: parsed.homeDescription,
     p_home_heading: parsed.homeHeading,
     p_particles_enabled: parsed.particlesEnabled,
@@ -74,10 +78,14 @@ export async function saveAdminPersonalNote(note: string, clientOverride?: Admin
   const value = z.string().trim().max(2_000).parse(note);
   const current = await getAdminSiteSettings(clientOverride);
   return saveAdminSiteSettings({
+    aboutBiography: current.aboutBiography!,
+    aboutContact: current.aboutContact!,
     adminNote: value,
     businessHours: current.businessHours,
     commissionsOpen: current.commissionsOpen,
     discordContact: current.discordContact,
+    contactEmail: current.contactEmail!,
+    instagramUrl: current.instagramUrl ?? "",
     homeDescription: current.homeDescription,
     homeHeading: current.homeHeading,
     particlesEnabled: current.particlesEnabled,

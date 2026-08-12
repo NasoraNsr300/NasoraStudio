@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { useAuthSession } from "@/shared/auth/auth-session-provider";
 import type { Locale } from "@/shared/i18n/locales";
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 
 import styles from "./member-sidebar.module.css";
 
@@ -32,6 +33,7 @@ export function MemberSidebar({
   onSelectSection?: (section: MemberSection) => void;
 }) {
   const { user } = useAuthSession();
+  const settings = useOptionalPublicSiteSettings();
   const nickname = user?.nickname ?? "Member";
   const initial = nickname.trim().charAt(0).toUpperCase() || "M";
 
@@ -66,7 +68,7 @@ export function MemberSidebar({
       <div className={styles.help}>
         <HelpCircle size={20} />
         <strong>{locale === "th" ? "ต้องการความช่วยเหลือ?" : "Need help?"}</strong>
-        <a href="mailto:support@nasora.example">
+        <a href={`mailto:${settings?.contactEmail ?? "nasora.nsr300@gmail.com"}`}>
           {locale === "th" ? "ติดต่อทีมงาน" : "Contact support"}
         </a>
       </div>

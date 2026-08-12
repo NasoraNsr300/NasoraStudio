@@ -40,7 +40,7 @@ describe("Admin site settings route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ settings });
     expect(repository.saveAdminSiteSettings).toHaveBeenCalledOnce();
-    for (const path of ["/admin", "/admin/settings", "/th", "/en", "/th/commission", "/en/commission"]) {
+    for (const path of ["/admin", "/admin/settings", "/th", "/en", "/th/about", "/en/about", "/th/commission", "/en/commission"]) {
       expect(cache.revalidatePath).toHaveBeenCalledWith(path);
     }
   });

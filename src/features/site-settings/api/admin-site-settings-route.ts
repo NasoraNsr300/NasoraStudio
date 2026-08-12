@@ -24,7 +24,7 @@ export function siteSettingsMutationError(error: unknown) {
 }
 
 export function revalidateSiteSettings() {
-  for (const path of ["/admin", "/admin/settings", "/th", "/en", "/th/commission", "/en/commission"]) {
+  for (const path of ["/admin", "/admin/settings", "/th", "/en", "/th/about", "/en/about", "/th/commission", "/en/commission"]) {
     revalidatePath(path);
   }
 }

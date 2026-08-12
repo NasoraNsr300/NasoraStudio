@@ -24,11 +24,21 @@ describe("site settings domain", () => {
     const projected = projectPublicSiteSettings(siteSettingsRowSchema.parse(row));
 
     expect(projected).toEqual({
+      aboutBiography: {
+        en: "Nasora is an independent illustrator creating character-led artwork, stories, and commission pieces with a warm, atmospheric finish.",
+        th: "Nasora เป็นนักวาดอิสระที่สร้างสรรค์งานตัวละคร เรื่องราว และคอมมิชชันในบรรยากาศอบอุ่นนุ่มนวล",
+      },
+      aboutContact: {
+        en: "For commission questions, availability, or a friendly hello, start with Discord.",
+        th: "หากมีคำถามเกี่ยวกับคอมมิชชัน คิว หรืออยากทักทาย เริ่มต้นพูดคุยที่ Discord ได้เลย",
+      },
       businessHours: "11:00 – 22:00",
       commissionsOpen: false,
       discordContact: "nasora.studio",
+      contactEmail: "nasora.nsr300@gmail.com",
       homeDescription: { en: "Stories made visible", th: "ถ่ายทอดเรื่องราวให้มองเห็น" },
       homeHeading: { en: "Draw your world", th: "รับวาดภาพในโลกของคุณ" },
+      instagramUrl: "",
       particlesEnabled: true,
       queueCapacity: 10,
       shootingStarsEnabled: true,
