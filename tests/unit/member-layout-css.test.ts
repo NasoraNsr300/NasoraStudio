@@ -15,6 +15,11 @@ describe("member workspace layout", () => {
     expect(pagesCss).toMatch(/\.paymentActions\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*flex-end/i);
   });
 
+  it("uses equal horizontal padding for every payment summary column", () => {
+    expect(pagesCss).toMatch(/\.moneyGrid div\s*\{[^}]*padding:\s*\.3rem 1rem/i);
+    expect(pagesCss).not.toMatch(/\.moneyGrid div:first-child\s*\{[^}]*padding-left:\s*0/i);
+  });
+
   it("lays out timeline dates without negative translation overlap", () => {
     expect(jobCss).toMatch(/\.timeline article\s*\{[^}]*grid-template-columns:\s*7rem\s+1\.8rem\s+minmax\(0,\s*1fr\)/i);
     expect(jobCss).not.toMatch(/\.timeline article\s*\{[^}]*transform:\s*translateX/i);
