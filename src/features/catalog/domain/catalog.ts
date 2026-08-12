@@ -193,26 +193,34 @@ export function mapPublicAlbum(row: CatalogAlbumRow): { category: ServiceCategor
     slug: row.slug,
     typeCount: activeServices.length,
   };
-  const types: ServiceType[] = activeServices.map((service) => ({
-    availability: service.availability,
-    categorySlug: row.slug,
-    description: service.description,
-    displayOrder: service.display_order,
-    documentSlugs: service.document_slugs,
-    examples: [],
-    freeRevisionCount: service.free_revision_count,
-    modifiers: service.modifiers,
-    name: service.name,
-    published: service.published,
-    referencePrices: service.commission_service_prices
-      .map((price) => ({ amountThb: price.amount_satang / 100, label: price.label, pace: price.pace, usage: price.usage }))
-      .sort((left, right) => {
-        const leftRow = service.commission_service_prices.find((price) => price.usage === left.usage && price.pace === left.pace);
-        const rightRow = service.commission_service_prices.find((price) => price.usage === right.usage && price.pace === right.pace);
-        return (leftRow?.display_order ?? 0) - (rightRow?.display_order ?? 0);
-      }),
-    slug: service.slug,
-    timingGuidance: service.timing_guidance,
-  }));
+  const types: ServiceType[] = activeServices.map((service) => {
+    const coverMedia = mapMedia(service.commission_catalog_media);
+    return {
+      availability: service.availability,
+      categorySlug: row.slug,
+      description: service.description,
+      displayOrder: service.display_order,
+      documentSlugs: service.document_slugs,
+      examples: coverMedia ? [{
+        crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" },
+        id: coverMedia.id,
+        media: coverMedia,
+        title: service.name,
+      }] : [],
+      freeRevisionCount: service.free_revision_count,
+      modifiers: service.modifiers,
+      name: service.name,
+      published: service.published,
+      referencePrices: service.commission_service_prices
+        .map((price) => ({ amountThb: price.amount_satang / 100, label: price.label, pace: price.pace, usage: price.usage }))
+        .sort((left, right) => {
+          const leftRow = service.commission_service_prices.find((price) => price.usage === left.usage && price.pace === left.pace);
+          const rightRow = service.commission_service_prices.find((price) => price.usage === right.usage && price.pace === right.pace);
+          return (leftRow?.display_order ?? 0) - (rightRow?.display_order ?? 0);
+        }),
+      slug: service.slug,
+      timingGuidance: service.timing_guidance,
+    };
+  });
   return { category, types };
 }

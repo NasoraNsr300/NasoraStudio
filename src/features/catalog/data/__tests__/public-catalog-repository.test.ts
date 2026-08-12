@@ -7,6 +7,7 @@ import { getPublicAlbum, listPublicAlbums } from "@/features/catalog/data/public
 
 const albumId = "00000000-0000-4000-8000-000000000101";
 const serviceId = "00000000-0000-4000-8000-000000000102";
+const serviceMediaId = "00000000-0000-4000-8000-000000000103";
 
 function albumRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -78,6 +79,32 @@ describe("public catalog repository", () => {
         slug: "chibi-full-body",
       }),
     ]);
+  });
+
+  it("maps a saved service cover into the public card and detail example", async () => {
+    const row = albumRow();
+    (row.commission_services[0] as unknown as { commission_catalog_media: unknown }).commission_catalog_media = {
+      alt: { en: "Updated Chibi cover", th: "ภาพปกชิบิที่อัปเดต" },
+      content_type: "image/webp",
+      height: 1200,
+      id: serviceMediaId,
+      width: 1200,
+    };
+    const query = queryResult([row]);
+    supabase.createClient.mockResolvedValue({ from: vi.fn(() => query) });
+
+    const catalog = await listPublicAlbums("th");
+
+    expect(catalog.types[0].examples).toEqual([{
+      crop: { aspectRatio: "1 / 1", objectPosition: "50% 50%" },
+      id: serviceMediaId,
+      media: expect.objectContaining({
+        cardSrc: `/api/catalog/media/${serviceMediaId}`,
+        detailSrc: `/api/catalog/media/${serviceMediaId}`,
+        thumbnailSrc: `/api/catalog/media/${serviceMediaId}`,
+      }),
+      title: { en: "Chibi Full Body", th: "Chibi Full Body" },
+    }]);
   });
 
   it("loads one published album and returns null for a missing slug", async () => {
