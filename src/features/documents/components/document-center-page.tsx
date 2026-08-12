@@ -66,7 +66,7 @@ export function DocumentCenterPage({ documents, initialQuery = "", locale }: Doc
           {featuredDocument.coverMedia ? <>
             {/* Stored WebP derivative; no runtime image transformation is required. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="" src={featuredDocument.coverMedia.cardSrc} />
+            <img alt="" decoding="async" height={featuredDocument.coverMedia.height} loading="eager" src={featuredDocument.coverMedia.cardSrc} width={featuredDocument.coverMedia.width} />
           </> : <span aria-hidden="true">⌖</span>}
         </div>
         <div className={styles.featuredCopy}><p>⌖ {labels.pinned}</p><h2><Link href={`/${locale}/documents/${featuredDocument.slug}`}>{featuredDocument.title[locale]}</Link></h2><span>{featuredDocument.summary[locale]}</span></div>

@@ -49,8 +49,8 @@ function PortfolioGalleryContent({ categories, initialCategory, initialQuery, in
       {categories.map(([slug, label]) => <button aria-pressed={category === slug} key={slug} onClick={() => setCategory(slug)} type="button"><Sparkles size={16} />{label[locale]}</button>)}
     </div>
     <div className={styles.gallery}>
-      {visibleItems.map((item) => <button aria-label={`${text.view} ${item.title[locale]}`} className={`${styles.card} ${styles[portfolioTileShape({ ...item.media, id: item.id })]}`} key={item.id} onClick={() => setSelectedItem(item)} type="button">
-        <img alt={item.media.alt[locale]} className={styles.cardMedia} height={item.media.height} loading="lazy" src={item.media.cardSrc} width={item.media.width} />
+      {visibleItems.map((item, index) => <button aria-label={`${text.view} ${item.title[locale]}`} className={`${styles.card} ${styles[portfolioTileShape({ ...item.media, id: item.id })]}`} key={item.id} onClick={() => setSelectedItem(item)} type="button">
+        <img alt={item.media.alt[locale]} className={styles.cardMedia} decoding="async" fetchPriority={index === 0 ? "high" : "auto"} height={item.media.height} loading={index === 0 ? "eager" : "lazy"} src={item.media.cardSrc} width={item.media.width} />
         <span className={styles.cardOverlay}><strong>{item.title[locale]}</strong></span>
       </button>)}
     </div>

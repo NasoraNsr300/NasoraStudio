@@ -30,6 +30,7 @@ describe("member live UI contract", () => {
       "src/features/member/components/member-job-page.tsx",
       "src/features/member/components/member-profile-form.tsx",
       "src/features/member/components/member-profile-page.tsx",
+      "src/features/member/components/member-quote-panel.tsx",
       "src/features/member/components/member-sidebar.tsx",
     ];
     const combined = files.map(source).join("\n");

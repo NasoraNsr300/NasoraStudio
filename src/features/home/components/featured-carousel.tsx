@@ -54,8 +54,10 @@ function FeaturedGroup({ ariaHidden = false, items, locale }: FeaturedGroupProps
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt={ariaHidden ? "" : item.media.alt[locale]}
+              decoding="async"
+              fetchPriority={!ariaHidden && index === 0 ? "high" : "auto"}
               height={item.media.height}
-              loading="lazy"
+              loading={!ariaHidden && index === 0 ? "eager" : "lazy"}
               sizes="(min-width: 1024px) 20vw, 44vw"
               src={item.media.cardSrc}
               srcSet={`${item.media.thumbnailSrc} 480w, ${item.media.cardSrc} 960w, ${item.media.detailSrc} 1600w`}

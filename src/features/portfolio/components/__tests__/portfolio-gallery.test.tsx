@@ -41,4 +41,11 @@ describe("PortfolioGallery", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("loads the first visible artwork eagerly and defers the rest", () => {
+    render(<PortfolioGallery items={items} locale="en" />);
+    const images = screen.getAllByRole("img");
+    expect(images[0]).toHaveAttribute("loading", "eager");
+    expect(images[1]).toHaveAttribute("loading", "lazy");
+  });
 });

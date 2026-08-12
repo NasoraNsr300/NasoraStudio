@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { documents } from "@/data/fixtures/public-content";
 import { DocumentSearch } from "@/features/documents/components/document-search";
 import { DocumentReader } from "@/features/documents/components/document-reader";
+import { DocumentCenterPage } from "@/features/documents/components/document-center-page";
 import { richTextPlainText } from "@/features/documents/domain/rich-text";
 
 const navigation = vi.hoisted(() => ({ params: new URLSearchParams(), useSearchParams: vi.fn(() => new URLSearchParams()) }));
@@ -19,6 +20,14 @@ afterEach(() => {
 const publishedDocuments = documents.filter((document) => document.published);
 
 describe("DocumentCenterPage", () => {
+  it("prioritizes the pinned document cover without runtime transforms", () => {
+    render(<DocumentCenterPage documents={publishedDocuments} locale="en" />);
+    const cover = document.querySelector("article img");
+    expect(cover).not.toBeNull();
+    expect(cover).toHaveAttribute("loading", "eager");
+    expect(cover).toHaveAttribute("decoding", "async");
+  });
+
   it("places pinned documents first and includes direct document URLs", () => {
     render(<DocumentSearch documents={publishedDocuments} locale="en" />);
 

@@ -41,6 +41,15 @@ describe("FeaturedCarousel continuous loop", () => {
     expect(shortItems).toHaveLength(2);
   });
 
+  it("prioritizes only the first visible artwork", () => {
+    render(<FeaturedCarousel items={items} locale="en" />);
+    const images = screen.getAllByRole("img");
+
+    expect(images[0]).toHaveAttribute("loading", "eager");
+    expect(images[0]).toHaveAttribute("fetchpriority", "high");
+    expect(images[1]).toHaveAttribute("loading", "lazy");
+  });
+
   it("renders the approved empty state when no featured work is published", () => {
     render(<FeaturedCarousel items={[]} locale="en" />);
     expect(screen.getByText("No featured work yet")).toBeVisible();
