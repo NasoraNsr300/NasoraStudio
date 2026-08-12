@@ -48,4 +48,14 @@ describe("PortfolioGallery", () => {
     expect(images[0]).toHaveAttribute("loading", "eager");
     expect(images[1]).toHaveAttribute("loading", "lazy");
   });
+
+  it("exposes the source aspect ratio on each artwork card", () => {
+    render(<PortfolioGallery items={items} locale="en" />);
+    expect(screen.getByRole("button", { name: "View Moon Garden" })).toHaveStyle({
+      "--portfolio-aspect-ratio": "1200 / 1600",
+    });
+    expect(screen.getByRole("button", { name: "View Star Child" })).toHaveStyle({
+      "--portfolio-aspect-ratio": "1600 / 900",
+    });
+  });
 });

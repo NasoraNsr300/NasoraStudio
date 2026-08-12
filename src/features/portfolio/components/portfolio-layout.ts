@@ -1,4 +1,4 @@
-export type PortfolioTileShape = "hero" | "portrait" | "square" | "wide";
+export type PortfolioTileWidth = "single" | "double";
 
 function stableHash(value: string) {
   let hash = 2166136261;
@@ -9,10 +9,8 @@ function stableHash(value: string) {
   return hash >>> 0;
 }
 
-export function portfolioTileShape(media: { height: number; id: string; width: number }): PortfolioTileShape {
+export function portfolioTileWidth(media: { height: number; id: string; width: number }): PortfolioTileWidth {
   const ratio = media.width / media.height;
-  const variation = stableHash(media.id) % 5;
-  if (ratio >= 1.35) return variation === 0 ? "hero" : "wide";
-  if (ratio <= 0.82) return "portrait";
-  return variation === 0 ? "wide" : "square";
+  if (ratio < 1.35) return "single";
+  return stableHash(media.id) % 5 === 0 ? "single" : "double";
 }

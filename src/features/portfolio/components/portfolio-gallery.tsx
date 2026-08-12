@@ -2,13 +2,13 @@
 /* eslint-disable @next/next/no-img-element -- private R2 media is served through signed redirect routes */
 
 import { Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 
 import type { PublicPortfolioItem } from "@/features/portfolio/domain/portfolio";
 import type { Locale } from "@/shared/i18n/locales";
 
 import { ImageLightbox } from "./image-lightbox";
-import { portfolioTileShape } from "./portfolio-layout";
+import { portfolioTileWidth } from "./portfolio-layout";
 import styles from "./portfolio.module.css";
 
 export type PortfolioGalleryProps = {
@@ -49,7 +49,7 @@ function PortfolioGalleryContent({ categories, initialCategory, initialQuery, in
       {categories.map(([slug, label]) => <button aria-pressed={category === slug} key={slug} onClick={() => setCategory(slug)} type="button"><Sparkles size={16} />{label[locale]}</button>)}
     </div>
     <div className={styles.gallery}>
-      {visibleItems.map((item, index) => <button aria-label={`${text.view} ${item.title[locale]}`} className={`${styles.card} ${styles[portfolioTileShape({ ...item.media, id: item.id })]}`} key={item.id} onClick={() => setSelectedItem(item)} type="button">
+      {visibleItems.map((item, index) => <button aria-label={`${text.view} ${item.title[locale]}`} className={`${styles.card} ${styles[portfolioTileWidth({ ...item.media, id: item.id })]}`} key={item.id} onClick={() => setSelectedItem(item)} style={{ "--portfolio-aspect-ratio": `${item.media.width} / ${item.media.height}` } as CSSProperties} type="button">
         <img alt={item.media.alt[locale]} className={styles.cardMedia} decoding="async" fetchPriority={index === 0 ? "high" : "auto"} height={item.media.height} loading={index === 0 ? "eager" : "lazy"} src={item.media.cardSrc} width={item.media.width} />
         <span className={styles.cardOverlay}><strong>{item.title[locale]}</strong></span>
       </button>)}

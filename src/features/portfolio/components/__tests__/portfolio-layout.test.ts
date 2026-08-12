@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { portfolioTileShape } from "@/features/portfolio/components/portfolio-layout";
+import { portfolioTileWidth } from "@/features/portfolio/components/portfolio-layout";
 
-describe("portfolioTileShape", () => {
-  it("returns a stable masonry span from id and image ratio", () => {
-    const first = portfolioTileShape({ height: 1600, id: "00000000-0000-4000-8000-000000000001", width: 1200 });
-    expect(portfolioTileShape({ height: 1600, id: "00000000-0000-4000-8000-000000000001", width: 1200 })).toEqual(first);
-    expect(first).toMatch(/^(portrait|square|wide|hero)$/);
+describe("portfolioTileWidth", () => {
+  it("keeps portrait and near-square media in one column", () => {
+    expect(portfolioTileWidth({ height: 1600, id: "00000000-0000-4000-8000-000000000001", width: 1200 })).toBe("single");
+    expect(portfolioTileWidth({ height: 1200, id: "00000000-0000-4000-8000-000000000003", width: 1200 })).toBe("single");
   });
 
-  it("uses wide spans for landscape media and never leaves an undefined shape", () => {
-    expect(["wide", "hero"]).toContain(portfolioTileShape({ height: 800, id: "00000000-0000-4000-8000-000000000002", width: 1800 }));
+  it("uses a deterministic span for landscape media", () => {
+    const media = { height: 800, id: "00000000-0000-4000-8000-000000000002", width: 1800 };
+    expect(portfolioTileWidth(media)).toBe("double");
+    expect(portfolioTileWidth(media)).toBe(portfolioTileWidth(media));
   });
 });
