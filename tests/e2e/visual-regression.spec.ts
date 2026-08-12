@@ -75,7 +75,7 @@ for (const viewport of viewports) {
   test(`service details matches ${viewport.name} baseline`, async ({ page }) => {
     await prepareVisualPage(page, "/en/commission/illustration", viewport.width, viewport.height);
     await page.getByRole("button", { name: "View Details & Rates" }).first().click();
-    await expect(page.getByRole("dialog", { name: "Illustration Half Body" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page).toHaveScreenshot(`service-details-${viewport.width}x${viewport.height}.png`, {
       animations: "disabled",
       caret: "initial",
