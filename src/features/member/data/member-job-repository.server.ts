@@ -46,6 +46,12 @@ export type MemberJobView = {
 
 function oneStatus(value: z.infer<typeof statusSchema>) { return Array.isArray(value) ? value[0] : value; }
 
+function formatDateTime(value: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
+    day: "numeric", hour: "2-digit", hour12: false, minute: "2-digit", month: "short", timeZone: "Asia/Bangkok", year: "numeric",
+  }).format(new Date(value));
+}
+
 function mapMemberJob(data: unknown, locale: Locale): MemberJobView {
   const parsed = rowSchema.safeParse(data);
   if (!parsed.success) throw new Error("Member job data is unavailable");
@@ -56,7 +62,7 @@ function mapMemberJob(data: unknown, locale: Locale): MemberJobView {
   if (!currentStatus || !row.commission_requests) throw new Error("Member job data is unavailable");
   return {
     code: row.id.slice(0, 8).toUpperCase(), deadlineLabel: row.deadline ?? "—", freeRevisions: row.default_free_revisions,
-    history: visibleHistory.map((history) => ({ changedAtLabel: history.changed_at, id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
+    history: visibleHistory.map((history) => ({ changedAtLabel: formatDateTime(history.changed_at, locale), id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
     deliveries: row.deliveries.map((delivery) => ({ deliveredAt: delivery.delivered_at, displayName: delivery.display_name, expiresAt: delivery.expires_at, id: delivery.id, kind: delivery.kind })),
     id: row.id, paidSatang: paymentRows.reduce((sum, payment) => sum + payment.amount_satang, 0), progressUpdates: row.job_progress_updates.map((progress) => ({ body: progress.body, createdAt: progress.created_at, id: progress.id, ...(progress.image_content_type ? { imageId: progress.id } : {}), title: progress.title })), quoteId: row.accepted_quote_id,
     requestId: row.commission_requests.id, statusLabel: oneStatus(currentStatus.status_definitions).label[locale],

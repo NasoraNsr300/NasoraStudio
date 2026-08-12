@@ -12,6 +12,7 @@ describe("MemberPaymentsContent", () => {
     expect(screen.getByText("1,000 THB")).toBeVisible();
     expect(screen.getAllByText("500 THB")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Make payment" })).toHaveAttribute("href", "/en/member/requests/request-1");
+    expect(screen.getByRole("link", { name: "Make payment" }).parentElement?.className).toContain("paymentActions");
     expect(screen.queryByText("#PAY-260520-001")).not.toBeInTheDocument();
   });
 });

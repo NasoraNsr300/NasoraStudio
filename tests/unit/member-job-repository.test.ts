@@ -43,7 +43,12 @@ describe("member job repository", () => {
     expect(selection).toContain("customer_visible");
     expect(selection).toContain("commission_requests!request_id(id,usage_type)");
     expect(query.eq).toHaveBeenCalledWith("user_id", "member-1");
-    expect(job).toEqual(expect.objectContaining({ id: "job-1", paidSatang: 70000, statusLabel: "Waiting" }));
+    expect(job).toEqual(expect.objectContaining({
+      history: [expect.objectContaining({ changedAtLabel: "10 Aug 2026, 08:00" })],
+      id: "job-1",
+      paidSatang: 70000,
+      statusLabel: "Waiting",
+    }));
   });
 
   it("lists real member jobs with request and quote links", async () => {

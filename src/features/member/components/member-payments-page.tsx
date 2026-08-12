@@ -23,7 +23,7 @@ export function MemberPaymentsContent({ jobs = [], locale }: { jobs?: MemberJobV
       return <article className={styles.surface} key={job.id}>
         <div className={styles.surfaceTitle}><div><h2>{job.title}</h2><small>#{job.code} · {job.statusLabel}</small></div></div>
         <div className={styles.moneyGrid}><div><small>{th ? "ราคารวม" : "Total"}</small><strong>{money(job.totalSatang, locale)}</strong></div><div><small>{th ? "ชำระแล้ว" : "Paid"}</small><strong className={styles.green}>{money(job.paidSatang, locale)}</strong></div><div><small>{th ? "ยอดคงเหลือ" : "Balance"}</small><strong className={styles.gold}>{money(outstanding, locale)}</strong></div></div>
-        {outstanding > 0 ? <Link className={styles.goldButton} href={`/${locale}/member/requests/${job.requestId}`}><CreditCard size={17} />{th ? "ชำระเพิ่มเติม" : "Make payment"}</Link> : <p className={styles.verified}>● {th ? "ชำระครบแล้ว" : "Paid in full"}</p>}
+        <div className={styles.paymentActions}>{outstanding > 0 ? <Link className={styles.goldButton} href={`/${locale}/member/requests/${job.requestId}`}><CreditCard size={17} />{th ? "ชำระเพิ่มเติม" : "Make payment"}</Link> : <p className={styles.verified}>● {th ? "ชำระครบแล้ว" : "Paid in full"}</p>}</div>
       </article>;
     })}</div>
   </section>;
