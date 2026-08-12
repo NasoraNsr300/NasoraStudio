@@ -7,8 +7,8 @@ import { createClient } from "@/shared/supabase/server";
 
 const localizedSchema = z.object({ en: z.string().min(1), th: z.string().min(1) });
 const statusSchema = z.union([
-  z.object({ customer_visible: z.literal(true), label: localizedSchema }),
-  z.array(z.object({ customer_visible: z.literal(true), label: localizedSchema })).length(1),
+  z.object({ customer_visible: z.literal(true), label: localizedSchema, stable_key: z.string().min(1) }),
+  z.array(z.object({ customer_visible: z.literal(true), label: localizedSchema, stable_key: z.string().min(1) })).length(1),
 ]);
 const rowSchema = z.object({
   accepted_quote_id: z.string().min(1),
@@ -38,6 +38,7 @@ export type MemberJobView = {
   progressUpdates?: Array<{ body: string; createdAt: string; id: string; imageId?: string; title: string }>;
   quoteId: string;
   requestId: string;
+  statusKey?: string;
   statusLabel: string;
   title: string;
   totalSatang: number;
@@ -63,15 +64,15 @@ function mapMemberJob(data: unknown, locale: Locale): MemberJobView {
   return {
     code: row.id.slice(0, 8).toUpperCase(), deadlineLabel: row.deadline ?? "—", freeRevisions: row.default_free_revisions,
     history: visibleHistory.map((history) => ({ changedAtLabel: formatDateTime(history.changed_at, locale), id: history.id, publicNote: history.public_note, statusLabel: oneStatus(history.status_definitions).label[locale] })),
-    deliveries: row.deliveries.map((delivery) => ({ deliveredAt: delivery.delivered_at, displayName: delivery.display_name, expiresAt: delivery.expires_at, id: delivery.id, kind: delivery.kind })),
+    deliveries: row.deliveries.map((delivery) => ({ deliveredAt: delivery.delivered_at, displayName: delivery.display_name, expiresAt: delivery.expires_at, id: delivery.id, kind: delivery.kind })).sort((a, b) => b.deliveredAt.localeCompare(a.deliveredAt)),
     id: row.id, paidSatang: paymentRows.reduce((sum, payment) => sum + payment.amount_satang, 0), progressUpdates: row.job_progress_updates.map((progress) => ({ body: progress.body, createdAt: progress.created_at, id: progress.id, ...(progress.image_content_type ? { imageId: progress.id } : {}), title: progress.title })), quoteId: row.accepted_quote_id,
-    requestId: row.commission_requests.id, statusLabel: oneStatus(currentStatus.status_definitions).label[locale],
+    requestId: row.commission_requests.id, statusKey: oneStatus(currentStatus.status_definitions).stable_key, statusLabel: oneStatus(currentStatus.status_definitions).label[locale],
     title: `${row.category_name_snapshot[locale]} — ${row.service_type_name_snapshot[locale]}`, totalSatang: row.original_quote_total_satang,
     usageType: row.commission_requests.usage_type,
   };
 }
 
-const memberJobSelect = "id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,job_status_history(id,changed_at,public_note,status_definitions!to_status_id(label,customer_visible)),job_progress_updates(id,title,body,image_content_type,created_at),deliveries(id,kind,display_name,delivered_at,expires_at),commission_requests!request_id(id,usage_type),quotes!accepted_quote_id(payments(amount_satang))";
+const memberJobSelect = "id,accepted_quote_id,member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot,original_quote_total_satang,default_free_revisions,deadline,job_status_history(id,changed_at,public_note,status_definitions!to_status_id(stable_key,label,customer_visible)),job_progress_updates(id,title,body,image_content_type,created_at),deliveries(id,kind,display_name,delivered_at,expires_at),commission_requests!request_id(id,usage_type),quotes!accepted_quote_id(payments(amount_satang))";
 
 export async function getMemberJob(jobId: string, locale: Locale): Promise<MemberJobView | null> {
   const client = await createClient();

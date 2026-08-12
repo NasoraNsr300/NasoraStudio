@@ -18,7 +18,7 @@ describe("member job repository", () => {
         changed_at: "2026-08-10T01:00:00Z",
         id: "history-1",
         public_note: "Deposit verified",
-        status_definitions: { customer_visible: true, label: { en: "Waiting", th: "Waiting" } },
+        status_definitions: { customer_visible: true, label: { en: "Waiting", th: "Waiting" }, stable_key: "waiting" },
       }],
       member_display_name_snapshot: "Mali",
       original_quote_total_satang: 140000,
@@ -41,12 +41,14 @@ describe("member job repository", () => {
     expect(selection).not.toContain("guest_");
     expect(selection).not.toContain("status_definitions!status_id");
     expect(selection).toContain("customer_visible");
+    expect(selection).toContain("stable_key");
     expect(selection).toContain("commission_requests!request_id(id,usage_type)");
     expect(query.eq).toHaveBeenCalledWith("user_id", "member-1");
     expect(job).toEqual(expect.objectContaining({
       history: [expect.objectContaining({ changedAtLabel: "10 Aug 2026, 08:00" })],
       id: "job-1",
       paidSatang: 70000,
+      statusKey: "waiting",
       statusLabel: "Waiting",
     }));
   });
@@ -58,7 +60,7 @@ describe("member job repository", () => {
       default_free_revisions: 4, id: "job-1", member_display_name_snapshot: "Mali",
       original_quote_total_satang: 140000, quotes: { payments: [{ amount_satang: 70000 }] },
       service_type_name_snapshot: { en: "Full Body", th: "Full Body" },
-      job_status_history: [{ changed_at: "2026-08-10T01:00:00Z", id: "history-1", public_note: null, status_definitions: { customer_visible: true, label: { en: "Waiting", th: "รอเริ่มงาน" } } }],
+      job_status_history: [{ changed_at: "2026-08-10T01:00:00Z", id: "history-1", public_note: null, status_definitions: { customer_visible: true, label: { en: "Waiting", th: "รอเริ่มงาน" }, stable_key: "waiting" } }],
     };
     const query = { eq: vi.fn((_c: string, _v: string) => query), order: vi.fn(async () => ({ data: [row], error: null })), select: vi.fn(() => query) };
     supabase.createClient.mockResolvedValue({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: "member-1" } } })) }, from: vi.fn(() => query) });

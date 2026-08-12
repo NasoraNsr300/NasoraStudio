@@ -91,6 +91,8 @@ const copy = {
 export function MemberJobPage({ job, locale }: { job: MemberJobView; locale: Locale }) {
   const labels = copy[locale];
   const [activeSection, setActiveSection] = useState<MemberSection>("jobs");
+  const activeStage = job.statusKey === "completed" ? 5 : job.statusKey === "delivery" ? 4 : 3;
+  const downloadableDelivery = job.deliveries?.[0];
 
   return (
     <main className={styles.memberPage}>
@@ -111,14 +113,16 @@ export function MemberJobPage({ job, locale }: { job: MemberJobView; locale: Loc
           </header>
 
           <ol className={styles.stageTrack}>
-            {labels.stages.map((stage, index) => (
-              <li className={index < 3 ? styles.stageDone : index === 3 ? styles.stageActive : undefined} key={stage}>
+            {labels.stages.map((stage, index) => {
+              const state = index < activeStage || (job.statusKey === "completed" && index === activeStage) ? "done" : index === activeStage ? "active" : "locked";
+              return (
+              <li className={state === "done" ? styles.stageDone : state === "active" ? styles.stageActive : undefined} data-state={state} key={stage}>
                 <span>
-                  {index < 3 ? <Check size={17} /> : index === 3 ? <Sparkles size={17} /> : <LockKeyhole size={15} />}
+                  {state === "done" ? <Check size={17} /> : state === "active" ? <Sparkles size={17} /> : <LockKeyhole size={15} />}
                 </span>
                 <strong>{stage}</strong>
               </li>
-            ))}
+            );})}
           </ol>
 
           <div className={styles.jobGrid}>
@@ -228,10 +232,17 @@ export function MemberJobPage({ job, locale }: { job: MemberJobView; locale: Loc
                     {" · "}{locale === "th" ? "ใช้ได้ถึง" : "Available until"} {new Date(delivery.expiresAt).toLocaleDateString(locale)}
                   </p>) : <p>{labels.deliveryHint}</p>}
                 </div>
-                <span className={styles.deliveryStatus}>
-                  <Send size={17} />
-                  {job.deliveries?.length ? (locale === "th" ? "พร้อมดาวน์โหลด" : "Ready to download") : labels.locked}
-                </span>
+                {downloadableDelivery ? (
+                  <Link className={styles.deliveryStatus} href={`/api/member/deliveries/${downloadableDelivery.id}/download`} prefetch={false}>
+                    <Send size={17} />
+                    {locale === "th" ? "พร้อมดาวน์โหลด" : "Ready to download"}
+                  </Link>
+                ) : (
+                  <span className={styles.deliveryStatus}>
+                    <LockKeyhole size={17} />
+                    {labels.locked}
+                  </span>
+                )}
               </section>
             </div>
           </div>

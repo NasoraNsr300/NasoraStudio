@@ -17,9 +17,19 @@ describe("member job page", () => {
   });
 
   it("shows persisted progress and an unlocked delivery without exposing its private object key", () => {
-    render(<MemberJobPage locale="th" job={{ id: "job-1", code: "NSR-0001", title: "Illustration — Full Body", statusLabel: "ลงสี", deadlineLabel: "1 Sep 2026", totalSatang: 140000, paidSatang: 140000, quoteId: "quote-1", requestId: "request-1", usageType: "personal", freeRevisions: 4, history: [], progressUpdates: [{ body: "ส่งภาพลงสีรอบแรกให้ตรวจค่ะ", createdAt: "2026-08-10T10:00:00Z", id: "progress-1", title: "ลงสีรอบแรก" }], deliveries: [{ deliveredAt: "2026-08-10T11:00:00Z", displayName: "final-art.zip", expiresAt: "2026-09-09T11:00:00Z", id: "delivery-1", kind: "r2_file" }] }} />);
+    render(<MemberJobPage locale="th" job={{ id: "job-1", code: "NSR-0001", title: "Illustration — Full Body", statusKey: "completed", statusLabel: "เสร็จสิ้น", deadlineLabel: "1 Sep 2026", totalSatang: 140000, paidSatang: 140000, quoteId: "quote-1", requestId: "request-1", usageType: "personal", freeRevisions: 4, history: [], progressUpdates: [{ body: "ส่งภาพลงสีรอบแรกให้ตรวจค่ะ", createdAt: "2026-08-10T10:00:00Z", id: "progress-1", title: "ลงสีรอบแรก" }], deliveries: [{ deliveredAt: "2026-08-10T11:00:00Z", displayName: "final-art.zip", expiresAt: "2026-09-09T11:00:00Z", id: "delivery-1", kind: "r2_file" }] }} />);
     expect(screen.getByText("ส่งภาพลงสีรอบแรกให้ตรวจค่ะ")).toBeVisible();
     expect(screen.getByRole("link", { name: /final-art\.zip/ })).toHaveAttribute("href", "/api/member/deliveries/delivery-1/download");
+    expect(screen.getByRole("link", { name: "พร้อมดาวน์โหลด" })).toHaveAttribute("href", "/api/member/deliveries/delivery-1/download");
+    expect(screen.getByText("เสร็จสิ้น", { selector: "li strong" }).closest("li")).toHaveAttribute("data-state", "done");
+    expect(screen.getByText("ส่งงาน", { selector: "li strong" }).closest("li")).toHaveAttribute("data-state", "done");
+    expect(screen.getByText("กำลังทำงาน", { selector: "li strong" }).closest("li")).not.toHaveAttribute("data-state", "active");
     expect(document.body.textContent).not.toContain("deliveries/job-1/private-key");
+  });
+
+  it("moves the workflow tracker to delivery when the persisted status changes", () => {
+    render(<MemberJobPage locale="en" job={{ id: "job-1", code: "NSR-0001", title: "Chibi — Bust", statusKey: "delivery", statusLabel: "Delivery", deadlineLabel: "1 Sep 2026", totalSatang: 1000, paidSatang: 1000, quoteId: "quote-1", requestId: "request-1", usageType: "personal", freeRevisions: 4, history: [] }} />);
+    expect(screen.getByText("Delivery", { selector: "li strong" }).closest("li")).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("In progress", { selector: "li strong" }).closest("li")).toHaveAttribute("data-state", "done");
   });
 });
