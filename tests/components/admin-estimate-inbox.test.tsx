@@ -36,6 +36,16 @@ const requests: AdminEstimateSummary[] = [{
   submittedAt: "2026-08-09T10:00:00.000Z",
 }];
 
+const guestRequest: AdminEstimateSummary = {
+  ...requests[0],
+  customerDisplayName: "Zara",
+  id: "request-2",
+  requestCode: "REQ-ZYXWVUT987",
+  requesterType: "guest",
+  status: "quoted",
+  submittedAt: "2026-08-10T10:00:00.000Z",
+};
+
 describe("AdminEstimateInbox", () => {
   it("renders supplied submitted requests in the approved inbox table", () => {
     render(<AdminEstimateInbox requests={requests} />);
@@ -75,5 +85,28 @@ describe("AdminEstimateInbox", () => {
 
     expect(screen.getByRole("row", { selected: true })).toBeVisible();
     expect(screen.queryByRole("region", { name: "ตัวอย่างแบบประเมิน REQ-ABCDEF1234" })).not.toBeInTheDocument();
+  });
+
+  it("searches the visible inbox without changing the current route", async () => {
+    const user = userEvent.setup();
+    render(<AdminEstimateInbox requests={[requests[0], guestRequest]} />);
+
+    await user.type(screen.getByRole("searchbox"), "Zara");
+
+    expect(screen.getByText("Zara")).toBeVisible();
+    expect(screen.queryByText("Mali")).not.toBeInTheDocument();
+  });
+
+  it("cycles requester filters and toggles submitted ordering", async () => {
+    const user = userEvent.setup();
+    render(<AdminEstimateInbox requests={[requests[0], guestRequest]} />);
+
+    await user.click(screen.getByRole("button", { name: /ตัวกรอง/ }));
+    expect(screen.getByText("Mali")).toBeVisible();
+    expect(screen.queryByText("Zara")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /ล่าสุด/ }));
+    const rows = screen.getAllByRole("row");
+    expect(within(rows[1]).getByText("Mali")).toBeVisible();
   });
 });

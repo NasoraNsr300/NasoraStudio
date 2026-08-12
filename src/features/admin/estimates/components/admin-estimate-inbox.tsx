@@ -2,6 +2,7 @@
 
 import { ChevronDown, Filter, PenLine, Search, UserRound } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import type { AdminEstimateStatus, AdminEstimateSummary } from "@/features/admin/estimates/domain/admin-estimate";
 import { adminEstimateStatusPresentation } from "@/features/admin/estimates/domain/admin-estimate-status-presentation";
@@ -28,7 +29,16 @@ export function AdminEstimateInbox({
   const router = useRouter();
   const searchParams = useSearchParams();
   const openedRequestId = searchParams.get("request");
-  const openedRequest = requests.find((request) => request.id === openedRequestId);
+  const [query, setQuery] = useState("");
+  const [requesterFilter, setRequesterFilter] = useState<"all" | "guest" | "member">("all");
+  const [newestFirst, setNewestFirst] = useState(true);
+  const visibleRequests = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase("th");
+    return requests
+      .filter((request) => requesterFilter === "all" || request.requesterType === requesterFilter)
+      .filter((request) => !needle || [request.customerDisplayName, request.requestCode, request.serviceName.en, request.serviceName.th].some((value) => value.toLocaleLowerCase("th").includes(needle)))
+      .toSorted((left, right) => (newestFirst ? -1 : 1) * left.submittedAt.localeCompare(right.submittedAt));
+  }, [newestFirst, query, requesterFilter, requests]);
 
   function openRequest(request: AdminEstimateSummary) {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
@@ -39,16 +49,16 @@ export function AdminEstimateInbox({
   return <>
     <section className={styles.dataPanel}>
       <div className={styles.toolbar}>
-        <label><Search size={18} /><input placeholder="ค้นหาชื่อลูกค้า หรือเลขแบบประเมิน..." /></label>
-        <button type="button"><Filter size={17} />ตัวกรอง</button>
-        <button type="button">ล่าสุด<ChevronDown size={16} /></button>
+        <label><Search size={18} /><input aria-label="ค้นหาแบบประเมิน" onChange={(event) => setQuery(event.target.value)} placeholder="ค้นหาชื่อลูกค้า หรือเลขแบบประเมิน..." type="search" value={query} /></label>
+        <button aria-label={`ตัวกรอง: ${requesterFilter === "all" ? "ทั้งหมด" : requesterFilter === "member" ? "สมาชิก" : "Guest"}`} onClick={() => setRequesterFilter((current) => current === "all" ? "member" : current === "member" ? "guest" : "all")} type="button"><Filter size={17} />{requesterFilter === "all" ? "ทั้งหมด" : requesterFilter === "member" ? "สมาชิก" : "Guest"}</button>
+        <button aria-label={newestFirst ? "ล่าสุด" : "เก่าสุด"} onClick={() => setNewestFirst((current) => !current)} type="button">{newestFirst ? "ล่าสุด" : "เก่าสุด"}<ChevronDown size={16} /></button>
       </div>
       <table>
         <thead><tr><th>ลูกค้า</th><th>ประเภทงาน</th><th>งบที่แจ้ง</th><th>วันที่ส่ง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
         <tbody>
-          {requests.length === 0
+          {visibleRequests.length === 0
             ? <tr><td colSpan={6}>ยังไม่มีแบบประเมินในรายการนี้</td></tr>
-            : requests.map((request) => {
+            : visibleRequests.map((request) => {
               const status = adminEstimateStatusPresentation[request.status];
               return <tr aria-selected={openedRequestId === request.id} key={request.id}>
                 <td><UserRound size={17} /><span>{request.customerDisplayName}<small>{request.requestCode}</small></span></td>

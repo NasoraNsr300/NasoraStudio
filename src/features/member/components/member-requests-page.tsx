@@ -114,7 +114,7 @@ export function MemberRequestsContent({ auth, locale, repository }: Omit<Props, 
 
   return (
     <section className={styles.pagePanel}>
-      <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><button type="button"><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</button></header>
+      <header className={styles.pageHeader}><div><h1>{th ? "แบบประเมินของฉัน" : "My requests"}</h1><p>{th ? "ติดตามแบบประเมิน ใบเสนอราคา และคำขอที่ส่งให้ Nasora" : "Track requests, estimates, and quotes sent to Nasora."}</p></div><Link href={`/${locale}/commission`}><Plus size={18} />{th ? "ส่งแบบประเมินใหม่" : "New request"}</Link></header>
       <div className={styles.stats}><div className={styles.stat}><span><Clock3 /></span><div><strong>{waitingCount}</strong><small>{th ? "รอตรวจสอบ" : "Awaiting review"}</small></div></div><div className={styles.stat}><span><FileCheck2 /></span><div><strong>{quotedCount}</strong><small>{th ? "ได้รับใบเสนอราคา" : "Quote received"}</small></div></div><div className={styles.stat}><span><FileText /></span><div><strong>{closedCount}</strong><small>{th ? "ปิดรายการแล้ว" : "Closed"}</small></div></div></div>
       <section className={styles.surface}><div className={styles.surfaceTitle}><h2>{th ? "รายการล่าสุด" : "Recent requests"}</h2><span>{requests.length} {th ? "รายการ" : "items"}</span></div>
         {loading ? <p className={styles.loadingCopy}>{th ? "กำลังโหลดแบบประเมิน..." : "Loading requests..."}</p> : null}

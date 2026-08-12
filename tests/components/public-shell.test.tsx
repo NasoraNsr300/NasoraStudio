@@ -61,10 +61,11 @@ describe("PublicShell", () => {
 
     expect(screen.getByText("NASORA")).toBeVisible();
     expect(screen.getByRole("button", { name: "Open menu" })).toBeVisible();
-    expect(screen.getByRole("search", { name: "Search Nasora" })).toHaveAttribute("action", "/en");
+    expect(screen.getByRole("search", { name: "Search portfolio" })).toHaveAttribute("action", "/en/portfolio");
     expect(screen.getByText("OPEN")).toBeVisible();
     expect(within(screen.getByRole("banner")).getByText("Queue")).toBeVisible();
     expect(screen.getByRole("link", { name: "TH" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "TH" }).className).toContain("languageLink");
     expect(screen.getByRole("button", { name: "Night" })).toBeVisible();
     expect(screen.getByRole("button", { name: /account/i })).toBeVisible();
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
@@ -192,7 +193,7 @@ describe("Floating navbar size", () => {
 
 describe("Floating navbar search scope", () => {
   it.each([
-    ["/en", "/en", "Search Nasora"],
+    ["/en", "/en/portfolio", "Search portfolio"],
     ["/en/portfolio", "/en/portfolio", "Search portfolio"],
     ["/en/commission", "/en/commission", "Search commissions"],
     ["/en/queue", "/en/queue", "Search queue"],

@@ -27,6 +27,12 @@ function repositoryWith(data: Awaited<ReturnType<Repository["listMine"]>>): Repo
 }
 
 describe("MemberRequestsPage", () => {
+  it("links the new request action to the commission catalog", async () => {
+    render(<MemberRequestsPage auth={auth} locale="th" repository={repositoryWith({ data: [], ok: true })} />);
+
+    expect(screen.getByRole("link", { name: "ส่งแบบประเมินใหม่" })).toHaveAttribute("href", "/th/commission");
+  });
+
   it("renders an empty state from real repository data", async () => {
     render(<MemberRequestsPage auth={auth} locale="en" repository={repositoryWith({ data: [], ok: true })} />);
 

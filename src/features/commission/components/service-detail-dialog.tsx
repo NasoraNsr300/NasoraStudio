@@ -173,8 +173,9 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
   const requestRef = useRef<HTMLButtonElement>(null);
   const previousPreviewOpen = useRef(initialPreview);
   const [previewOpen, setPreviewOpen] = useState(initialPreview);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [activeExample, setActiveExample] = useState(0);
-  const close = useDialogFocus(open, onClose, dialogRef, closeRef, !previewOpen);
+  const close = useDialogFocus(open, onClose, dialogRef, closeRef, !previewOpen && !imagePreviewOpen);
   const categoryName = titleCaseSlug(service.categorySlug);
   const serviceName = service.name[locale].replace(new RegExp(`^${categoryName}\\s+`, "i"), "");
   const example = service.examples[activeExample] ?? service.examples[0];
@@ -187,7 +188,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
   if (!open) return null;
 
   return <>
-    <div aria-hidden={previewOpen || undefined} aria-labelledby={`service-${service.slug}`} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
+    <div aria-hidden={previewOpen || imagePreviewOpen || undefined} aria-labelledby={`service-${service.slug}`} aria-modal="true" className={styles.dialogBackdrop} inert={previewOpen || imagePreviewOpen || undefined} onClick={(event) => { if (event.target === event.currentTarget) close(); }} ref={dialogRef} role="dialog">
       <section className={styles.detailDialog}>
         <header className={styles.detailHeroHeader}>
           <div className={styles.detailTitleLine}><Sparkles aria-hidden="true" /><h2 aria-label={service.name[locale]} id={`service-${service.slug}`}>{serviceName}</h2><span>—</span><strong>{categoryName}</strong></div>
@@ -200,7 +201,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
 
         <div className={styles.detailBody}>
           <div className={styles.detailGallery}>
-            {example ? <button className={styles.detailMainImage} type="button">
+            {example ? <button aria-label={locale === "th" ? "ดูภาพตัวอย่างขนาดเต็ม" : "View sample image full size"} className={styles.detailMainImage} onClick={() => setImagePreviewOpen(true)} type="button">
               {/* eslint-disable-next-line @next/next/no-img-element -- stored full detail derivative */}
               <img alt={example.media.alt[locale]} height={example.media.height} src={example.media.detailSrc} width={example.media.width} />
             </button> : <div className={styles.detailMainImage} />}
@@ -250,6 +251,11 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
         </footer>
       </section>
     </div>
+    {imagePreviewOpen && example ? <div aria-label={example.media.alt[locale]} aria-modal="true" className={styles.serviceImagePreview} onClick={(event) => { if (event.target === event.currentTarget) setImagePreviewOpen(false); }} onKeyDown={(event) => { if (event.key === "Escape") setImagePreviewOpen(false); }} role="dialog" tabIndex={-1}>
+      <button aria-label={messages.closeDetails} onClick={() => setImagePreviewOpen(false)} type="button"><X /></button>
+      {/* eslint-disable-next-line @next/next/no-img-element -- stored full detail derivative */}
+      <img alt={example.media.alt[locale]} height={example.media.height} src={example.media.detailSrc} width={example.media.width} />
+    </div> : null}
     {previewOpen ? <EstimateRequestDialog locale={locale} onClose={() => setPreviewOpen(false)} service={service} /> : null}
   </>;
 }

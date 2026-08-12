@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -45,6 +45,20 @@ describe("ServiceDetailDialog", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
     await user.click(screen.getByRole("button", { name: "Close details" }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("opens the active example at full size and closes it from the backdrop", async () => {
+    const user = userEvent.setup();
+    const service = serviceTypes.find((candidate) => candidate.slug === "illustration-halfbody");
+    if (!service) throw new Error("Expected illustration fixture service");
+
+    render(<ServiceDetailDialog onClose={() => undefined} open service={service} />);
+
+    await user.click(screen.getByRole("button", { name: "View sample image full size" }));
+    const preview = screen.getByRole("dialog", { name: service.examples[0].media.alt.en });
+    expect(within(preview).getByRole("img", { name: service.examples[0].media.alt.en })).toHaveAttribute("src", service.examples[0].media.detailSrc);
+    fireEvent.click(preview);
+    expect(screen.queryByRole("dialog", { name: service.examples[0].media.alt.en })).not.toBeInTheDocument();
   });
 
   it("does not render when closed", () => {

@@ -156,7 +156,7 @@
 .localeControl { border-left: 1px solid var(--border); padding-left: var(--space-3); }
 .localeControl strong { color: var(--text-primary); font-size: var(--font-label); }
 .localeControl > span { color: var(--text-secondary); }
-.languageLink { color: var(--text-secondary); font-size: var(--font-label); text-decoration: none; }
+.languageLink { align-items: center; color: var(--text-secondary); display: inline-flex; font-size: var(--font-label); justify-content: center; min-height: 44px; min-width: 44px; text-decoration: none; }
 
 .themeControls { border-left: 1px solid var(--border); padding-left: var(--space-3); }
 .themeControls button {

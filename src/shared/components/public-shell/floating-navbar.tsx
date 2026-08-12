@@ -54,7 +54,7 @@ function getSearchConfig(locale: Locale, pathname: string | null) {
   if (route.startsWith(`${basePath}/commission`)) return { action: `${basePath}/commission`, label: locale === "th" ? "ค้นหาคอมมิชชัน" : "Search commissions" };
   if (route.startsWith(`${basePath}/queue`)) return { action: `${basePath}/queue`, label: locale === "th" ? "ค้นหาคิว" : "Search queue" };
   if (route.startsWith(`${basePath}/documents`)) return { action: `${basePath}/documents`, label: locale === "th" ? "ค้นหาเอกสาร" : "Search documents" };
-  return { action: basePath, label: locale === "th" ? "ค้นหา Nasora" : "Search Nasora" };
+  return { action: `${basePath}/portfolio`, label: locale === "th" ? "ค้นหาผลงาน" : "Search portfolio" };
 }
 
 export function FloatingNavbar({ locale, availability = "open" }: FloatingNavbarProps) {
