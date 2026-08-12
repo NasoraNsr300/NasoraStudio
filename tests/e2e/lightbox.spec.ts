@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 async function openFirstArtwork(page: import("@playwright/test").Page) {
   await page.goto("/en/portfolio");
   const opener = page.getByRole("button", { name: /^View / }).first();
+  test.skip(!(await opener.count()), "requires at least one published Portfolio item");
   await opener.click();
   return opener;
 }

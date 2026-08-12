@@ -9,6 +9,7 @@ describe("Portfolio Home presentation migration", () => {
     expect(filename).toBeTruthy();
     const sql = fs.readFileSync(path.join(process.cwd(), "supabase", "migrations", filename!), "utf8");
 
+    expect(sql).not.toMatch(/^\+/m);
     expect(sql).toMatch(/add column show_in_hero boolean not null default false/i);
     expect(sql).toMatch(/p_show_in_hero boolean/i);
     expect(sql).toMatch(/private\.is_admin\(\)/i);

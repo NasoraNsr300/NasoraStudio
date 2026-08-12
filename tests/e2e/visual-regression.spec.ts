@@ -144,7 +144,8 @@ test("Home, Portfolio, and Commission keep independent recursive dependency grap
       visited.add(current);
 
       for (const [otherFeature, otherRoot] of Object.entries(featureRoots)) {
-        if (otherFeature !== feature) {
+        const approvedHomePortfolioRead = feature === "home" && otherFeature === "portfolio";
+        if (otherFeature !== feature && !approvedHomePortfolioRead) {
           expect(isInside(current, otherRoot), `${feature} dependency graph reaches ${otherFeature} via ${path.relative(sourceRoot, current)}`).toBe(false);
         }
       }

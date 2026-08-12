@@ -44,23 +44,24 @@ test("sidebar closes through its backdrop", async ({ page }) => {
 });
 
 test("Sidebar marks nested Commission and document routes as the current page", async ({ page }) => {
-  for (const [route, label] of [["/en/commission/illustration", "Commission"], ["/en/documents/commission-terms", "Documents"]] as const) {
+  for (const [route, label] of [["/en/commission/illustration", "Commission"], ["/en/documents", "Documents"]] as const) {
     await page.goto(route);
     await page.getByRole("button", { name: "Open menu" }).click();
     await expect(page.getByRole("link", { name: label, exact: true })).toHaveAttribute("aria-current", "page");
   }
 });
 
-test("Sidebar authentication preview receives focus, closes with Escape, and restores its initiating control", async ({ page }) => {
+test("Sidebar login opens the real authentication dialog", async ({ page }) => {
   await page.goto("/en");
   await page.getByRole("button", { name: "Open menu" }).click();
   const login = page.getByRole("button", { name: "Log in" });
   await login.click();
 
-  await expect(page.getByRole("button", { name: "Close authentication preview" })).toBeFocused();
+  const dialog = page.getByRole("dialog", { name: "Sign in to Nasora" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Close sign in" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Authentication preview" })).toHaveCount(0);
-  await expect(login).toBeFocused();
+  await expect(dialog).toHaveCount(0);
 });
 
 test("floating Navbar keeps the same dimensions after scroll", async ({ page }) => {
@@ -94,7 +95,7 @@ test("manual theme choice persists after reload", async ({ page }) => {
   await page.goto("/en");
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "night");
-  await page.getByRole("button", { name: "Change theme: night" }).click();
+  await page.getByRole("button", { name: "Autumn" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "autumn");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "autumn");

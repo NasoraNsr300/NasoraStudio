@@ -11,7 +11,7 @@ test.describe("ordinary customer security boundary", () => {
     await page.goto("/th?auth=1");
     await page.getByLabel("อีเมล").fill(credentials!.email);
     await page.getByLabel("รหัสผ่าน").fill(credentials!.password);
-    await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
+    await page.getByRole("button", { exact: true, name: "เข้าสู่ระบบ" }).click();
 
     await expect(page).not.toHaveURL(/auth=1/);
 

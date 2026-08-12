@@ -18,6 +18,10 @@ describe("live site settings migration", () => {
     expect(sql).toMatch(/grant select \([^)]+\) on public\.site_settings to anon, authenticated/i);
     expect(sql).not.toMatch(/grant select on public\.site_settings to anon, authenticated/i);
     expect(sql).toMatch(/revoke insert, update, delete on public\.site_settings from anon, authenticated/i);
+    expect(sql).not.toMatch(/jsonb_object_length\(/i);
+    expect(sql).not.toMatch(/select count\(\*\) from jsonb_object_keys/i);
+    expect(sql).toMatch(/home_heading\s*-\s*'th'\s*-\s*'en'\s*=\s*'\{\}'::jsonb/i);
+    expect(sql).toMatch(/home_description\s*-\s*'th'\s*-\s*'en'\s*=\s*'\{\}'::jsonb/i);
   });
 
   it("guards Admin writes and prevents submission while commissions are closed", () => {

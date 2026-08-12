@@ -1,4 +1,4 @@
-+alter table public.portfolio_items
+alter table public.portfolio_items
   add column show_in_hero boolean not null default false;
 
 create index portfolio_items_public_home_idx

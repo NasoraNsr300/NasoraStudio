@@ -14,7 +14,7 @@ create table public.site_settings (
     jsonb_typeof(home_heading) = 'object'
     and nullif(btrim(home_heading ->> 'th'), '') is not null
     and nullif(btrim(home_heading ->> 'en'), '') is not null
-    and jsonb_object_length(home_heading) = 2
+    and home_heading - 'th' - 'en' = '{}'::jsonb
     and char_length(home_heading ->> 'th') <= 160
     and char_length(home_heading ->> 'en') <= 160
   ),
@@ -22,7 +22,7 @@ create table public.site_settings (
     jsonb_typeof(home_description) = 'object'
     and nullif(btrim(home_description ->> 'th'), '') is not null
     and nullif(btrim(home_description ->> 'en'), '') is not null
-    and jsonb_object_length(home_description) = 2
+    and home_description - 'th' - 'en' = '{}'::jsonb
     and char_length(home_description ->> 'th') <= 1000
     and char_length(home_description ->> 'en') <= 1000
   ),

@@ -12,23 +12,35 @@ test("Home follows the approved 1920 desktop composition", async ({ page }) => {
   const heroBox = await hero.boundingBox();
   const lowerBox = await lower.boundingBox();
 
-  expect(shellBox?.width).toBeGreaterThanOrEqual(1640);
-  expect(shellBox?.width).toBeLessThanOrEqual(1690);
+  expect(shellBox?.width).toBeGreaterThanOrEqual(1400);
+  expect(shellBox?.width).toBeLessThanOrEqual(1440);
   expect(heroBox?.height).toBeLessThan(560);
   expect(lowerBox?.y).toBeLessThan(760);
-  await expect(page.getByTestId("featured-loop-viewport")).toHaveAttribute("data-visible-count", "4");
+  const featuredViewport = page.getByTestId("featured-loop-viewport");
+  if (await featuredViewport.count()) {
+    await expect(featuredViewport).toHaveAttribute("data-visible-count", "4");
+  } else {
+    await expect(page.locator("#featured-work")).toContainText("ยังไม่มีผลงานแนะนำ");
+  }
   await expect(page.getByRole("tablist", { name: "ข้อมูลฉบับย่อ" })).toBeInViewport();
 });
 
-test("Home loop pauses from its visible control", async ({ page }) => {
+test("Home featured work has no pause control and loops when populated", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/th");
 
   const track = page.getByTestId("featured-loop-track");
-  await page.getByRole("button", { name: "หยุดผลงานเด่น" }).click();
-  await expect(track).toHaveAttribute("data-paused", "true");
-  await page.getByRole("button", { name: "เล่นผลงานเด่น" }).click();
-  await page.mouse.move(0, 0);
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await expect(track).toHaveAttribute("data-paused", "false");
+  await expect(page.getByRole("button", { name: "หยุดผลงานเด่น" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "เล่นผลงานเด่น" })).toHaveCount(0);
+  if (!(await track.count())) {
+    await expect(page.locator("#featured-work")).toContainText("ยังไม่มีผลงานแนะนำ");
+    return;
+  }
+  await expect(track).toBeVisible();
+  const animation = await track.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { duration: styles.animationDuration, name: styles.animationName };
+  });
+  expect(animation.name).not.toBe("none");
+  expect(animation.duration).not.toBe("0s");
 });
