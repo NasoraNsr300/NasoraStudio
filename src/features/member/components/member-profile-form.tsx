@@ -1,7 +1,7 @@
 "use client";
 
 import { Languages, UserRound } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
 import { MemberAvatarEditor } from "./member-avatar-editor";
@@ -26,13 +26,15 @@ export function MemberProfileForm({
   const th = locale === "th";
   const [nickname, setNickname] = useState(initialProfile.nickname);
   const [preferredLocale, setPreferredLocale] = useState<"th" | "en">(initialProfile.preferredLocale);
+  const [loadedProfile, setLoadedProfile] = useState(initialProfile);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  if (loadedProfile.nickname !== initialProfile.nickname || loadedProfile.preferredLocale !== initialProfile.preferredLocale) {
+    setLoadedProfile(initialProfile);
     setNickname(initialProfile.nickname);
     setPreferredLocale(initialProfile.preferredLocale);
-  }, [initialProfile.nickname, initialProfile.preferredLocale]);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();

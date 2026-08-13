@@ -164,19 +164,19 @@ Run all draft/commission tests, typecheck, lint, build, linked migration apply/p
 
 Run public, auth, estimate modal, member, and Admin pages at 390×844, 768×1024, and the Desktop baseline. Check horizontal overflow, nested scrolling, sticky/fixed regions, dialogs, tables, images, touch targets, virtual keyboard space, sidebar behavior, and reduced motion. Save screenshots only where a finding needs visual evidence.
 
-- [ ] **Step 2: Present proposed UI changes and pause**
+- [x] **Step 2: Present proposed UI changes and pause**
 
 Write the audit with exact selectors/components and recommended visual effect. Ask Nasora for approval. Do not edit UI CSS, JSX layout, or snapshots before approval.
 
-- [ ] **Step 3: Add failing responsive assertions after approval**
+- [x] **Step 3: Add failing responsive assertions after approval**
 
 For each approved finding, add the narrowest component/CSS contract or Playwright visual/behavior test that demonstrates the problem. Run focused tests and observe the expected failures.
 
-- [ ] **Step 4: Implement only approved adjustments**
+- [x] **Step 4: Implement only approved adjustments**
 
 Change only files named in the approved audit. Preserve Night/Autumn styling and Desktop geometry. Re-run phone, tablet, Desktop, keyboard, and reduced-motion checks.
 
-- [ ] **Step 5: Verify checkpoint 4**
+- [x] **Step 5: Verify checkpoint 4**
 
 Run responsive/component tests, approved visual snapshots, accessibility checks, typecheck, lint, and build. Commit audit and approved fixes as `fix(ui): complete responsive layouts`.
 
@@ -195,7 +195,7 @@ Run responsive/component tests, approved visual snapshots, accessibility checks,
 - Consumes: disposable ordinary test customer, linked non-production Supabase, test R2 buckets, real application routes, and approved responsive UI.
 - Produces: repeatable estimate-to-delivery E2E evidence, browser performance evidence, targeted optimizations, and a clean branch ready for later merge.
 
-- [ ] **Step 1: Confirm safe test environment**
+- [x] **Step 1: Confirm safe test environment**
 
 Verify project identity is non-production, reset guard is enabled only for the dedicated test user, R2 test objects use lifecycle cleanup, commissions can be opened for the test, and no production URL/key is present. Stop rather than run destructive reset if any identity check fails.
 
@@ -203,21 +203,25 @@ Verify project identity is non-production, reset guard is enabled only for the d
 
 Cover Google/email authentication boundary as available, member draft restore/delete, Guest local draft, estimate submission, Admin review/quote, PromptPay intent, slip upload/verification, job/queue creation, status progression, messages/images, installment/final payment, delivery download/Drive redirect, and avatar/session synchronization. For each newly exposed bug, add or retain the failing focused regression before changing production code.
 
+Implemented browser coverage for email authentication/Admin denial, Member and Guest drafts, estimate submit/cancel, and avatar/session synchronization. Admin quote-to-delivery browser coverage remains blocked by the sole-Admin credential boundary; existing unit/integration coverage is retained rather than adding an Admin bypass.
+
 - [ ] **Step 3: Run and repair the real workflow**
 
 Execute the guarded reset and Playwright lifecycle against disposable resources. Fix only reproduced defects using focused RED → GREEN cycles. Repeat until the full workflow is deterministic and cleanup succeeds.
 
-- [ ] **Step 4: Measure before optimizing**
+- [x] **Step 4: Measure before optimizing**
 
 Record Home/Portfolio LCP and CLS, image derivative cache headers, relevant interaction latency, route payload behavior, and reduced-motion particle suppression at phone and Desktop baselines. Add a regression test or explicit measurable acceptance threshold before each optimization.
 
-- [ ] **Step 5: Implement measured optimizations**
+- [x] **Step 5: Implement measured optimizations**
 
 Adjust only proven bottlenecks in image priority/sizing, cache headers, query shape, code splitting, or animation scheduling. Do not redesign UI. Re-measure the same flows and record before/after evidence.
 
 - [ ] **Step 6: Run final merge-readiness gate**
 
 Run full Vitest, typecheck, lint, Next build, OpenNext build, complete Playwright suites, Wrangler dry-runs, linked migration parity, database lint/advisors, RLS/role checks, `git diff --check`, and clean status review. Restore generated `next-env.d.ts` if it is the only build artifact. Update readiness docs with exact results.
+
+All local gates, OpenNext, both Wrangler dry-runs, performance checks, and functional Playwright passed. A fresh linked Supabase CLI parity/lint rerun is blocked by `SUPABASE_DB_PASSWORD` authentication and must be repeated after the credential is refreshed.
 
 - [ ] **Step 7: Commit without deploying or merging**
 

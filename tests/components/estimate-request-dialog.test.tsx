@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { serviceTypes } from "@/data/fixtures/public-content";
@@ -92,6 +93,39 @@ describe("EstimateRequestDialog", () => {
     expect(screen.getByText("@stardust")).toBeVisible();
     expect(screen.queryByPlaceholderText("For example: Lunaris, StarWalker")).not.toBeInTheDocument();
     expect(repository.loadMemberIdentity).toHaveBeenCalledWith("user-1", "member@example.com");
+  });
+
+  it("keeps member draft hydration alive when the session user object refreshes", async () => {
+    const draft = {
+      backgroundLevel: 0, budgetKind: "open" as const, budgetMaxThb: "", budgetMinThb: "",
+      description: "Member draft after session refresh", extraCharacterCount: 0, guestContactKind: "",
+      guestContactValue: "", guestDisplayName: "", moodAndStyle: "", propCount: 0,
+      requestedDeadline: "2099-09-01", savedAt: "2026-08-14T00:00:00.000Z", usageType: "personal" as const, version: 1 as const,
+    };
+    let resolveDraft!: (value: typeof draft | null) => void;
+    const drafts = createDraftRepository();
+    drafts.load.mockReturnValue(new Promise((resolve) => { resolveDraft = resolve; }));
+    const auth = { status: "signedIn" as const, user: { email: "member@example.com", id: "user-1", nickname: "Session name" } };
+    const { rerender } = render(<EstimateRequestDialog auth={auth} draftRepository={drafts} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
+
+    rerender(<EstimateRequestDialog auth={{ ...auth, user: { ...auth.user } }} draftRepository={drafts} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
+    resolveDraft(draft);
+
+    expect(await screen.findByDisplayValue("Member draft after session refresh")).toBeVisible();
+  });
+
+  it("restores a draft when React Strict Mode replays the hydration effect", async () => {
+    const drafts = createDraftRepository({
+      backgroundLevel: 0, budgetKind: "open", budgetMaxThb: "", budgetMinThb: "",
+      description: "Strict Mode draft", extraCharacterCount: 0, guestContactKind: "discord",
+      guestContactValue: "", guestDisplayName: "", moodAndStyle: "", propCount: 0,
+      requestedDeadline: "2099-09-01", savedAt: "2026-08-14T00:00:00.000Z", usageType: "personal", version: 1,
+    });
+
+    render(<StrictMode><EstimateRequestDialog auth={{ status: "signedOut", user: null }} draftRepository={drafts} locale="en" onClose={() => undefined} repository={createRepository()} service={service} /></StrictMode>);
+
+    expect(await screen.findByDisplayValue("Strict Mode draft")).toBeVisible();
+    expect(drafts.load).toHaveBeenCalled();
   });
 
   it("validates and submits a Guest brief once, then shows its reference", async () => {

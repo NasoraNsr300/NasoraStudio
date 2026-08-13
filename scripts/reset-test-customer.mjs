@@ -70,6 +70,12 @@ const { data: resetSummary, error: resetError } = await supabase.rpc(
 
 if (resetError) throw resetError;
 
+const { error: draftResetError } = await supabase
+  .from("estimate_request_drafts")
+  .delete()
+  .eq("user_id", user.id);
+if (draftResetError) throw draftResetError;
+
 const { data: resetAvatarId, error: resetAvatarError } = await supabase.rpc(
   "gateway_reset_test_customer_avatar",
   { p_user_id: user.id },

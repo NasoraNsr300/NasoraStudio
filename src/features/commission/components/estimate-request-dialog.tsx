@@ -196,6 +196,7 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
   const commissionsOpen = commissionsOpenOverride ?? publicSettings?.commissionsOpen ?? true;
   const contextualAuth = useOptionalAuthSession();
   const session = auth ?? contextualAuth ?? { status: "signedOut" as const, user: null };
+  const signedInUserId = session.status === "signedIn" ? session.user?.id ?? null : null;
   const customerMode: CustomerMode = session.status === "signedIn" ? "member" : "guest";
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -249,21 +250,21 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
 
   const getDraftRepository = useCallback(() => {
     if (draftRepository) return draftRepository;
-    const identityKey = session.status === "signedIn" && session.user
-      ? `member:${session.user.id}`
+    const identityKey = signedInUserId
+      ? `member:${signedInUserId}`
       : "guest";
     if (draftRepositoryRef.current && draftRepositoryIdentityRef.current === identityKey) {
       return draftRepositoryRef.current;
     }
-    draftRepositoryRef.current = session.status === "signedIn" && session.user
+    draftRepositoryRef.current = signedInUserId
       ? createMemberEstimateDraftRepository(
         createSupabaseBrowserClient() as unknown as EstimateDraftClient,
-        session.user.id,
+        signedInUserId,
       )
       : createGuestEstimateDraftRepository(window.localStorage);
     draftRepositoryIdentityRef.current = identityKey;
     return draftRepositoryRef.current;
-  }, [draftRepository, session.status, session.user]);
+  }, [draftRepository, signedInUserId]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -290,10 +291,11 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
     const identityKey = session.status === "signedIn" ? `member:${session.user?.id ?? ""}` : "guest";
     const hydrateKey = `${identityKey}:${service.slug}`;
     if (hydratedDraftKeyRef.current === hydrateKey) return;
-    hydratedDraftKeyRef.current = hydrateKey;
     let active = true;
     void getDraftRepository().load(service.slug).then((draft) => {
-      if (!active || !draft) return;
+      if (!active) return;
+      hydratedDraftKeyRef.current = hydrateKey;
+      if (!draft) return;
       setUsageType(draft.usageType);
       setBudgetKind(draft.budgetKind);
       setBudgetMinThb(draft.budgetMinThb);
@@ -310,7 +312,11 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
         setGuestContactValue(draft.guestContactValue);
       }
       setDraftFeedback(labels.draftRestored);
-    }).catch(() => { if (active) setDraftFeedback(labels.draftError); });
+    }).catch(() => {
+      if (!active) return;
+      hydratedDraftKeyRef.current = hydrateKey;
+      setDraftFeedback(labels.draftError);
+    });
     return () => { active = false; };
   }, [customerMode, getDraftRepository, labels.draftError, labels.draftRestored, service.slug, session.status, session.user?.id]);
 

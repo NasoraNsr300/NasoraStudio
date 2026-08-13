@@ -18,10 +18,15 @@ Both snapshots were built with `next build --webpack` so the temporary detached 
 
 The reduced-motion gate adds 589 bytes across the complete application chunk set. Its benefit is runtime: users requesting reduced motion do not mount either particle canvas, so they avoid animation CPU/GPU work rather than merely hiding the canvases with CSS.
 
-## Browser measurements deferred
+## Production browser measurements â€” 14 Aug 2026
 
-LCP, CLS, request count, and transferred image bytes were not recorded because the local page currently returns HTTP 500 against the linked Supabase project: remote migrations stop at `20260810165138`, while the UI requires the later site-settings, Home presentation, message-read, and ordinary-test-customer migrations. Applying remote migrations changes external state and needs separate approval. No metric was fabricated from the broken page.
+Measured with Chromium against `next start`, reduced motion enabled, linked non-production Supabase data, and the same script at `scripts/measure-public-performance.mjs`. Values are local production-build evidence, not field data.
 
-## Verification target
+| Route | Viewport | LCP | CLS | Requests | Transfer |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Home | 1440Ã—900 | 1,868 ms | 0.00004 | 22 | 858 KB |
+| Portfolio | 1440Ã—900 | 284 ms | 0.00004 | 23 | 856 KB |
+| Home | 390Ã—844 | 232 ms | 0 | 22 | 858 KB |
+| Portfolio | 390Ã—844 | 260 ms | 0 | 23 | 856 KB |
 
-After the four pending migrations are approved and applied, rerun the ordinary-customer browser flow with a real image from `E:\NasoraStudio\Img`, record Home/Portfolio LCP and CLS, and verify the public R2 derivative response remains cacheable.
+All runs stay below the checked local thresholds of LCP 2.5 s and CLS 0.1. No source optimization was justified by this measurement, so Desktop UI and loading behavior remain unchanged. Repeat with Cloudflare Web Analytics after deployment because local results do not include real user network latency.

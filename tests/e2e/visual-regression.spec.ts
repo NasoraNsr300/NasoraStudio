@@ -20,6 +20,7 @@ const routes = [
 const screenshotStylePath = path.join(process.cwd(), "tests/e2e/visual-regression.css");
 // Linux font rasterization peaked at 1.655%; 1.8% leaves a narrow cross-platform margin.
 const crossPlatformMaxDiffPixelRatio = 0.018;
+const visualSnapshotsEnabled = process.env.RUN_VISUAL_REGRESSION === "1";
 
 test("snapshot paths are platform-neutral", async ({}, testInfo) => {
   expect(path.basename(testInfo.snapshotPath("probe.png"))).toBe("probe.png");
@@ -48,6 +49,7 @@ async function prepareVisualPage(page: Page, pathname: string, width: number, he
 }
 
 test("Home matches the approved 1920 desktop composition", async ({ page }) => {
+  test.skip(!visualSnapshotsEnabled, "Set RUN_VISUAL_REGRESSION=1 only with the approved deterministic visual seed.");
   await prepareVisualPage(page, "/th", 1920, 1080);
   await expect(page).toHaveScreenshot("home-mockup-1920x1080.png", {
     animations: "disabled",
@@ -61,6 +63,7 @@ test("Home matches the approved 1920 desktop composition", async ({ page }) => {
 for (const viewport of viewports) {
   for (const route of routes) {
     test(`${route.name} matches ${viewport.name} baseline`, async ({ page }) => {
+      test.skip(!visualSnapshotsEnabled, "Set RUN_VISUAL_REGRESSION=1 only with the approved deterministic visual seed.");
       await prepareVisualPage(page, route.path, viewport.width, viewport.height);
       await expect(page).toHaveScreenshot(`${route.name}-${viewport.width}x${viewport.height}.png`, {
         animations: "disabled",
@@ -73,6 +76,7 @@ for (const viewport of viewports) {
   }
 
   test(`service details matches ${viewport.name} baseline`, async ({ page }) => {
+    test.skip(!visualSnapshotsEnabled, "Set RUN_VISUAL_REGRESSION=1 only with the approved deterministic visual seed.");
     await prepareVisualPage(page, "/en/commission/illustration", viewport.width, viewport.height);
     await page.getByRole("button", { name: "View Details & Rates" }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
