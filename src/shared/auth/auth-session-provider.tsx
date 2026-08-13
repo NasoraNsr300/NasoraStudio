@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { createSupabaseBrowserClient } from "@/shared/supabase/client";
 
-import type { AuthIdentity, AuthOperationResult, AuthStatus, SignUpInput } from "./auth-types";
+import { safeAppReturnTarget } from "./return-target";
+import type { AuthIdentity, AuthOperationResult, AuthStatus, GoogleSignInInput, SignUpInput } from "./auth-types";
 
 type AuthUserLike = {
   app_metadata?: Record<string, unknown>;
@@ -20,6 +21,7 @@ export type AuthClientLike = {
       data: { subscription: { unsubscribe(): void } };
     };
     signInWithPassword(input: { email: string; password: string }): Promise<AuthOperationResult>;
+    signInWithOAuth(input: { options: { redirectTo: string }; provider: "google" }): Promise<AuthOperationResult>;
     signOut(): Promise<AuthOperationResult>;
     signUp(input: SignUpInput): Promise<AuthOperationResult>;
     updateUser(input: { data?: Record<string, unknown>; password?: string }): Promise<AuthOperationResult>;
@@ -35,6 +37,7 @@ export type AuthClientLike = {
 
 type AuthSessionValue = {
   signIn(input: { email: string; password: string }): Promise<AuthOperationResult>;
+  signInWithGoogle(input: GoogleSignInInput): Promise<AuthOperationResult>;
   signOut(): Promise<AuthOperationResult>;
   signUp(input: SignUpInput): Promise<AuthOperationResult>;
   status: AuthStatus;
@@ -111,6 +114,13 @@ export function AuthSessionProvider({ children, client }: { children: ReactNode;
 
   const value = useMemo<AuthSessionValue>(() => ({
     signIn: (input) => authClient.auth.signInWithPassword(input),
+    signInWithGoogle: ({ locale, returnTo }) => {
+      const target = safeAppReturnTarget(returnTo, locale);
+      const callback = new URL("/auth/callback", window.location.origin);
+      callback.searchParams.set("locale", locale);
+      callback.searchParams.set("next", target);
+      return authClient.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callback.toString() } });
+    },
     signOut: () => authClient.auth.signOut(),
     signUp: (input) => authClient.auth.signUp(input),
     status,

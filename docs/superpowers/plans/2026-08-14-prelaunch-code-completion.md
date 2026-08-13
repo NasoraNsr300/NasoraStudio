@@ -79,23 +79,23 @@ Run focused tests, `npm run typecheck`, `npm run lint`, `npm run build`, linked 
 - Consumes: Supabase browser `auth.signInWithOAuth`, existing PKCE callback exchange, locale, and the current page path.
 - Produces: `signInWithGoogle({ locale, returnTo }): Promise<AuthOperationResult>` and a same-origin callback URL `/auth/callback?locale=<locale>&next=<encoded-relative-path>`.
 
-- [ ] **Step 1: Verify current Supabase OAuth guidance**
+- [x] **Step 1: Verify current Supabase OAuth guidance**
 
 Read the current Supabase changelog and official Google Auth/SSR PKCE documentation. Confirm redirect allowlist requirements and callback exchange behavior before writing production code.
 
-- [ ] **Step 2: Add failing provider and return-target tests**
+- [x] **Step 2: Add failing provider and return-target tests**
 
 Tests require the provider to call `signInWithOAuth({ provider: "google", options: { redirectTo } })`, the dialog button to be enabled with pending/error feedback, and return validation to accept same-origin locale routes while rejecting protocols, protocol-relative URLs, foreign origins, and locale mismatches. Run the four focused test files; expect the missing method/disabled button failures.
 
-- [ ] **Step 3: Implement OAuth without changing the dialog layout**
+- [x] **Step 3: Implement OAuth without changing the dialog layout**
 
 Extend `AuthClientLike` and `AuthSessionValue`, build the callback URL from `window.location.origin`, locale, and a validated relative path, invoke OAuth from the existing Google button, disable it only while pending, and localize failures through the existing error presentation. Remove the unavailable badge without changing spacing or styling structure.
 
-- [ ] **Step 4: Harden the callback**
+- [x] **Step 4: Harden the callback**
 
 Generalize the return-target helper to approved application-local paths, keep member fallbacks for guards, exchange the code exactly once, and redirect callback errors to the locale home authentication dialog. Add route tests for success, missing code, exchange error, unsafe targets, and locale preservation.
 
-- [ ] **Step 5: Verify checkpoint 2**
+- [x] **Step 5: Verify checkpoint 2**
 
 Run focused auth tests, full auth/security tests, typecheck, lint, and build. Confirm required Google provider/redirect configuration without committing secrets. Commit as `feat(auth): enable Google sign in`.
 

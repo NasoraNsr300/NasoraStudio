@@ -30,6 +30,7 @@ describe("MemberProfilePage", () => {
         getUser: vi.fn(async () => ({ data: { user: { id: "user-1", email: "member@example.com", user_metadata: { nickname: "Lunaris" } } } })),
         onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
         signInWithPassword: vi.fn(async () => ({ error: null })),
+        signInWithOAuth: vi.fn(async () => ({ error: null })),
         signOut: vi.fn(async () => ({ error: null })),
         signUp: vi.fn(async () => ({ error: null })),
         updateUser: vi.fn(async () => ({ error: null })),

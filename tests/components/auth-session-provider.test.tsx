@@ -13,6 +13,7 @@ function Probe() {
     <span>{session.user?.email ?? "no-user"}</span>
     <span>{session.user?.nickname ?? "no-nickname"}</span>
     <button onClick={() => session.updateNickname("Lunaris")} type="button">Update nickname</button>
+    <button onClick={() => session.signInWithGoogle({ locale: "th", returnTo: "/th/portfolio?tag=chibi#latest" })} type="button">Google sign in</button>
     <button onClick={() => session.signOut()} type="button">Sign out</button>
   </div>;
 }
@@ -21,6 +22,7 @@ function createClient(initialUser: { email: string; id: string; user_metadata?: 
   let listener: ((event: string, session: { user: typeof initialUser } | null) => void) | undefined;
   const unsubscribe = vi.fn();
   const signOut = vi.fn().mockResolvedValue({ error: null });
+  const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
   return {
     client: {
       auth: {
@@ -30,6 +32,7 @@ function createClient(initialUser: { email: string; id: string; user_metadata?: 
           return { data: { subscription: { unsubscribe } } };
         }),
         signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+        signInWithOAuth,
         signOut,
         signUp: vi.fn().mockResolvedValue({ error: null }),
         updateUser: vi.fn().mockResolvedValue({ error: null }),
@@ -39,6 +42,7 @@ function createClient(initialUser: { email: string; id: string; user_metadata?: 
       listener?.("SIGNED_IN", user ? { user } : null);
     },
     signOut,
+    signInWithOAuth,
     unsubscribe,
   };
 }
@@ -84,5 +88,20 @@ describe("AuthSessionProvider", () => {
 
     expect(auth.client.auth.updateUser).toHaveBeenCalledWith({ data: { nickname: "Lunaris" } });
     expect(screen.getByText("Lunaris")).toBeVisible();
+  });
+
+  it("starts Google PKCE OAuth with a localized safe return path", async () => {
+    const user = userEvent.setup();
+    const auth = createClient(null);
+    render(<AuthSessionProvider client={auth.client}><Probe /></AuthSessionProvider>);
+
+    await user.click(screen.getByRole("button", { name: "Google sign in" }));
+
+    expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:3000/auth/callback?locale=th&next=%2Fth%2Fportfolio%3Ftag%3Dchibi%23latest",
+      },
+    });
   });
 });

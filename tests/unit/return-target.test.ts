@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { safeMemberReturnTarget } from "@/shared/auth/return-target";
+import { safeAppReturnTarget, safeMemberReturnTarget } from "@/shared/auth/return-target";
+
+describe("safeAppReturnTarget", () => {
+  it("accepts localized public and member paths with query and hash", () => {
+    expect(safeAppReturnTarget("/th/portfolio?tag=chibi#latest", "th")).toBe("/th/portfolio?tag=chibi#latest");
+    expect(safeAppReturnTarget("/en/member/profile", "en")).toBe("/en/member/profile");
+  });
+
+  it("rejects protocols, protocol-relative URLs, foreign origins, and locale mismatches", () => {
+    expect(safeAppReturnTarget("https://attacker.example/th", "th")).toBe("/th");
+    expect(safeAppReturnTarget("//attacker.example/th", "th")).toBe("/th");
+    expect(safeAppReturnTarget("javascript:alert(1)", "th")).toBe("/th");
+    expect(safeAppReturnTarget("/en/portfolio", "th")).toBe("/th");
+  });
+});
 
 describe("safeMemberReturnTarget", () => {
   it("accepts a localized member path", () => {

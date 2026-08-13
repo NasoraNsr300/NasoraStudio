@@ -32,6 +32,16 @@ Review the migration list before `db push`. Run database advisors and member/Adm
 
 `supabase db lint --linked --level warning --fail-on error` exits successfully with zero findings after migration `20260814120000_prelaunch_sql_warning_cleanup`.
 
+### Google authentication
+
+The application uses Supabase PKCE OAuth through `/auth/callback` and preserves only validated same-locale application paths. Before browser verification or deployment:
+
+- enable the Google provider in the Supabase Auth dashboard;
+- configure the Google Web OAuth Client ID and Client Secret in Supabase (never commit them);
+- add the Supabase project Auth callback URL to Google Authorized redirect URIs;
+- keep `http://localhost:3000/auth/callback` in the development redirect allowlist;
+- add each future Cloudflare or Vercel `/auth/callback` URL to Supabase Redirect URLs before enabling that target.
+
 ## R2
 
 Create two private buckets:

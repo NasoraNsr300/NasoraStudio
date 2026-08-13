@@ -19,7 +19,6 @@ const copy = {
     email: "Email",
     emailError: "Enter a valid email address",
     google: "Continue with Google",
-    googleUnavailable: "Not available yet",
     haveAccount: "Already have an account?",
     intro: "Access your estimates, messages, payments, and commissioned work.",
     nickname: "Display name",
@@ -38,7 +37,6 @@ const copy = {
     email: "อีเมล",
     emailError: "กรุณากรอกอีเมลให้ถูกต้อง",
     google: "ดำเนินการต่อด้วย Google",
-    googleUnavailable: "ยังไม่เปิดใช้งาน",
     haveAccount: "มีบัญชีอยู่แล้ว?",
     intro: "เข้าถึงใบประเมิน ข้อความ การชำระเงิน และงานคอมมิชชันของคุณ",
     nickname: "ชื่อที่ใช้แสดง",
@@ -55,7 +53,7 @@ const copy = {
 
 export function AuthDialog({ locale, onAuthenticated, onClose }: { locale: Locale; onAuthenticated?(): void; onClose(): void }) {
   const labels = copy[locale];
-  const { signIn, signUp } = useAuthSession();
+  const { signIn, signInWithGoogle, signUp } = useAuthSession();
   const [mode, setMode] = useState<Mode>("signIn");
   const [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -117,6 +115,19 @@ export function AuthDialog({ locale, onAuthenticated, onClose }: { locale: Local
     (onAuthenticated ?? onClose)();
   };
 
+  const googleSignIn = async () => {
+    setFeedback("");
+    setPending(true);
+    const result = await signInWithGoogle({
+      locale,
+      returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    });
+    if (result.error) {
+      setPending(false);
+      setFeedback(localizeAuthError(result.error, locale));
+    }
+  };
+
   return <div aria-label={mode === "signIn" ? labels.title : labels.titleSignUp} aria-modal="true" className={styles.backdrop} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} role="dialog">
     <section className={styles.dialog}>
       <button aria-label={labels.close} className={styles.close} onClick={onClose} ref={closeRef} type="button"><X size={21} /></button>
@@ -141,7 +152,7 @@ export function AuthDialog({ locale, onAuthenticated, onClose }: { locale: Local
       </form>
 
       <div className={styles.divider}><span />{locale === "th" ? "หรือ" : "or"}<span /></div>
-      <button aria-label={labels.google} className={styles.google} disabled type="button"><b>G</b><span>{labels.google}</span><small>{labels.googleUnavailable}</small></button>
+      <button aria-label={labels.google} className={styles.google} disabled={pending} onClick={googleSignIn} type="button"><b>G</b><span>{labels.google}</span></button>
       <p className={styles.switcher}>{mode === "signIn" ? labels.noAccount : labels.haveAccount} <button onClick={() => switchMode(mode === "signIn" ? "signUp" : "signIn")} type="button">{mode === "signIn" ? labels.signUp : labels.signIn}</button></p>
     </section>
   </div>;

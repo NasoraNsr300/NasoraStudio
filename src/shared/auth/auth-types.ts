@@ -17,3 +17,8 @@ export type SignUpInput = {
   options?: { data?: Record<string, unknown> };
   password: string;
 };
+
+export type GoogleSignInInput = {
+  locale: "en" | "th";
+  returnTo?: string | null;
+};
