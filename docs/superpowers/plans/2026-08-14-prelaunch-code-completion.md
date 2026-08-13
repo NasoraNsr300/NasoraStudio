@@ -117,31 +117,31 @@ Run focused auth tests, full auth/security tests, typecheck, lint, and build. Co
 - Consumes: service type slug, authenticated user identity, validated form fields, existing submit result, Supabase browser client, and `localStorage`.
 - Produces: `EstimateDraftValues`, `createMemberEstimateDraftRepository(client)`, `createGuestEstimateDraftRepository(storage)`, and `draftKey(serviceTypeSlug)`.
 
-- [ ] **Step 1: Add failing schema and RLS contract tests**
+- [x] **Step 1: Add failing schema and RLS contract tests**
 
 Require a `public.estimate_request_drafts` table keyed uniquely by `(user_id, service_type_slug)`, timestamps, bounded JSON payload, RLS ownership predicates using `auth.uid()`, explicit authenticated grants, no anon table grant, and updated-at behavior. Run the focused migration test; expect failure.
 
-- [ ] **Step 2: Generate and implement the draft migration**
+- [x] **Step 2: Generate and implement the draft migration**
 
 Use `npx supabase migration new member_estimate_drafts`, rename it to the exact plan path, create the table/index/trigger/policies/grants, and keep Admin/service-role access outside the browser repository. Verify the SQL contract test.
 
-- [ ] **Step 3: Add failing domain and repository tests**
+- [x] **Step 3: Add failing domain and repository tests**
 
 Define the persisted draft as version `1` with usage type, budget mode/range, requested deadline, description, mood/style, counts, Guest identity only for Guest local storage, and saved timestamp. Tests reject obsolete versions, unknown fields, oversized text, invalid dates/counts/budgets, and payloads above the chosen JSON size cap. Repository tests cover member upsert/load/delete and defensive local-storage load/save/delete scoped by service slug.
 
-- [ ] **Step 4: Implement isolated draft domain/repositories**
+- [x] **Step 4: Implement isolated draft domain/repositories**
 
 Use Zod parsing at every persistence boundary. Member operations filter by the authenticated RLS row and service slug. Guest keys use `nasora:estimate-draft:v1:<service-slug>`; malformed values are removed. Do not persist submission keys, accepted-legal state, request codes, or file objects.
 
-- [ ] **Step 5: Add failing dialog behavior tests**
+- [x] **Step 5: Add failing dialog behavior tests**
 
 Cover member restore, Guest restore, mode isolation, explicit save feedback, save failure retaining fields, excluding references, clearing only after confirmed submit success, retaining after ambiguous failure, and explaining that attachments must be selected again. Run the dialog tests; expect the disabled Save button and missing restore behavior to fail.
 
-- [ ] **Step 6: Connect the existing dialog UI**
+- [x] **Step 6: Connect the existing dialog UI**
 
 Enable the existing Save button, hydrate once per resolved mode/service identity, map controlled fields through the domain parser, show localized saved/restored/error feedback in the existing feedback area, and delete the matching draft after successful submission. Preserve current Desktop DOM structure and CSS.
 
-- [ ] **Step 7: Verify checkpoint 3**
+- [x] **Step 7: Verify checkpoint 3**
 
 Run all draft/commission tests, typecheck, lint, build, linked migration apply/parity, database lint, and member/Guest RLS checks. Commit as `feat(commissions): persist estimate drafts`.
 
@@ -160,7 +160,7 @@ Run all draft/commission tests, typecheck, lint, build, linked migration apply/p
 - Consumes: current live pages, existing 390×844 snapshots, Desktop layouts, reduced-motion behavior, and browser screenshots.
 - Produces: page-by-page findings with viewport, reproduction, proposed adjustment, and approval status; then approved responsive CSS only.
 
-- [ ] **Step 1: Audit without altering UI**
+- [x] **Step 1: Audit without altering UI**
 
 Run public, auth, estimate modal, member, and Admin pages at 390×844, 768×1024, and the Desktop baseline. Check horizontal overflow, nested scrolling, sticky/fixed regions, dialogs, tables, images, touch targets, virtual keyboard space, sidebar behavior, and reduced motion. Save screenshots only where a finding needs visual evidence.
 
