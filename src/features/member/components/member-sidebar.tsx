@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthSession } from "@/shared/auth/auth-session-provider";
 import type { Locale } from "@/shared/i18n/locales";
 import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
+import { MemberAvatar } from "@/shared/components/member-avatar/member-avatar";
 
 import styles from "./member-sidebar.module.css";
 
@@ -35,12 +36,11 @@ export function MemberSidebar({
   const { user } = useAuthSession();
   const settings = useOptionalPublicSiteSettings();
   const nickname = user?.nickname ?? "Member";
-  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.identity}>
-        <span aria-hidden="true" className={styles.avatarFallback}>{initial}</span>
+        <MemberAvatar avatarMediaId={user?.avatarMediaId} className={styles.avatarFallback} nickname={nickname} />
         <strong>{nickname}</strong>
         <span>{locale === "th" ? "สมาชิก" : "Member"}</span>
       </div>

@@ -4,18 +4,18 @@ import { ArrowLeft, Bell, LayoutDashboard, LogOut, ShieldCheck } from "lucide-re
 import Link from "next/link";
 
 import type { Locale } from "@/shared/i18n/locales";
+import { MemberAvatar } from "@/shared/components/member-avatar/member-avatar";
 
 import styles from "./public-shell.module.css";
 
 export type AccountNotification = { body: string; createdAt: string; id: string; read: boolean; targetUrl: string; title: string };
-type AccountMenuProps = { isAdmin: boolean; locale: Locale; nickname: string; onClose(): void; onShowNotifications(): void; onSignOut(): void | Promise<void>; unreadCount?: number };
+type AccountMenuProps = { avatarMediaId?: string | null; isAdmin: boolean; locale: Locale; nickname: string; onClose(): void; onShowNotifications(): void; onSignOut(): void | Promise<void>; unreadCount?: number };
 type NotificationPanelProps = { locale: Locale; notifications?: AccountNotification[]; onBack(): void };
 
-export function AccountMenu({ isAdmin, locale, nickname, onClose, onShowNotifications, onSignOut, unreadCount = 0 }: AccountMenuProps) {
+export function AccountMenu({ avatarMediaId, isAdmin, locale, nickname, onClose, onShowNotifications, onSignOut, unreadCount = 0 }: AccountMenuProps) {
   const th = locale === "th";
-  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
   return <section aria-label={th ? "เมนูบัญชี" : "Account menu"} className={styles.accountPanel}>
-    <header className={styles.accountSummary}><i aria-hidden="true" className={styles.accountAvatarFallback}>{initial}</i><span><strong>{nickname}</strong><small>{th ? "สมาชิก" : "Member"}</small></span></header>
+    <header className={styles.accountSummary}><MemberAvatar avatarMediaId={avatarMediaId} className={styles.accountAvatarFallback} nickname={nickname} /><span><strong>{nickname}</strong><small>{th ? "สมาชิก" : "Member"}</small></span></header>
     <div className={styles.accountMenuList}>
       <button className={styles.accountMenuItem} onClick={onShowNotifications} type="button"><Bell size={19} /><span>{th ? "แจ้งเตือน" : "Notifications"}</span>{unreadCount > 0 ? <b aria-label={th ? `${unreadCount} รายการที่ยังไม่ได้อ่าน` : `${unreadCount} unread`}>{unreadCount}</b> : null}</button>
       <Link className={styles.accountMenuItem} href={`/${locale}/member/requests`} onClick={onClose}><LayoutDashboard size={19} /><span>{th ? "พื้นที่สมาชิก" : "Member area"}</span></Link>

@@ -17,7 +17,7 @@ import styles from "./member-pages.module.css";
 
 export function MemberProfileContent({ locale, profileClient }: { locale: Locale; profileClient?: MemberProfileClient }) {
   const th = locale === "th";
-  const { signIn, status, updateNickname, updatePassword, user } = useAuthSession();
+  const { signIn, status, updateAvatarMediaId, updateNickname, updatePassword, user } = useAuthSession();
   const client = useMemo(() => profileClient ?? (createSupabaseBrowserClient() as unknown as MemberProfileClient), [profileClient]);
   const repository = useMemo(() => user ? createMemberProfileRepository(client, user.id) : null, [client, user]);
   const [profile, setProfile] = useState<MemberProfile | null>(null);
@@ -52,7 +52,7 @@ export function MemberProfileContent({ locale, profileClient }: { locale: Locale
       {status === "loading" && <p className={styles.loadingCopy}>{th ? "กำลังโหลดข้อมูลสมาชิก…" : "Loading member profile…"}</p>}
       {loadMessage && <p aria-live="polite" className={styles.errorMessage} role="alert">{loadMessage}</p>}
       {user && repository && <div className={styles.profileGrid}>
-        <MemberProfileForm initialProfile={{ nickname: profileValue.nickname, preferredLocale: profileValue.preferredLocale }} key={`${profileValue.nickname}-${profileValue.preferredLocale}`} locale={locale} onSave={async (input) => {
+        <MemberProfileForm avatarMediaId={user.avatarMediaId} initialProfile={{ nickname: profileValue.nickname, preferredLocale: profileValue.preferredLocale }} key={`${profileValue.nickname}-${profileValue.preferredLocale}`} locale={locale} onAvatarUploaded={updateAvatarMediaId} onSave={async (input) => {
           const result = await repository.updateProfile(input);
           if (result.ok) {
             setProfile(result.data);

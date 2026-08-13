@@ -57,7 +57,7 @@ export function AccountButton({ locale }: { locale: Locale }) {
       >
         <UserRound size={22} />
       </IconButton>
-      {status === "signedIn" && panel === "menu" ? <AccountMenu isAdmin={isNasoraAdmin({ app_metadata: { role: user?.role }, email: user?.email })} locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => { setPanel("notifications"); void fetch("/api/member/notifications", { method: "PATCH" }).then((response) => { if (response.ok) setNotifications((items) => items.map((item) => ({ ...item, read: true }))); }).catch(() => undefined); }} onSignOut={async () => { await signOut(); setPanel(null); }} unreadCount={notifications.filter((item) => !item.read).length} /> : null}
+      {status === "signedIn" && panel === "menu" ? <AccountMenu avatarMediaId={user?.avatarMediaId} isAdmin={isNasoraAdmin({ app_metadata: { role: user?.role }, email: user?.email })} locale={locale} nickname={user?.nickname ?? "Member"} onClose={() => setPanel(null)} onShowNotifications={() => { setPanel("notifications"); void fetch("/api/member/notifications", { method: "PATCH" }).then((response) => { if (response.ok) setNotifications((items) => items.map((item) => ({ ...item, read: true }))); }).catch(() => undefined); }} onSignOut={async () => { await signOut(); setPanel(null); }} unreadCount={notifications.filter((item) => !item.read).length} /> : null}
       {status === "signedIn" && panel === "notifications" ? <NotificationPanel locale={locale} notifications={notifications} onBack={() => setPanel("menu")} /> : null}
     </div>
   );

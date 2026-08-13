@@ -4,6 +4,7 @@ import { Languages, UserRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
+import { MemberAvatarEditor } from "./member-avatar-editor";
 import styles from "./member-pages.module.css";
 
 type ProfileInput = { nickname: string; preferredLocale: "th" | "en" };
@@ -11,11 +12,15 @@ type ActionResult = { ok: true } | { message: string; ok: false };
 
 export function MemberProfileForm({
   initialProfile,
+  avatarMediaId,
   locale,
+  onAvatarUploaded = () => undefined,
   onSave,
 }: {
   initialProfile: ProfileInput;
+  avatarMediaId?: string | null;
   locale: Locale;
+  onAvatarUploaded?(mediaId: string): void;
   onSave(input: ProfileInput): Promise<ActionResult>;
 }) {
   const th = locale === "th";
@@ -23,7 +28,6 @@ export function MemberProfileForm({
   const [preferredLocale, setPreferredLocale] = useState<"th" | "en">(initialProfile.preferredLocale);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
-  const initial = nickname.trim().charAt(0).toUpperCase() || "M";
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -40,12 +44,7 @@ export function MemberProfileForm({
         <UserRound size={18} />
         {th ? "ข้อมูลส่วนตัว" : "Personal information"}
       </h2>
-      <div className={styles.avatarEditor}>
-        <span aria-hidden="true" className={styles.avatarFallback}>{initial}</span>
-        <div>
-          <strong>{nickname}</strong>
-        </div>
-      </div>
+      <MemberAvatarEditor avatarMediaId={avatarMediaId} locale={locale} nickname={nickname} onUploaded={onAvatarUploaded} />
       <form onSubmit={submit}>
         <div className={styles.fieldPair}>
           <label className={styles.field}>
