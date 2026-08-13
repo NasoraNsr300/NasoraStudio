@@ -5,7 +5,7 @@ Deployment target: Cloudflare Workers through OpenNext. Production deployment re
 ## Verified locally
 
 - Next.js 16.3.0 and OpenNext Cloudflare 1.20.2 produce a Worker bundle.
-- Node `proxy.ts` was replaced by Edge `middleware.ts` because OpenNext does not support Node middleware yet.
+- Edge `middleware.ts` remains intentional: Next.js 16.3 accepts Node `proxy.ts`, but OpenNext Cloudflare 1.20.2 rejects it with `Node.js middleware is not currently supported`. Re-test before removing this compatibility exception.
 - Main Worker dry-run (13 Aug 2026): 11,445.21 KiB raw / 2,196.30 KiB gzip.
 - Maintenance Worker dry-run (13 Aug 2026): 1.36 KiB raw / 0.67 KiB gzip.
 - Worker observability is enabled.
@@ -20,7 +20,7 @@ Deployment target: Cloudflare Workers through OpenNext. Production deployment re
 
 ## Supabase
 
-Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). The worktree is linked and all 27 local migrations match the remote migration history as of 13 Aug 2026.
+Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). The worktree is linked and all 30 local migrations match the remote migration history as of 14 Aug 2026.
 
 ```bash
 npx supabase link --project-ref rmcxkrqgbggaxqptxubd
@@ -30,7 +30,7 @@ npx supabase db push
 
 Review the migration list before `db push`. Run database advisors and member/Admin/anonymous RLS checks after apply.
 
-`supabase db lint --linked --level warning --fail-on error` currently exits successfully. It reports only unused PL/pgSQL variable warnings; no schema error blocks deployment.
+`supabase db lint --linked --level warning --fail-on error` exits successfully with zero findings after migration `20260814120000_prelaunch_sql_warning_cleanup`.
 
 ## R2
 

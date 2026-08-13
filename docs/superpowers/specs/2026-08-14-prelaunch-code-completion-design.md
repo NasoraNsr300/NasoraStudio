@@ -2,13 +2,13 @@
 
 ## Goal
 
-Finish the remaining Version 1 code work before deployment: adopt the Next.js 16 proxy convention, remove current database lint warnings without changing payment behavior, enable Google authentication, add estimate-request drafts, complete an approved mobile/responsive pass, run the real browser lifecycle, optimize measured bottlenecks, and leave the branch ready for a clean merge. Deployment is explicitly out of scope.
+Finish the remaining Version 1 code work before deployment: preserve a Cloudflare-compatible request boundary, remove current database lint warnings without changing payment behavior, enable Google authentication, add estimate-request drafts, complete an approved mobile/responsive pass, run the real browser lifecycle, optimize measured bottlenecks, and leave the branch ready for a clean merge. Deployment is explicitly out of scope.
 
 ## Delivery checkpoints
 
 Work is divided into independently reviewable checkpoints:
 
-1. **Framework and database cleanup** — migrate the request boundary from `middleware.ts` to `proxy.ts`, then add a forward-only Supabase migration that removes unused PL/pgSQL declarations while preserving function contracts and transactional behavior.
+1. **Framework and database cleanup** — verify the request boundary against both Next.js and the active Cloudflare adapter, then add a forward-only Supabase migration that removes unused PL/pgSQL declarations while preserving function contracts and transactional behavior.
 2. **Google authentication** — enable the existing Google button through Supabase OAuth, preserve the current locale and return path, and reuse the current callback/session/profile synchronization flow.
 3. **Estimate drafts** — store member drafts in Supabase under owner-only RLS and Guest drafts in browser `localStorage`; restore the matching service draft when the form opens and remove it after successful submission.
 4. **Mobile/responsive review** — audit all public, member, authentication, estimate, and Admin pages. No visual change is implemented until Nasora approves the proposed UI changes.
@@ -18,7 +18,7 @@ Each checkpoint is committed separately. No production deployment, custom-domain
 
 ## Framework migration
 
-The current request-boundary behavior is moved to the Next.js 16 `proxy.ts` convention without changing matching rules, authentication cookies, locale handling, redirects, or public/admin/member authorization. Tests assert behavioral parity and the production build must no longer emit the middleware-convention warning.
+Next.js 16 prefers the `proxy.ts` convention, but OpenNext Cloudflare 1.20.2 rejects Node Proxy with `Node.js middleware is not currently supported`. The Cloudflare target therefore retains Edge `middleware.ts` with unchanged matching rules, authentication cookies, locale handling, redirects, and authorization. A future Vercel target may materialize `proxy.ts` from the same request-boundary source; business logic must not fork between deployment targets.
 
 ## Database warning cleanup
 
@@ -73,4 +73,3 @@ Performance work follows measurement rather than speculative redesign. Browser e
 ## Verification and completion
 
 Every checkpoint follows test-first development and receives focused tests before the full suite. Final merge readiness requires fresh passing evidence for tests, typecheck, lint, Next production build, OpenNext build, linked migration parity, database lint, approved browser E2E, and browser performance checks. Generated files and unrelated working-tree changes are excluded from commits. The final result remains on `feature/nasora-public` for a later authorized clean merge; it is not deployed.
-

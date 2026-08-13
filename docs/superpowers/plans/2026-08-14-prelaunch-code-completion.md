@@ -22,40 +22,40 @@
 
 ---
 
-### Task 1: Next.js proxy convention and SQL lint cleanup
+### Task 1: Cloudflare request-boundary compatibility and SQL lint cleanup
 
 **Files:**
-- Rename: `src/middleware.ts` → `src/proxy.ts`
-- Create: `tests/unit/proxy-convention.test.ts`
+- Preserve: `src/middleware.ts`
+- Modify: `tests/unit/cloudflare-deploy-readiness.test.ts`
 - Create through `supabase migration new`, then rename: `supabase/migrations/20260814120000_prelaunch_sql_warning_cleanup.sql`
 - Create: `tests/unit/prelaunch-sql-warning-cleanup-migration.test.ts`
 - Modify: `docs/deployment/cloudflare-workers.md`
 
 **Interfaces:**
 - Consumes: existing Supabase SSR cookie refresh behavior from `src/middleware.ts` and existing payment/quote functions.
-- Produces: Next.js `proxy(request: NextRequest): Promise<NextResponse>` with the existing matcher; forward-only function replacements with identical signatures and grants.
+- Produces: a documented Cloudflare compatibility exception backed by an OpenNext build; forward-only function replacements with identical signatures and grants.
 
-- [ ] **Step 1: Add failing proxy convention test**
+- [x] **Step 1: Test the proxy convention against both build targets**
 
-Assert that `src/proxy.ts` exists, exports `proxy`, retains the current matcher, and `src/middleware.ts` is absent. Run `npm test -- tests/unit/proxy-convention.test.ts`; expect failure because only `src/middleware.ts` exists.
+The Next production build accepted `src/proxy.ts`, while the real OpenNext Cloudflare 1.20.2 build failed with `Node.js middleware is not currently supported`. This proved the repository's existing Cloudflare readiness contract is still required.
 
-- [ ] **Step 2: Rename the boundary and preserve behavior**
+- [x] **Step 2: Preserve Edge middleware and document the exception**
 
-Run `Move-Item src/middleware.ts src/proxy.ts`, rename the exported handler to `proxy`, and keep the current Supabase cookie/session logic and matcher unchanged. Run the focused test and the existing security/session tests; expect pass.
+Keep `src/middleware.ts`, its current Supabase cookie/session logic, and matcher unchanged. Record that a future Vercel target can derive `proxy.ts` without forking business logic, but do not add deployment-target generation in this checkpoint.
 
-- [ ] **Step 3: Capture linked database lint evidence**
+- [x] **Step 3: Capture linked database lint evidence**
 
 Run the linked Supabase lint command documented in `docs/deployment/cloudflare-workers.md`. Record the exact unused declarations and function signatures; do not infer from old migration files when the linked definition differs.
 
-- [ ] **Step 4: Add a failing migration contract test**
+- [x] **Step 4: Add a failing migration contract test**
 
 The test reads `20260814120000_prelaunch_sql_warning_cleanup.sql` and asserts each affected function is replaced with the same argument/return contract, explicit fixed `search_path`, required authorization checks, grants/revokes, and no declarations reported by linked lint. Run the focused test; expect failure because the migration is absent.
 
-- [ ] **Step 5: Generate and implement the forward migration**
+- [x] **Step 5: Generate and implement the forward migration**
 
 Use `npx supabase migration new prelaunch_sql_warning_cleanup`, rename the generated empty file to the exact plan path, and copy the current linked function bodies while removing only proven-unused declarations. Preserve arithmetic, row locks, idempotency, transaction ordering, audit writes, `security definer`, and effective execute privileges.
 
-- [ ] **Step 6: Verify checkpoint 1**
+- [x] **Step 6: Verify checkpoint 1**
 
 Run focused tests, `npm run typecheck`, `npm run lint`, `npm run build`, linked migration parity, and linked database lint. Update the deployment document with fresh evidence. Commit only checkpoint files as `chore: finish framework and database cleanup`.
 
@@ -222,4 +222,3 @@ Run full Vitest, typecheck, lint, Next build, OpenNext build, complete Playwrigh
 - [ ] **Step 7: Commit without deploying or merging**
 
 Commit E2E/optimization/readiness changes as `perf: finish prelaunch verification`. Leave `feature/nasora-public` ready for a later explicitly authorized clean merge. Do not run deploy, push, merge, or production migration commands.
-
