@@ -9,6 +9,18 @@ import { MemberProfileForm } from "@/features/member/components/member-profile-f
 afterEach(cleanup);
 
 describe("member profile forms", () => {
+  it("updates loaded profile values without replacing the form node", () => {
+    const onSave = vi.fn(async () => ({ ok: true as const }));
+    const { rerender } = render(<MemberProfileForm initialProfile={{ nickname: "Loading", preferredLocale: "en" }} locale="en" onSave={onSave} />);
+    const nickname = screen.getByLabelText(/Nickname/i);
+
+    rerender(<MemberProfileForm initialProfile={{ nickname: "Stardust", preferredLocale: "th" }} locale="en" onSave={onSave} />);
+
+    expect(screen.getByLabelText(/Nickname/i)).toBe(nickname);
+    expect(nickname).toHaveValue("Stardust");
+    expect(screen.getByLabelText("Preferred language")).toHaveValue("th");
+  });
+
   it("saves nickname and preferred language", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn(async () => ({ ok: true as const }));

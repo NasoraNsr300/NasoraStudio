@@ -52,7 +52,7 @@ export function MemberProfileContent({ locale, profileClient }: { locale: Locale
       {status === "loading" && <p className={styles.loadingCopy}>{th ? "กำลังโหลดข้อมูลสมาชิก…" : "Loading member profile…"}</p>}
       {loadMessage && <p aria-live="polite" className={styles.errorMessage} role="alert">{loadMessage}</p>}
       {user && repository && <div className={styles.profileGrid}>
-        <MemberProfileForm avatarMediaId={user.avatarMediaId} initialProfile={{ nickname: profileValue.nickname, preferredLocale: profileValue.preferredLocale }} key={`${profileValue.nickname}-${profileValue.preferredLocale}`} locale={locale} onAvatarUploaded={updateAvatarMediaId} onSave={async (input) => {
+        <MemberProfileForm avatarMediaId={user.avatarMediaId} initialProfile={{ nickname: profileValue.nickname, preferredLocale: profileValue.preferredLocale }} locale={locale} onAvatarUploaded={updateAvatarMediaId} onSave={async (input) => {
           const result = await repository.updateProfile(input);
           if (result.ok) {
             setProfile(result.data);

@@ -19,6 +19,7 @@ async function signIn(page: import("@playwright/test").Page) {
 async function uploadAvatar(page: import("@playwright/test").Page, path: string) {
   await page.getByLabel("Choose profile image").setInputFiles(path);
   await expect(page.getByRole("img", { name: "Profile image preview" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Upload profile image" })).toBeEnabled({ timeout: 15_000 });
   const responsePromise = page.waitForResponse((response) => response.url().endsWith("/api/member/profile/avatar") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Upload profile image" }).click();
   const response = await responsePromise;
