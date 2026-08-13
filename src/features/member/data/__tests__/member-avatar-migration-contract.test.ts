@@ -20,6 +20,8 @@ describe("member avatar migration contract", () => {
     expect(sql).toMatch(/content_type text not null[\s\S]*image\/webp/);
     expect(sql).toMatch(/width integer not null[\s\S]*width = 512/);
     expect(sql).toMatch(/height integer not null[\s\S]*height = 512/);
+    expect(sql).toContain("constraint profile_avatar_media_lifecycle_check");
+    expect(sql).not.toContain("constraint profile_avatar_media_state_check");
   });
 
   it("keeps media metadata private and service gateway guarded", () => {

@@ -13,7 +13,7 @@ create table public.profile_avatar_media (
   created_at timestamptz not null default now(),
   replaced_at timestamptz,
   deleted_at timestamptz,
-  constraint profile_avatar_media_state_check check (
+  constraint profile_avatar_media_lifecycle_check check (
     (state = 'active' and replaced_at is null and deleted_at is null)
     or (state = 'pending_cleanup' and replaced_at is not null and deleted_at is null)
     or (state = 'deleted' and replaced_at is not null and deleted_at is not null)
