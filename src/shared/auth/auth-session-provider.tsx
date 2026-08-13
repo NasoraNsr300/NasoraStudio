@@ -24,6 +24,13 @@ export type AuthClientLike = {
     signUp(input: SignUpInput): Promise<AuthOperationResult>;
     updateUser(input: { data?: Record<string, unknown>; password?: string }): Promise<AuthOperationResult>;
   };
+  from?(table: string): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        maybeSingle(): Promise<{ data: { avatar_media_id?: unknown } | null; error?: unknown }>;
+      };
+    };
+  };
 };
 
 type AuthSessionValue = {
@@ -31,6 +38,7 @@ type AuthSessionValue = {
   signOut(): Promise<AuthOperationResult>;
   signUp(input: SignUpInput): Promise<AuthOperationResult>;
   status: AuthStatus;
+  updateAvatarMediaId(mediaId: string | null): void;
   updateNickname(nickname: string): Promise<AuthOperationResult>;
   updatePassword(password: string): Promise<AuthOperationResult>;
   user: AuthIdentity | null;
@@ -44,7 +52,16 @@ function toIdentity(user: AuthUserLike | null): AuthIdentity | null {
     ? user.user_metadata.nickname.trim()
     : user.email?.split("@")[0] ?? "Member";
   const role = typeof user.app_metadata?.role === "string" ? user.app_metadata.role : null;
-  return { email: user.email ?? null, id: user.id, nickname, role };
+  return { avatarMediaId: null, email: user.email ?? null, id: user.id, nickname, role };
+}
+
+async function profileAvatarId(client: AuthClientLike, userId: string) {
+  try {
+    if (!client.from) return null;
+    const { data, error } = await client.from("profiles").select("avatar_media_id").eq("user_id", userId).maybeSingle();
+    if (error || typeof data?.avatar_media_id !== "string") return null;
+    return data.avatar_media_id;
+  } catch { return null; }
 }
 
 export function AuthSessionProvider({ children, client }: { children: ReactNode; client?: AuthClientLike }) {
@@ -61,9 +78,11 @@ export function AuthSessionProvider({ children, client }: { children: ReactNode;
       window.setTimeout(() => resolve({ data: { user: null } }), 3_000);
     });
     void Promise.race([authClient.auth.getUser(), sessionTimeout])
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!active) return;
         const identity = toIdentity(data.user);
+        if (identity) identity.avatarMediaId = await profileAvatarId(authClient, identity.id);
+        if (!active) return;
         setUser(identity);
         setStatus(identity ? "signedIn" : "signedOut");
       })
@@ -76,8 +95,12 @@ export function AuthSessionProvider({ children, client }: { children: ReactNode;
     const { data } = authClient.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       const identity = toIdentity(session?.user ?? null);
-      setUser(identity);
-      setStatus(identity ? "signedIn" : "signedOut");
+      if (!identity) { setUser(null); setStatus("signedOut"); return; }
+      void profileAvatarId(authClient, identity.id).then((avatarMediaId) => {
+        if (!active) return;
+        setUser({ ...identity, avatarMediaId });
+        setStatus("signedIn");
+      });
     });
 
     return () => {
@@ -91,6 +114,7 @@ export function AuthSessionProvider({ children, client }: { children: ReactNode;
     signOut: () => authClient.auth.signOut(),
     signUp: (input) => authClient.auth.signUp(input),
     status,
+    updateAvatarMediaId: (avatarMediaId) => setUser((current) => current ? { ...current, avatarMediaId } : current),
     updateNickname: async (nickname) => {
       const result = await authClient.auth.updateUser({ data: { nickname } });
       if (!result.error) setUser((current) => current ? { ...current, nickname } : current);

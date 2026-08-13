@@ -1,4 +1,5 @@
 export type AuthIdentity = {
+  avatarMediaId?: string | null;
   email: string | null;
   id: string;
   nickname: string;
