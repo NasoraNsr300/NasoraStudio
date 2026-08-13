@@ -70,11 +70,18 @@ const { data: resetSummary, error: resetError } = await supabase.rpc(
 
 if (resetError) throw resetError;
 
+const { data: resetAvatarId, error: resetAvatarError } = await supabase.rpc(
+  "gateway_reset_test_customer_avatar",
+  { p_user_id: user.id },
+);
+if (resetAvatarError) throw resetAvatarError;
+
 process.stdout.write(`${JSON.stringify({
   account: existing ? "reset" : "created",
   email: APPROVED_EMAIL,
   memberRole: true,
   resetSummary,
+  avatarCleanupScheduled: Boolean(resetAvatarId),
   signInPath: "/th?auth=1",
   userId: user.id,
 }, null, 2)}\n`);

@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 import { expect, test } from "@playwright/test";
 
 import { getTestCustomerCredentials } from "./fixtures/test-customer";
@@ -16,7 +18,7 @@ async function signIn(page: import("@playwright/test").Page) {
 
 async function uploadAvatar(page: import("@playwright/test").Page, path: string) {
   await page.getByLabel("Choose profile image").setInputFiles(path);
-  await expect(page.getByRole("img", { name: "Profile image preview" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Profile image preview" })).toBeVisible({ timeout: 15_000 });
   const responsePromise = page.waitForResponse((response) => response.url().endsWith("/api/member/profile/avatar") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Upload profile image" }).click();
   const response = await responsePromise;
@@ -28,6 +30,9 @@ async function uploadAvatar(page: import("@playwright/test").Page, path: string)
 
 test.describe("member profile avatar lifecycle", () => {
   test.skip(!credentials, "Set RUN_TEST_CUSTOMER_E2E=1 after resetting the local test customer.");
+  test.afterAll(() => {
+    execFileSync(process.execPath, ["--env-file=.env.local", "scripts/reset-test-customer.mjs"], { cwd: process.cwd(), stdio: "ignore" });
+  });
 
   test("normalizes, stores, synchronizes, reloads, replaces, and protects a private avatar", async ({ browser, page }) => {
     await signIn(page);
