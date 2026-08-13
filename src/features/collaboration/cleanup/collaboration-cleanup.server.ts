@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
 import { createR2PrivateAssetsStorage } from "@/features/collaboration/storage/r2-private-assets.server";
 
-const taskSchema = z.object({ delivery_kind: z.enum(["r2_file", "google_drive"]).nullable(), object_key: z.string().nullable(), target_id: z.uuid(), target_type: z.enum(["delivery", "message_asset", "progress_image"]), task_id: z.uuid() });
+const taskSchema = z.object({ delivery_kind: z.enum(["r2_file", "google_drive"]).nullable(), object_key: z.string().nullable(), target_id: z.uuid(), target_type: z.enum(["delivery", "message_asset", "progress_image", "profile_avatar"]), task_id: z.uuid() });
 
 export async function processCollaborationCleanup(environment: Record<string, string | undefined> = process.env) {
   const gateway = createPaymentGatewayClient(environment); const storage = createR2PrivateAssetsStorage(environment); const { data, error } = await gateway.rpc("claim_cleanup_batch", { p_limit: 10 });
