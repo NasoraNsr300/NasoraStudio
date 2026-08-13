@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { serviceTypes } from "@/data/fixtures/public-content";
 import { EstimateRequestDialog } from "@/features/commission/components/estimate-request-dialog";
 import type { createCommissionRequestRepository } from "@/features/commission/data/commission-request-repository";
+import type { EstimateDraftRepository } from "@/features/commission/data/estimate-draft-repository";
 
 afterEach(cleanup);
 
@@ -24,6 +25,14 @@ function createRepository(overrides: Partial<Repository> = {}): Repository {
   } as Repository;
 }
 
+function createDraftRepository(draft: Awaited<ReturnType<EstimateDraftRepository["load"]>> = null) {
+  return {
+    delete: vi.fn().mockResolvedValue(undefined),
+    load: vi.fn().mockResolvedValue(draft),
+    save: vi.fn().mockResolvedValue(undefined),
+  } satisfies EstimateDraftRepository;
+}
+
 describe("EstimateRequestDialog", () => {
   it("blocks new Guest and member submissions while commissions are closed", () => {
     render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} commissionsOpen={false} locale="th" onClose={() => undefined} repository={createRepository()} service={service} />);
@@ -41,7 +50,7 @@ describe("EstimateRequestDialog", () => {
     expect(screen.getByPlaceholderText("For example: Lunaris, StarWalker")).toBeVisible();
     expect(screen.queryByText("Loading member information...")).not.toBeInTheDocument();
     expect(screen.queryByText("Upload more")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
   });
 
   it("moves the selected treatment when the usage type changes", async () => {
@@ -66,8 +75,10 @@ describe("EstimateRequestDialog", () => {
 
   it("automatically loads member identity when signed in", async () => {
     const repository = createRepository();
+    const drafts = createDraftRepository();
     render(<EstimateRequestDialog
       auth={{ status: "signedIn", user: { email: "member@example.com", id: "user-1", nickname: "Session name" } }}
+      draftRepository={drafts}
       locale="en"
       onClose={() => undefined}
       repository={repository}
@@ -131,5 +142,42 @@ describe("EstimateRequestDialog", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Network unavailable");
     expect(screen.getByPlaceholderText("For example: Lunaris, StarWalker")).toHaveValue("Moon");
+  });
+
+  it("restores and saves a Guest draft without legal acceptance or files", async () => {
+    const user = userEvent.setup();
+    const drafts = createDraftRepository({
+      version: 1, usageType: "commercial", budgetKind: "range", budgetMinThb: "1200", budgetMaxThb: "3000",
+      requestedDeadline: "2099-10-01", description: "Restored brief", moodAndStyle: "Autumn", extraCharacterCount: 1,
+      backgroundLevel: 2, propCount: 0, guestDisplayName: "Moon", guestContactKind: "email", guestContactValue: "moon@example.com",
+      savedAt: "2026-08-14T00:00:00.000Z",
+    });
+    render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} draftRepository={drafts} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
+
+    expect(await screen.findByDisplayValue("Restored brief")).toBeVisible();
+    expect(screen.getByDisplayValue("Moon")).toBeVisible();
+    expect(screen.getByDisplayValue("1200")).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Commercial" })).toBeChecked();
+    await user.clear(screen.getByLabelText("Mood, palette, and style"));
+    await user.type(screen.getByLabelText("Mood, palette, and style"), "Night");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(drafts.save).toHaveBeenCalledWith(service.slug, expect.objectContaining({ moodAndStyle: "Night", guestDisplayName: "Moon", version: 1 }));
+    expect(screen.getByRole("status")).toHaveTextContent("Draft saved");
+  });
+
+  it("deletes the matching draft only after confirmed submission success", async () => {
+    const user = userEvent.setup();
+    const drafts = createDraftRepository();
+    render(<EstimateRequestDialog auth={{ status: "signedOut", user: null }} draftRepository={drafts} locale="en" onClose={() => undefined} repository={createRepository()} service={service} />);
+    await user.type(screen.getByPlaceholderText("For example: Lunaris, StarWalker"), "Moon");
+    await user.type(screen.getByPlaceholderText("For example: @username"), "@moon");
+    await user.type(screen.getByPlaceholderText("Minimum"), "1000");
+    await user.type(screen.getByPlaceholderText("Maximum"), "2000");
+    await user.type(screen.getByLabelText("Preferred deadline"), "2099-09-01");
+    await user.type(screen.getByLabelText("Character / project description"), "A complete brief");
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Review and submit" }));
+    await waitFor(() => expect(drafts.delete).toHaveBeenCalledWith(service.slug));
   });
 });

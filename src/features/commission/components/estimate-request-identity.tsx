@@ -44,11 +44,17 @@ export function MemberEstimateIdentity({
 }
 
 export type GuestEstimateIdentityProps = {
+  contactKind?: string;
+  contactValue?: string;
   disabled: boolean;
+  displayName?: string;
   labels: EstimateIdentityLabels;
+  onContactKindChange?(value: string): void;
+  onContactValueChange?(value: string): void;
+  onDisplayNameChange?(value: string): void;
 };
 
-export function GuestEstimateIdentity({ disabled, labels }: GuestEstimateIdentityProps) {
+export function GuestEstimateIdentity({ contactKind, contactValue, disabled, displayName, labels, onContactKindChange, onContactValueChange, onDisplayNameChange }: GuestEstimateIdentityProps) {
   return (
     <div className={styles.guestIdentity}>
       <label>
@@ -58,9 +64,11 @@ export function GuestEstimateIdentity({ disabled, labels }: GuestEstimateIdentit
           disabled={disabled}
           maxLength={80}
           name="guestDisplayName"
+          onChange={onDisplayNameChange ? (event) => onDisplayNameChange(event.target.value) : undefined}
           placeholder={labels.guestNameHint}
           required
           type="text"
+          value={displayName}
         />
       </label>
       <label>
@@ -68,9 +76,11 @@ export function GuestEstimateIdentity({ disabled, labels }: GuestEstimateIdentit
         <div className={styles.contactFields}>
           <select
             aria-label={`${labels.contact} method`}
-            defaultValue="discord"
+            defaultValue={contactKind === undefined ? "discord" : undefined}
             disabled={disabled}
             name="guestContactKind"
+            onChange={onContactKindChange ? (event) => onContactKindChange(event.target.value) : undefined}
+            value={contactKind}
           >
             <option value="discord">Discord</option>
             <option value="email">Email</option>
@@ -82,9 +92,11 @@ export function GuestEstimateIdentity({ disabled, labels }: GuestEstimateIdentit
             disabled={disabled}
             maxLength={200}
             name="guestContactValue"
+            onChange={onContactValueChange ? (event) => onContactValueChange(event.target.value) : undefined}
             placeholder={labels.contactHint}
             required
             type="text"
+            value={contactValue}
           />
         </div>
       </label>

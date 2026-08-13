@@ -15,6 +15,8 @@ import {
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { createCommissionRequestRepository, type CommissionRequestClient } from "@/features/commission/data/commission-request-repository";
+import { createGuestEstimateDraftRepository, createMemberEstimateDraftRepository, type EstimateDraftClient, type EstimateDraftRepository } from "@/features/commission/data/estimate-draft-repository";
+import { parseEstimateDraft, type EstimateDraftValues } from "@/features/commission/domain/estimate-draft";
 import { parseEstimateRequest, toCommissionRequestRpcPayload } from "@/features/commission/domain/estimate-request";
 import { useOptionalAuthSession } from "@/shared/auth/auth-session-provider";
 import type { AuthIdentity, AuthStatus } from "@/shared/auth/auth-types";
@@ -32,6 +34,7 @@ type UsageType = "personal" | "commercial";
 type EstimateRequestDialogProps = {
   auth?: { status: AuthStatus; user: AuthIdentity | null };
   commissionsOpen?: boolean;
+  draftRepository?: EstimateDraftRepository;
   locale: Locale;
   onClose(): void;
   repository?: ReturnType<typeof createCommissionRequestRepository>;
@@ -90,6 +93,9 @@ const copy = {
     guestNameHint: "เช่น Lunaris, StarWalker",
     contactHint: "เช่น @username",
     draftUnavailable: "ระบบบันทึกร่างจะเปิดให้ใช้ภายหลัง",
+    draftSaved: "บันทึกร่างแล้ว — ไฟล์แนบต้องเลือกใหม่เมื่อกลับมา",
+    draftRestored: "กู้คืนร่างแล้ว — กรุณาเลือกไฟล์แนบใหม่",
+    draftError: "ไม่สามารถบันทึกหรือกู้คืนร่างได้",
     sending: "กำลังส่ง...",
     sent: "ส่งแบบประเมินแล้ว เลขอ้างอิงของคุณคือ",
     identityLoading: "กำลังโหลดข้อมูลสมาชิก...",
@@ -146,6 +152,9 @@ const copy = {
     guestNameHint: "For example: Lunaris, StarWalker",
     contactHint: "For example: @username",
     draftUnavailable: "Draft saving will be available later",
+    draftSaved: "Draft saved — attachments must be selected again when you return",
+    draftRestored: "Draft restored — please select attachments again",
+    draftError: "Unable to save or restore this draft",
     sending: "Submitting...",
     sent: "Your estimate request was sent. Reference:",
     identityLoading: "Loading member information...",
@@ -181,7 +190,7 @@ function newSubmissionKey() {
   });
 }
 
-export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOverride, locale, onClose, repository, service }: EstimateRequestDialogProps) {
+export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOverride, draftRepository, locale, onClose, repository, service }: EstimateRequestDialogProps) {
   const labels = copy[locale];
   const publicSettings = useOptionalPublicSiteSettings();
   const commissionsOpen = commissionsOpenOverride ?? publicSettings?.commissionsOpen ?? true;
@@ -191,16 +200,25 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const repositoryRef = useRef(repository ?? null);
+  const draftRepositoryRef = useRef<EstimateDraftRepository | null>(draftRepository ?? null);
+  const draftRepositoryIdentityRef = useRef<string | null>(draftRepository ? "injected" : null);
+  const hydratedDraftKeyRef = useRef<string | null>(null);
   const [identity, setIdentity] = useState({ contact: session.user?.email ?? "", nickname: session.user?.nickname ?? labels.memberName });
   const [loadedIdentityUserId, setLoadedIdentityUserId] = useState<string | null>(null);
   const [extraCharacterCount, setExtraCharacterCount] = useState(0);
   const [backgroundLevel, setBackgroundLevel] = useState(0);
   const [propCount, setPropCount] = useState(0);
   const [budgetKind, setBudgetKind] = useState<"open" | "range">("range");
+  const [budgetMinThb, setBudgetMinThb] = useState("");
+  const [budgetMaxThb, setBudgetMaxThb] = useState("");
   const [usageType, setUsageType] = useState<UsageType>("personal");
   const [description, setDescription] = useState("");
   const [moodAndStyle, setMoodAndStyle] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [guestDisplayName, setGuestDisplayName] = useState("");
+  const [guestContactKind, setGuestContactKind] = useState("discord");
+  const [guestContactValue, setGuestContactValue] = useState("");
+  const [draftFeedback, setDraftFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestCode, setRequestCode] = useState<string | null>(null);
@@ -213,6 +231,13 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
     if (repository) repositoryRef.current = repository;
   }, [repository]);
 
+  useEffect(() => {
+    if (draftRepository) {
+      draftRepositoryRef.current = draftRepository;
+      draftRepositoryIdentityRef.current = "injected";
+    }
+  }, [draftRepository]);
+
   const getRepository = useCallback(() => {
     if (!repositoryRef.current) {
       repositoryRef.current = createCommissionRequestRepository(
@@ -221,6 +246,24 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
     }
     return repositoryRef.current;
   }, []);
+
+  const getDraftRepository = useCallback(() => {
+    if (draftRepository) return draftRepository;
+    const identityKey = session.status === "signedIn" && session.user
+      ? `member:${session.user.id}`
+      : "guest";
+    if (draftRepositoryRef.current && draftRepositoryIdentityRef.current === identityKey) {
+      return draftRepositoryRef.current;
+    }
+    draftRepositoryRef.current = session.status === "signedIn" && session.user
+      ? createMemberEstimateDraftRepository(
+        createSupabaseBrowserClient() as unknown as EstimateDraftClient,
+        session.user.id,
+      )
+      : createGuestEstimateDraftRepository(window.localStorage);
+    draftRepositoryIdentityRef.current = identityKey;
+    return draftRepositoryRef.current;
+  }, [draftRepository, session.status, session.user]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -242,14 +285,69 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
     return () => { active = false; };
   }, [getRepository, session.status, session.user]);
 
+  useEffect(() => {
+    if (session.status === "loading") return;
+    const identityKey = session.status === "signedIn" ? `member:${session.user?.id ?? ""}` : "guest";
+    const hydrateKey = `${identityKey}:${service.slug}`;
+    if (hydratedDraftKeyRef.current === hydrateKey) return;
+    hydratedDraftKeyRef.current = hydrateKey;
+    let active = true;
+    void getDraftRepository().load(service.slug).then((draft) => {
+      if (!active || !draft) return;
+      setUsageType(draft.usageType);
+      setBudgetKind(draft.budgetKind);
+      setBudgetMinThb(draft.budgetMinThb);
+      setBudgetMaxThb(draft.budgetMaxThb);
+      setDeadline(draft.requestedDeadline);
+      setDescription(draft.description);
+      setMoodAndStyle(draft.moodAndStyle);
+      setExtraCharacterCount(draft.extraCharacterCount);
+      setBackgroundLevel(draft.backgroundLevel);
+      setPropCount(draft.propCount);
+      if (customerMode === "guest") {
+        setGuestDisplayName(draft.guestDisplayName);
+        setGuestContactKind(draft.guestContactKind || "discord");
+        setGuestContactValue(draft.guestContactValue);
+      }
+      setDraftFeedback(labels.draftRestored);
+    }).catch(() => { if (active) setDraftFeedback(labels.draftError); });
+    return () => { active = false; };
+  }, [customerMode, getDraftRepository, labels.draftError, labels.draftRestored, service.slug, session.status, session.user?.id]);
+
+  const currentDraft = (): EstimateDraftValues => parseEstimateDraft({
+    version: 1,
+    usageType,
+    budgetKind,
+    budgetMinThb,
+    budgetMaxThb,
+    requestedDeadline: deadline || localIsoDate(),
+    description,
+    moodAndStyle,
+    extraCharacterCount,
+    backgroundLevel,
+    propCount,
+    guestDisplayName: customerMode === "guest" ? guestDisplayName : "",
+    guestContactKind: customerMode === "guest" ? guestContactKind : "",
+    guestContactValue: customerMode === "guest" ? guestContactValue : "",
+    savedAt: new Date().toISOString(),
+  });
+
+  const saveDraft = async () => {
+    setDraftFeedback("");
+    try {
+      await getDraftRepository().save(service.slug, currentDraft());
+      setDraftFeedback(labels.draftSaved);
+    } catch { setDraftFeedback(labels.draftError); }
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!commissionsOpen || submitting || requestCode) return;
     setError(null);
     const form = new FormData(event.currentTarget);
     try {
-      const minThb = Number(form.get("budgetMin"));
-      const maxThb = Number(form.get("budgetMax"));
+      const minThb = Number(budgetMinThb);
+      const maxThb = Number(budgetMaxThb);
       const parsed = parseEstimateRequest({
         acceptedLegal: form.get("acceptedLegal") === "on",
         backgroundLevel,
@@ -257,9 +355,9 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
         description,
         extraCharacterCount,
         guest: customerMode === "guest" ? {
-          contactKind: form.get("guestContactKind"),
-          contactValue: form.get("guestContactValue"),
-          displayName: form.get("guestDisplayName"),
+          contactKind: guestContactKind,
+          contactValue: guestContactValue,
+          displayName: guestDisplayName,
         } : undefined,
         moodAndStyle,
         propCount,
@@ -277,7 +375,15 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
       });
       setSubmitting(true);
       const result = await getRepository().submit(payload);
-      if (result.ok) setRequestCode(result.data.requestCode);
+      if (result.ok) {
+        setRequestCode(result.data.requestCode);
+        try {
+          await getDraftRepository().delete(service.slug);
+          setDraftFeedback("");
+        } catch {
+          setDraftFeedback(labels.draftError);
+        }
+      }
       else setError(result.message);
     } catch (cause) {
       setError(cause instanceof Error && cause.message ? cause.message : labels.invalid);
@@ -311,7 +417,7 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
             <button aria-pressed={customerMode === "member"} disabled type="button"><UserRound size={17} />{labels.member}</button>
             <button aria-pressed={customerMode === "guest"} disabled type="button"><UserRound size={17} />{labels.guest}</button>
           </div>
-          {customerMode === "member" ? <MemberEstimateIdentity contact={identity.contact} labels={labels} loading={identityLoading} nickname={identity.nickname} /> : <GuestEstimateIdentity disabled={disabled} labels={labels} />}
+          {customerMode === "member" ? <MemberEstimateIdentity contact={identity.contact} labels={labels} loading={identityLoading} nickname={identity.nickname} /> : <GuestEstimateIdentity contactKind={guestContactKind} contactValue={guestContactValue} disabled={disabled} displayName={guestDisplayName} labels={labels} onContactKindChange={setGuestContactKind} onContactValueChange={setGuestContactValue} onDisplayNameChange={setGuestDisplayName} />}
           <fieldset className={styles.usageFieldset} disabled={disabled}>
             <legend>{labels.usage}<span>*</span></legend>
             <div>
@@ -325,7 +431,7 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
               </label>
             </div>
           </fieldset>
-          <label className={styles.formField}>{labels.budget}<span>*</span><div className={styles.budgetFields}><select disabled={disabled} name="budgetKind" onChange={(event) => setBudgetKind(event.target.value === "open" ? "open" : "range")} value={budgetKind}><option value="range">{labels.budgetType}</option><option value="open">Open budget</option></select><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMin" placeholder={labels.min} required={budgetKind === "range"} type="number" /><em>{locale === "th" ? "ถึง" : "to"}</em><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMax" placeholder={labels.max} required={budgetKind === "range"} type="number" /></div></label>
+          <label className={styles.formField}>{labels.budget}<span>*</span><div className={styles.budgetFields}><select disabled={disabled} name="budgetKind" onChange={(event) => setBudgetKind(event.target.value === "open" ? "open" : "range")} value={budgetKind}><option value="range">{labels.budgetType}</option><option value="open">Open budget</option></select><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMin" onChange={(event) => setBudgetMinThb(event.target.value)} placeholder={labels.min} required={budgetKind === "range"} type="number" value={budgetMinThb} /><em>{locale === "th" ? "ถึง" : "to"}</em><input disabled={disabled || budgetKind === "open"} inputMode="numeric" min="0" name="budgetMax" onChange={(event) => setBudgetMaxThb(event.target.value)} placeholder={labels.max} required={budgetKind === "range"} type="number" value={budgetMaxThb} /></div></label>
           <label className={styles.formField}>{labels.deadline}<span>*</span><div className={styles.dateField}><input aria-label={labels.deadline} disabled={disabled} min={localIsoDate()} onChange={(event) => setDeadline(event.target.value)} required type="date" value={deadline} /><span><CalendarDays size={18} />{deadline || labels.date}</span></div></label>
         </section>
 
@@ -339,9 +445,10 @@ export function EstimateRequestDialog({ auth, commissionsOpen: commissionsOpenOv
         <div className={styles.estimateFooter}>
           {error ? <p className={styles.estimateFeedback} role="alert">{error}</p> : null}
           {requestCode ? <p className={styles.estimateFeedback} role="status">{labels.sent} <strong>{requestCode}</strong></p> : null}
+          {draftFeedback ? <p className={styles.estimateFeedback} role="status">{draftFeedback}</p> : null}
           <label className={styles.legalCheck}><input disabled={disabled} name="acceptedLegal" type="checkbox" /><span>{labels.accept} <a href={`/${locale}/documents/privacy-policy`}>{labels.privacy}</a> {labels.and} <a href={`/${locale}/documents/commission-terms`}>{labels.terms}</a> {labels.legalSuffix}</span></label>
           <p><Info aria-hidden="true" size={15} />{labels.finalNotice}</p>
-          <div><button className={styles.draftButton} disabled title={labels.draftUnavailable} type="button"><Save size={18} />{labels.draft}</button><button className={styles.reviewButton} disabled={disabled || identityLoading} type="submit"><Sparkles size={18} />{submitting ? labels.sending : labels.review}<Check size={18} /></button></div>
+          <div><button className={styles.draftButton} disabled={disabled || identityLoading} onClick={saveDraft} type="button"><Save size={18} />{labels.draft}</button><button className={styles.reviewButton} disabled={disabled || identityLoading} type="submit"><Sparkles size={18} />{submitting ? labels.sending : labels.review}<Check size={18} /></button></div>
         </div>
       </form>
     </section>
