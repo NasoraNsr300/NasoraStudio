@@ -16,7 +16,11 @@ import styles from "./admin-dashboard.module.css";
 
 function currentTheme(): ThemeName { return document.documentElement.dataset.theme === "autumn" ? "autumn" : "night"; }
 function subscribeToTheme(onStoreChange: () => void) { const observer = new MutationObserver(onStoreChange); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] }); return () => observer.disconnect(); }
-function currentSidebar() { return window.localStorage.getItem("nasora-admin-sidebar-collapsed") === "true"; }
+function currentSidebar() {
+  const stored = window.localStorage.getItem("nasora-admin-sidebar-collapsed");
+  if (stored !== null) return stored === "true";
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 720px)").matches;
+}
 function subscribeToSidebar(onStoreChange: () => void) { window.addEventListener("nasora:admin-sidebar", onStoreChange); return () => window.removeEventListener("nasora:admin-sidebar", onStoreChange); }
 
 export function AdminShell({ children, data, initialCommissionsOpen = true }: { children: ReactNode; data: AdminShellData; initialCommissionsOpen?: boolean }) {

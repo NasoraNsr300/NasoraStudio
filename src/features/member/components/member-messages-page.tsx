@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, Send, UserRound } from "lucide-react";
+import { ArrowLeft, ImagePlus, Send, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { type FormEvent, useMemo, useState } from "react";
@@ -20,6 +20,7 @@ export function MemberMessagesContent({ conversations = [], fetcher = fetch, loc
   const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const router = useRouter();
   const th = locale === "th";
   const selected = conversations[active] ?? null;
@@ -41,19 +42,19 @@ export function MemberMessagesContent({ conversations = [], fetcher = fetch, loc
 
   return <section className={`${styles.pagePanel} ${styles.messagePanel}`}>
     <header className={styles.pageHeader}><div><h1>{th ? "ข้อความ" : "Messages"}</h1><p>{th ? "พูดคุยและติดตามรายละเอียดของงานที่กำลังดำเนินการ" : "Discuss and follow the details of your active jobs."}</p></div></header>
-    <div className={styles.messagesLayout}>
+    <div className={styles.messagesLayout} data-mobile-thread-open={mobileThreadOpen} data-testid="member-messages-layout">
       <section className={`${styles.surface} ${styles.conversationList}`}>
         <header><input aria-label={th ? "ค้นหาข้อความ" : "Search messages"} placeholder={th ? "ค้นหาข้อความ..." : "Search messages..."} /></header>
         {rows.length === 0 ? <p>{th ? "ยังไม่มีห้องสนทนา ห้องจะเปิดหลังยืนยันมัดจำ" : "No conversations yet. A thread opens after deposit verification."}</p> : rows.map((conversation, index) => {
           const latest = conversation.messages.at(-1);
-          return <button aria-pressed={active === index} className={styles.conversation} key={conversation.id} onClick={() => setActive(index)} type="button">
+          return <button aria-label={conversation.title} aria-pressed={active === index} className={styles.conversation} key={conversation.id} onClick={() => { setActive(index); setMobileThreadOpen(true); }} type="button">
             <span><strong>{conversation.title}</strong><time>{latest ? new Date(latest.createdAt).toLocaleString(locale) : ""}</time></span>
             <span><small>{latest?.body ?? (th ? "เริ่มการสนทนา" : "Start a conversation")}</small></span>
           </button>;
         })}
       </section>
       <section className={`${styles.surface} ${styles.chat}`}>
-        <header className={styles.chatHeader}><span><UserRound size={19} /></span><div><strong>Nasora</strong><small>{selected?.title ?? (th ? "เลือกงานเพื่อเริ่มสนทนา" : "Select a job")}</small></div></header>
+        <header className={styles.chatHeader}><button aria-label={th ? "กลับไปรายการสนทนา" : "Back to conversations"} className={styles.mobileChatBack} onClick={() => setMobileThreadOpen(false)} type="button"><ArrowLeft size={18} /></button><span><UserRound size={19} /></span><div><strong>Nasora</strong><small>{selected?.title ?? (th ? "เลือกงานเพื่อเริ่มสนทนา" : "Select a job")}</small></div></header>
         <div className={styles.chatBody}>
           {selected?.messages.map((message) => <div className={`${styles.bubble} ${message.senderRole === "member" ? styles.mine : ""}`} key={message.id}>
             {message.imageAssetId ? <Image alt={th ? "รูปภาพในข้อความ" : "Message image"} height={320} src={`/api/member/message-assets/${message.imageAssetId}`} unoptimized width={480} /> : null}<p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString(locale)}</small>

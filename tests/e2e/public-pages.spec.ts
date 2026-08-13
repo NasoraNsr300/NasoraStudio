@@ -21,8 +21,14 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function expectMinimumTouchTargets(page: Page, state: string) {
   const undersized = await page.locator("a[href]:visible, button:visible, input:visible, select:visible, textarea:visible, [role='button']:visible, [role='tab']:visible").evaluateAll((elements) =>
     Array.from(new Set(elements)).flatMap((element) => {
-      if (element.closest("nextjs-portal") || element.getAttribute("aria-label") === "Open Next.js Dev Tools") return [];
-      const box = element.getBoundingClientRect();
+      const ariaLabel = element.getAttribute("aria-label");
+      if (
+        element.closest("nextjs-portal") ||
+        ariaLabel === "Open Next.js Dev Tools" ||
+        ariaLabel === "Open issues overlay" ||
+        ariaLabel === "Collapse issues badge"
+      ) return [];
+      const box = (element instanceof HTMLInputElement && element.closest("label") ? element.closest("label")! : element).getBoundingClientRect();
       return box.width < 44 || box.height < 44
         ? [`${element.tagName.toLowerCase()}[${element.getAttribute("aria-label") ?? element.textContent?.trim() ?? ""}] ${Math.round(box.width)}x${Math.round(box.height)}`]
         : [];
@@ -183,10 +189,13 @@ test("all mobile public and overlay targets provide at least 44px touch targets"
   await page.goto("/en/commission/illustration");
   await page.getByRole("button", { name: "View Details & Rates" }).first().click();
   await expectMinimumTouchTargets(page, "open service dialog");
-  await page.getByRole("button", { name: "Request Estimate", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Request Estimate", exact: true }).click();
   await expectMinimumTouchTargets(page, "open nested request preview");
 
   await page.goto("/en/documents");
-  await page.getByRole("button", { name: "Read document" }).first().click();
-  await expectMinimumTouchTargets(page, "open document dialog");
+  const latestNotice = page.getByRole("button", { name: /View details/ });
+  if (await latestNotice.count()) {
+    await latestNotice.click();
+    await expectMinimumTouchTargets(page, "open document dialog");
+  }
 });

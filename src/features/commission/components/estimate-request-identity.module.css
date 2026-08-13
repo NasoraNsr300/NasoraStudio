@@ -70,3 +70,8 @@
   gap: .5rem;
   grid-template-columns: .9fr 1.1fr;
 }
+
+@media (max-width: 780px) {
+  .memberIdentity,.contactFields { grid-template-columns:1fr; }
+  .guestIdentity input,.guestIdentity select { min-height:44px; }
+}

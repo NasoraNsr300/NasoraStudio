@@ -66,3 +66,48 @@
 /* Live Admin shell */
 .adminShellCollapsed { grid-template-columns: 76px minmax(1180px, 1fr); }.sidebar[data-collapsed="true"] { padding-inline:8px; }.sidebar[data-collapsed="true"] .adminBrand { justify-content:center; padding-inline:0; }.sidebar[data-collapsed="true"] .adminBrand div,.sidebar[data-collapsed="true"] .artistCard div,.sidebar[data-collapsed="true"] nav a>span,.sidebar[data-collapsed="true"] nav b,.sidebar[data-collapsed="true"] .collapse span:nth-child(2) { display:none; }.sidebar[data-collapsed="true"] .artistCard { justify-content:center; padding-inline:0; }.sidebar[data-collapsed="true"] nav a { justify-content:center; padding:0; }.sidebar[data-collapsed="true"] .collapse { grid-template-columns:1fr; justify-items:center; }.sidebar[data-collapsed="true"] .collapse span:last-child { transform:rotate(180deg); }.adminAvatarFallback { align-items:center; background:linear-gradient(135deg,#24194a,#8861d4); border:1px solid var(--brand-gold); border-radius:50%; display:flex; font-size:1.2rem; height:58px; justify-content:center; min-width:58px; }.adminAccountRoot,.notificationRoot { position:relative; }.adminAccountButton { align-items:center; background:transparent; border:0; color:#fff; display:flex; gap:8px; }.adminAccountButton img,.adminAccountButton>span { align-items:center; background:linear-gradient(135deg,#24194a,#8861d4); border:1px solid #5a6990; border-radius:50%; display:flex; height:39px; justify-content:center; object-fit:cover; width:39px; }.adminAccountMenu,.notificationMenu { background:#0c1930; border:1px solid var(--admin-border); border-radius:10px; box-shadow:0 18px 55px rgb(0 0 0 / 45%); position:absolute; right:0; top:calc(100% + 10px); z-index:90; }.adminAccountMenu { display:grid; gap:4px; min-width:220px; padding:10px; }.adminAccountMenu>strong { border-bottom:1px solid var(--admin-border); font-size:11px; overflow:hidden; padding:7px; text-overflow:ellipsis; }.adminAccountMenu a,.adminAccountMenu button { background:transparent; border:0; border-radius:6px; color:#d5dbea; font:inherit; font-size:12px; padding:9px; text-align:left; text-decoration:none; }.adminAccountMenu a:hover,.adminAccountMenu button:hover { background:#152543; }.bell b { align-items:center; background:#7659b4; border:2px solid #081326; border-radius:999px; color:#fff; display:flex; font-size:9px; height:19px; justify-content:center; min-width:19px; padding:0 4px; position:absolute; right:-2px; top:-4px; }.notificationMenu { min-width:360px; overflow:hidden; }.notificationMenu header { align-items:center; border-bottom:1px solid var(--admin-border); display:flex; justify-content:space-between; padding:12px; }.notificationMenu h2 { font-size:14px; margin:0; }.notificationMenu header button { background:transparent; border:0; color:var(--brand-gold); font-size:10px; }.notificationMenu ul { list-style:none; margin:0; max-height:360px; overflow:auto; padding:0; }.notificationMenu li { border-bottom:1px solid #1d2d47; }.notificationMenu li[data-read="false"] { background:rgb(103 78 163 / 14%); }.notificationMenu li a { display:grid; gap:2px; padding:11px 13px; text-decoration:none; }.notificationMenu li strong { color:#eef1f7; font-size:12px; }.notificationMenu li span,.notificationMenu li time,.notificationMenu>p { color:var(--admin-muted); font-size:10px; }.notificationMenu>p { margin:0; padding:30px; text-align:center; }
 :global(html[data-theme="autumn"]) .adminAccountMenu,:global(html[data-theme="autumn"]) .notificationMenu { background:#fffaf1; color:#2b2118; }:global(html[data-theme="autumn"]) .notificationMenu li strong,:global(html[data-theme="autumn"]) .adminAccountMenu a,:global(html[data-theme="autumn"]) .adminAccountMenu button { color:#2b2118; }
+
+@media (max-width: 1100px) {
+  .adminShell,.adminShellCollapsed { grid-template-columns:76px minmax(0,1fr); min-width:0; }
+  .sidebar { padding-inline:8px; }
+  .sidebar .adminBrand { justify-content:center; padding-inline:0; }
+  .sidebar .adminBrand div,.sidebar .artistCard div,.sidebar nav a>span,.sidebar nav b,.sidebar .collapse span:nth-child(2) { display:none; }
+  .sidebar .artistCard { justify-content:center; padding-inline:0; }
+  .sidebar nav a { justify-content:center; padding:0; }
+  .sidebar .collapse { grid-template-columns:1fr; justify-items:center; }
+  .workspace,.dashboardShell .workspace { height:auto; min-height:100dvh; overflow:visible; }
+  .main,.dashboardShell .main { display:grid; grid-template-columns:minmax(0,1fr); height:auto; min-height:calc(100dvh - 72px); overflow-y:auto; padding:14px; }
+  .dashboardShell { height:auto; min-height:100dvh; overflow:visible; }
+  .dashboardShell .primaryColumn { display:grid; gap:14px; grid-template-rows:auto; height:auto; }
+  .dashboardShell .middleGrid,.middleGrid { grid-template-columns:minmax(0,1fr); }
+  .dashboardShell .rightRail,.rightRail { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:auto; height:auto; }
+  .summaryGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .panel,.queuePanel { max-width:100%; overflow-x:auto; }
+  .topbar { gap:12px; padding:0 14px; }
+  .globalSearch { max-width:22rem; }
+  .adminThemeControls button { min-height:44px; }
+}
+
+@media (max-width: 720px) {
+  .adminShell,.adminShellCollapsed { display:block; min-width:0; }
+  .sidebar { bottom:0; box-shadow:0 0 0 100vmax rgb(1 7 18 / 62%); left:0; max-width:min(18rem,86vw); overflow-y:auto; position:fixed; top:0; transform:translateX(0); transition:transform 180ms ease-out; width:100%; z-index:100; }
+  .sidebar[data-collapsed="true"] { transform:translateX(-100%); }
+  .sidebar:not([data-collapsed="true"]) .adminBrand { justify-content:flex-start; padding-inline:16px; }
+  .sidebar:not([data-collapsed="true"]) .adminBrand div,.sidebar:not([data-collapsed="true"]) .artistCard div,.sidebar:not([data-collapsed="true"]) nav a>span,.sidebar:not([data-collapsed="true"]) nav b,.sidebar:not([data-collapsed="true"]) .collapse span:nth-child(2) { display:initial; }
+  .sidebar:not([data-collapsed="true"]) .artistCard { justify-content:flex-start; padding-inline:9px; }
+  .sidebar:not([data-collapsed="true"]) nav a { justify-content:flex-start; padding:0 15px; }
+  .sidebar:not([data-collapsed="true"]) .collapse { grid-template-columns:auto 1fr auto; justify-items:stretch; }
+  .topbar { height:auto; min-height:64px; flex-wrap:wrap; padding:10px 12px; }
+  .globalSearch { flex:1 1 calc(100% - 60px); order:1; }
+  .globalSearch kbd { display:none; }
+  .topActions { flex:1 1 100%; justify-content:space-between; margin-left:0; order:2; overflow-x:auto; }
+  .topActions .toggle { flex:0 0 53px; }
+  .adminThemeControls { flex:0 0 auto; }
+  .main,.dashboardShell .main { min-height:calc(100dvh - 116px); padding:10px; }
+  .summaryGrid,.dashboardShell .rightRail,.rightRail { grid-template-columns:minmax(0,1fr); }
+  .queueHeader,.queueHeader>div,.panelHeading,.noteModalActions { align-items:stretch; flex-direction:column; }
+  .queueHeader select,.queueHeader a,.queueHeader button { min-height:44px; width:100%; }
+  .notificationMenu { max-width:calc(100vw - 24px); min-width:0; position:fixed; right:12px; top:70px; width:calc(100vw - 24px); }
+}
+
+@media (prefers-reduced-motion: reduce) { .sidebar { transition:none; } }

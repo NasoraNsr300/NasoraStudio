@@ -187,8 +187,26 @@
 }
 
 @media (max-width: 1180px) { .albumGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .serviceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 780px) { .albumGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .serviceListItem { grid-template-columns: 1fr; } .dialogBody { grid-template-columns: 1fr; } .detailDialog { max-height: calc(100dvh - 1rem); }.dialogHeader, .dialogBody, .dialogActions { padding: var(--space-4); } }
-@media (max-width: 520px) { .albumGrid, .serviceGrid { grid-template-columns: 1fr; }.albumTile { aspect-ratio: 4 / 3; }.dialogActions > div { width: 100%; }.dialogActions button { flex: 1; } }
+@media (max-width: 780px) { .albumGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .serviceListItem { grid-template-columns: 1fr; } .dialogBody { grid-template-columns: 1fr; } .detailDialog { max-height: calc(100dvh - 1rem); }.dialogHeader, .dialogBody, .dialogActions { padding: var(--space-4); } .viewModeButton { height:44px; min-height:44px; min-width:44px; width:44px; } .detailClose { height:44px; padding:.625rem; width:44px; } .detailHeroHeader { padding:1rem 3.25rem .8rem 1rem; } .detailTitleLine { align-items:flex-start; flex-wrap:wrap; gap:.35rem .6rem; padding-right:0; } .detailTitleLine h2 { font-size:clamp(1.65rem,8vw,2.35rem); overflow-wrap:anywhere; } .detailTitleLine>strong,.detailTitleLine>span { font-size:1.35rem; } .detailIntro { align-items:flex-start; flex-direction:column; } .detailBody { grid-template-columns:minmax(0, 1fr); padding:0 1rem 1rem; } .detailMainImage { aspect-ratio:4/3; } .detailThumbnails { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width: 780px) {
+  .estimateDialog { padding:1rem; }
+  .estimateClose { height:44px; padding:.625rem; right:.5rem; top:.5rem; width:44px; }
+  .estimateSteps { padding-right:2.75rem; }
+  .estimateHeader { align-items:stretch; flex-direction:column; gap:.75rem; }
+  .lockedService { min-width:0; width:100%; }
+  .estimateForm { grid-template-columns:minmax(0, 1fr); }
+  .customerMode button,.formField input,.formField select,.usageFieldset label { min-height:44px; }
+  .budgetFields { grid-template-columns:1fr 1fr; }
+  .budgetFields select { grid-column:1 / -1; }
+  .budgetFields em { display:none; }
+  .extrasFieldset>div { grid-template-columns:1fr; }
+  .estimateCounter button { height:44px; width:44px; }
+  .legalCheck { min-height:44px; }
+  .legalCheck a { align-items:center; display:inline-flex; min-height:44px; min-width:44px; }
+  .estimateFooter { grid-template-columns:minmax(0, 1fr); }
+  .estimateFooter>div { grid-column:1; grid-row:auto; }
+}
+@media (max-width: 520px) { .albumGrid, .serviceGrid { grid-template-columns: 1fr; }.albumTile { aspect-ratio: 4 / 3; }.dialogActions > div { width: 100%; }.dialogActions button { flex: 1; } .detailFooter { align-items:stretch; flex-direction:column; padding:.8rem 1rem; } .detailFooter>div { display:grid; grid-template-columns:1fr; width:100%; } .detailFooter button { padding:0 1rem; width:100%; } .detailFacts { grid-template-columns:1fr; } .detailFacts>div+div { border-left:0; border-top:1px solid var(--border); margin-top:.7rem; padding-top:.7rem; } .priceTableHead,.detailPriceRow { grid-template-columns:.75fr 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { .albumTile img { transition: none; } }
 .serviceImagePreview { align-items: center; background: rgb(2 6 23 / .92); display: flex; inset: 0; justify-content: center; padding: clamp(16px, 4vw, 56px); position: fixed; z-index: 90; }
 .serviceImagePreview > button { align-items: center; background: rgb(15 23 42 / .92); border: 1px solid var(--line); border-radius: 999px; color: var(--text); display: flex; height: 44px; justify-content: center; position: absolute; right: 20px; top: 20px; width: 44px; }

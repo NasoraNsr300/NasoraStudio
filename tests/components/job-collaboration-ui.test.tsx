@@ -26,6 +26,16 @@ describe("job collaboration UI", () => {
     await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringContaining(conversation.jobId), expect.objectContaining({ method: "POST" })));
   });
 
+  it("opens a conversation as a dedicated mobile panel and can return to the list", async () => {
+    render(<MemberMessagesContent conversations={[conversation]} locale="en" />);
+    const layout = screen.getByTestId("member-messages-layout");
+    expect(layout).toHaveAttribute("data-mobile-thread-open", "false");
+    fireEvent.click(screen.getByRole("button", { name: conversation.title }));
+    expect(layout).toHaveAttribute("data-mobile-thread-open", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Back to conversations" }));
+    expect(layout).toHaveAttribute("data-mobile-thread-open", "false");
+  });
+
   it("lets the admin select a real member thread and post progress", async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true });
     render(<AdminMessagesWorkspace conversations={[{ ...conversation, customerName: "Lunaris" }]} fetcher={fetcher} />);

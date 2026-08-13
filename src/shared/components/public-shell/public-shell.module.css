@@ -318,12 +318,19 @@
 @media (max-width: 720px) {
   .navbarFootprint { min-height: 116px; }
   .navbar {
-    grid-template-columns: auto auto 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
   }
+
+  .navActions { grid-column: 2; min-width: 0; }
+  .themeControls { display: none; }
+  .localeControl { gap:0; padding-left:var(--space-2); }
+  .languageLink { min-width:44px; }
 
   .search {
     grid-column: 1 / -1;
     grid-row: 2;
+    min-width: 0;
   }
 
   .availability { display: none; }
