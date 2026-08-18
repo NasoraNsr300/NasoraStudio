@@ -4,7 +4,7 @@ const userClient = { auth: { getUser: vi.fn() } };
 const gateway = { rpc: vi.fn() };
 
 vi.mock("@/shared/supabase/server", () => ({ createClient: async () => userClient }));
-vi.mock("@/features/payments/data/payment-gateway-client.server", () => ({ createPaymentGatewayClient: () => gateway }));
+vi.mock("@/shared/supabase/service-role-client.server", () => ({ createServiceRoleClient: () => gateway }));
 
 import { finalizeMemberAvatar, getMemberAvatarObject } from "../member-avatar-repository.server";
 

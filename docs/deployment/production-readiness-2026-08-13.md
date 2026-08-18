@@ -20,7 +20,7 @@
 
 ## Blocking gates
 
-- `BREVO_API_KEY` is not configured.
+- `RESEND_API_KEY` is not configured.
 - `ADMIN_EMAIL_SENDER` is not configured.
 - Browser E2E has one approved logic-test correction pending verification and responsive UI failures that must be corrected before accepting new visual baselines.
 - The ordinary-customer lifecycle test is implemented but intentionally skips while commissions are closed unless the dedicated test credentials are injected.

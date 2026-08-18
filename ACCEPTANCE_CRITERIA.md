@@ -100,7 +100,7 @@ Phase 1 is accepted only when every mandatory criterion below passes in the prod
 
 - [ ] Email/password registration, verification, login, logout, and password reset pass
 - [ ] Google login passes
-- [ ] Brevo custom SMTP sends Auth mail to a non-project-team test address
+- [ ] Resend SMTP with a verified domain sends Auth mail to a non-project-team test address
 - [ ] Nickname is required and unique without case-only duplicates
 - [ ] Member can change nickname while uniqueness validation remains enforced
 - [ ] Member can add, edit, delete, reorder, and select a default contact channel

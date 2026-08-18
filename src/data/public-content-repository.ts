@@ -1,6 +1,6 @@
 import type { Locale } from "@/shared/i18n/locales";
+import type { DocumentSummary } from "@/features/documents/domain/document";
 import type {
-  DocumentSummary,
   FeaturedItem,
   HeroItem,
   PortfolioItem,

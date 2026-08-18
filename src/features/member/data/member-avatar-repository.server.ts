@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 import { createClient } from "@/shared/supabase/server";
 
 const uuid = z.uuid();
@@ -17,7 +17,7 @@ async function sessionUserId() {
 
 export async function finalizeMemberAvatar(input: { etag: string; mediaId: string; objectKey: string; sizeBytes: number }) {
   const userId = await sessionUserId();
-  const gateway = createPaymentGatewayClient();
+  const gateway = createServiceRoleClient();
   const { data, error } = await gateway.rpc("gateway_finalize_profile_avatar", { p_etag: input.etag, p_media_id: uuid.parse(input.mediaId), p_object_key: input.objectKey, p_size_bytes: input.sizeBytes, p_user_id: userId });
   if (error) throw new Error("Unable to save profile avatar");
   return { mediaId: uuid.parse(data), userId };
@@ -25,7 +25,7 @@ export async function finalizeMemberAvatar(input: { etag: string; mediaId: strin
 
 export async function getMemberAvatarObject(mediaId: string) {
   const userId = await sessionUserId();
-  const gateway = createPaymentGatewayClient();
+  const gateway = createServiceRoleClient();
   const { data, error } = await gateway.rpc("gateway_get_profile_avatar", { p_media_id: uuid.parse(mediaId), p_user_id: userId });
   if (error) throw new Error("Unable to load profile avatar");
   const row = z.array(objectSchema).max(1).parse(data ?? [])[0];

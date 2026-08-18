@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 
 type Environment = Record<string, string | undefined>;
 type Fetcher = typeof fetch;
@@ -35,9 +35,9 @@ function safeEntitySummary(payload: Record<string, unknown>) {
 }
 
 export async function dispatchAdminEmailBatch(environment: Environment = process.env, fetcher: Fetcher = fetch) {
-  const apiKey = required(environment, "BREVO_API_KEY");
+  const apiKey = required(environment, "RESEND_API_KEY");
   const senderEmail = z.email().parse(required(environment, "ADMIN_EMAIL_SENDER"));
-  const gateway = createPaymentGatewayClient(environment);
+  const gateway = createServiceRoleClient(environment);
   const { data, error } = await gateway.rpc("claim_admin_email_batch", { p_limit: 10 });
   if (error) throw new Error("Unable to claim admin emails");
   const rows = z.array(outboxRowSchema).max(20).parse(data ?? []);
@@ -45,17 +45,21 @@ export async function dispatchAdminEmailBatch(environment: Environment = process
 
   for (const row of rows) {
     try {
-      const response = await fetcher("https://api.brevo.com/v3/smtp/email", {
+      const response = await fetcher("https://api.resend.com/emails", {
         body: JSON.stringify({
-          sender: { email: senderEmail, name: "Nasora Studio" },
+          from: `Nasora Studio <${senderEmail}>`,
           subject: subjects[row.event_type],
-          textContent: `${subjects[row.event_type]}\n\n${safeEntitySummary(row.payload)}\n\nเข้าสู่พื้นที่แอดมินของ Nasora เพื่อจัดการรายการนี้`,
-          to: [{ email: ADMIN_EMAIL, name: "Nasora" }],
+          text: `${subjects[row.event_type]}\n\n${safeEntitySummary(row.payload)}\n\nเข้าสู่พื้นที่แอดมินของ Nasora เพื่อจัดการรายการนี้`,
+          to: [ADMIN_EMAIL],
         }),
-        headers: { "api-key": apiKey, "content-type": "application/json" },
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json",
+          "idempotency-key": `admin-email/${row.id}`,
+        },
         method: "POST",
       });
-      if (!response.ok) throw new Error(`brevo_${response.status}`);
+      if (!response.ok) throw new Error(`resend_${response.status}`);
       await gateway.rpc("complete_admin_email", { p_error: null, p_id: row.id, p_sent: true });
       sent += 1;
     } catch (error) {

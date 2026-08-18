@@ -15,7 +15,7 @@ Deployment target: Cloudflare Workers through OpenNext. Production deployment re
 
 1. Run the full test, typecheck, lint, Next build, OpenNext build, Browser E2E suite, and both Wrangler dry-runs.
 2. Confirm all visual baselines on desktop and mobile. Do not accept a broken layout as a new baseline.
-3. Configure every required Worker secret. As of 13 Aug 2026, `BREVO_API_KEY` and `ADMIN_EMAIL_SENDER` are missing locally, so production deployment is blocked.
+3. Configure every required Worker secret. `RESEND_API_KEY` and `ADMIN_EMAIL_SENDER` must be present before enabling administrator email dispatch.
 4. Merge only after the working tree contains no unresolved runtime or visual changes.
 
 ## Supabase
@@ -64,7 +64,7 @@ Main Worker secrets/variables:
 - `R2_SECRET_ACCESS_KEY`
 - `R2_PAYMENT_SLIPS_BUCKET`
 - `R2_PRIVATE_ASSETS_BUCKET`
-- `BREVO_API_KEY`
+- `RESEND_API_KEY`
 - `ADMIN_EMAIL_SENDER`
 - `CRON_SECRET`
 

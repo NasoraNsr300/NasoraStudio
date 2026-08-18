@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 import { createPaymentRepository, type PaymentClient } from "@/features/payments/data/payment-repository";
 import { detectSlipContentType, PAYMENT_LIMITS } from "@/features/payments/domain/payment";
 import { acceptsSameOrigin, authenticatedUser } from "@/features/payments/http/payment-route-security";
@@ -59,7 +59,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   let repository: ReturnType<typeof createPaymentRepository>;
   let storage: ReturnType<typeof createR2SlipStorage>;
   try {
-    repository = createPaymentRepository(createPaymentGatewayClient() as unknown as PaymentClient);
+    repository = createPaymentRepository(createServiceRoleClient() as unknown as PaymentClient);
     storage = createR2SlipStorage();
   }
   catch { return Response.json({ error: "Slip storage is not configured" }, { status: 503 }); }
@@ -69,7 +69,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     allocated = await repository.allocateSlip({ attemptId, contentType: declaredType, idempotencyKey, paymentId: paymentId.data, sizeBytes: declaredSize, userId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const status = message === "r2_not_configured" || message === "payment_gateway_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") || message.includes("in_progress") ? 409 : 400;
+    const status = message === "r2_not_configured" || message === "service_role_not_configured" ? 503 : message.includes("rate_limited") ? 429 : message.includes("active") || message.includes("in_progress") ? 409 : 400;
     return Response.json({ error: status === 503 ? "Slip storage is not configured" : status === 429 ? "Too many slip uploads" : "Unable to process payment slip" }, { status });
   }
   if (allocated.cleanupAttemptId && allocated.cleanupObjectKey) {

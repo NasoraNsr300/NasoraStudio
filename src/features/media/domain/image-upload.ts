@@ -3,6 +3,25 @@ export const DISPLAY_IMAGE_MAX_EDGE = 4096;
 
 export type DisplayImageContentType = "image/jpeg" | "image/png" | "image/webp";
 
+function startsWith(bytes: Uint8Array, signature: readonly number[]) {
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+function endsWith(bytes: Uint8Array, signature: readonly number[]) {
+  return bytes.length >= signature.length && signature.every((byte, index) => bytes[bytes.length - signature.length + index] === byte);
+}
+
+export function detectImageContentType(bytes: Uint8Array): DisplayImageContentType {
+  const pngEnd = [0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82] as const;
+  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) && endsWith(bytes, pngEnd)) return "image/png";
+  if (bytes.length >= 5 && startsWith(bytes, [0xff, 0xd8, 0xff]) && endsWith(bytes, [0xff, 0xd9])) return "image/jpeg";
+  if (bytes.length >= 12 && startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWith(bytes.slice(8), [0x57, 0x45, 0x42, 0x50])) {
+    const declaredSize = new DataView(bytes.buffer, bytes.byteOffset + 4, 4).getUint32(0, true) + 8;
+    if (declaredSize === bytes.length) return "image/webp";
+  }
+  throw new Error("invalid_image");
+}
+
 function ascii(bytes: Uint8Array, offset: number, length: number) {
   return String.fromCharCode(...bytes.slice(offset, offset + length));
 }

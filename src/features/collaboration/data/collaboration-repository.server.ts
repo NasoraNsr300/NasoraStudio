@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { isNasoraAdmin } from "@/shared/auth/admin-access";
 import { createClient } from "@/shared/supabase/server";
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 
 type QueryResult = { data: unknown; error: { message?: string } | null };
 type RpcClient = {
@@ -159,7 +159,7 @@ export async function getMemberDeliveryDownload(deliveryId: string) {
 const conversationSelect = "id,job_id,last_message_at,jobs!job_id(member_display_name_snapshot,category_name_snapshot,service_type_name_snapshot),messages(id,body,sender_role,created_at,message_assets(id)),conversation_reads(user_id,last_read_at)";
 
 async function privateAsset(kind: "delivery" | "message_asset" | "progress_image", id: string) {
-  const parsedId = z.uuid().parse(id); const { user } = await userClient(); const gateway = createPaymentGatewayClient();
+  const parsedId = z.uuid().parse(id); const { user } = await userClient(); const gateway = createServiceRoleClient();
   const { data, error } = await gateway.rpc("gateway_get_private_asset", { p_admin: isNasoraAdmin(user), p_id: parsedId, p_kind: kind, p_user_id: user.id });
   if (error) throw new Error("Unable to load private asset");
   return z.array(z.object({ asset_kind: z.enum(["r2_file", "google_drive"]), external_url: z.string().nullable(), object_key: z.string().nullable() })).max(1).parse(data ?? [])[0] ?? null;

@@ -30,7 +30,7 @@ Exit criteria:
 - Create development and production projects
 - Configure Auth URL and redirects for local, preview, and temporary production URL
 - Enable email/password and Google OAuth
-- Configure Brevo custom SMTP before public email/password registration
+- Configure Resend SMTP with a verified domain before public email/password registration
 - Create database schemas and required extensions
 - Confirm Data API exposure settings
 
@@ -166,7 +166,7 @@ Perform:
 ## Stage 6 — Temporary URL launch
 
 - Deploy production build to Cloudflare temporary URL
-- Use Brevo SMTP with a verified sender configuration
+- Use Resend SMTP with a verified sending domain
 - Keep customer email notifications disabled except required Auth flows
 - Enable administrator email notifications
 - Enable Web Analytics

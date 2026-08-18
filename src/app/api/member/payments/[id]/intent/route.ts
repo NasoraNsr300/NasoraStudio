@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 import { createPaymentRepository, type PaymentClient } from "@/features/payments/data/payment-repository";
 import { createPromptPayPayload } from "@/features/payments/domain/payment";
 import { acceptsMutation, authenticatedUser } from "@/features/payments/http/payment-route-security";
@@ -14,7 +14,7 @@ function paymentConfiguration(amountSatang: number) {
   if (!promptPayId) throw new Error("payment_not_configured");
   const promptPayPayload = createPromptPayPayload(promptPayId, amountSatang);
   createR2SlipStorage();
-  createPaymentGatewayClient();
+  createServiceRoleClient();
   return promptPayPayload;
 }
 

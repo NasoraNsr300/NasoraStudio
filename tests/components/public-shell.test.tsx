@@ -42,13 +42,8 @@ describe("PublicShell", () => {
     navigation.pathname = "/th";
     navigation.usePathname.mockImplementation(() => navigation.pathname);
     render(<PublicShell authClient={createAuthClient()} locale="th" settings={{
-      businessHours: "11:00 – 22:00",
       commissionsOpen: false,
-      discordContact: "nasora.studio",
-      homeDescription: { en: "Stories", th: "เรื่องราว" },
-      homeHeading: { en: "Draw your world", th: "รับวาดภาพในโลกของคุณ" },
       particlesEnabled: false,
-      queueCapacity: 10,
       shootingStarsEnabled: false,
     }}><main>Page content</main></PublicShell>);
 

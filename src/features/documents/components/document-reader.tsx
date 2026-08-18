@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { DocumentSummary } from "@/shared/types/public-content";
+import type { DocumentSummary } from "@/features/documents/domain/document";
 import { RichTextRenderer } from "./rich-text-renderer";
 
 import { getDocumentCategoryLabel } from "./document-category";

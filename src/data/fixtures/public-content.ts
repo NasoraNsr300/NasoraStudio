@@ -1,5 +1,4 @@
 import type {
-  DocumentSummary,
   FeaturedItem,
   HeroItem,
   PortfolioItem,
@@ -7,6 +6,7 @@ import type {
   ServiceCategory,
   ServiceType,
 } from "@/shared/types/public-content";
+import type { DocumentSummary } from "@/features/documents/domain/document";
 import { createPlainRichText } from "@/features/documents/domain/rich-text";
 
 const media = {

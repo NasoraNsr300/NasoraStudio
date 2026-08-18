@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { createAdminPaymentRepository, type AdminPaymentClient } from "@/features/payments/data/admin-payment-repository.server";
-import { createPaymentGatewayClient } from "@/features/payments/data/payment-gateway-client.server";
+import { createServiceRoleClient } from "@/shared/supabase/service-role-client.server";
 import { acceptsMutation, authenticatedUser } from "@/features/payments/http/payment-route-security";
 import { createR2SlipStorage, normalizeEtag } from "@/features/payments/storage/r2-slip-storage.server";
 import { createClient } from "@/shared/supabase/server";
@@ -25,9 +25,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   if (user.app_metadata?.role !== "admin" || user.email?.toLowerCase() !== "nasora.nsr300@gmail.com") return Response.json({ error: "Admin access required" }, { status: 403 });
   const memberScopedRepository = createAdminPaymentRepository(client as unknown as AdminPaymentClient);
   let gatewayRepository: ReturnType<typeof createAdminPaymentRepository>;
-  let gatewayClient: ReturnType<typeof createPaymentGatewayClient>;
+  let gatewayClient: ReturnType<typeof createServiceRoleClient>;
   try {
-    gatewayClient = createPaymentGatewayClient();
+    gatewayClient = createServiceRoleClient();
     gatewayRepository = createAdminPaymentRepository(gatewayClient as unknown as AdminPaymentClient);
   }
   catch { return Response.json({ error: "Payment service is not configured" }, { status: 503 }); }

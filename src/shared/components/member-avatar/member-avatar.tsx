@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { avatarMediaUrl } from "@/features/member/domain/member-avatar";
+import { avatarMediaUrl } from "@/shared/auth/avatar-media-url";
 
 import styles from "./member-avatar.module.css";
 

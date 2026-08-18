@@ -2,7 +2,7 @@ import "server-only";
 
 import { AwsV4Signer } from "aws4fetch";
 
-import { detectSlipContentType } from "@/features/payments/domain/payment";
+import { detectImageContentType } from "@/features/media/domain/image-upload";
 
 type Environment = Record<string, string | undefined>;
 type Method = "DELETE" | "GET" | "HEAD" | "PUT";
@@ -69,7 +69,7 @@ export function createR2PrivateAssetsStorage(environment: Environment = process.
     },
     async putImage(objectKey: string, bytes: Uint8Array, declaredContentType: string) {
       if (bytes.byteLength < 1 || bytes.byteLength > PRIVATE_ASSET_LIMITS.imageBytes) throw new Error("invalid_image");
-      const contentType = detectSlipContentType(bytes);
+      const contentType = detectImageContentType(bytes);
       if (contentType !== declaredContentType) throw new Error("invalid_image");
       const body = new ArrayBuffer(bytes.byteLength); new Uint8Array(body).set(bytes);
       const response = await fetcher(await signedUrl("PUT", objectKey, contentType, 120), { body, headers: { "content-type": contentType }, method: "PUT" });

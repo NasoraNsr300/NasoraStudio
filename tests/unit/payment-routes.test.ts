@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   adminRepository: { findReviewSlip: vi.fn(), findVerificationResult: vi.fn(), verify: vi.fn() },
   createAdminPaymentRepository: vi.fn(),
   createClient: vi.fn(),
-  createPaymentGatewayClient: vi.fn(),
+  createServiceRoleClient: vi.fn(),
   createPaymentRepository: vi.fn(),
   createR2SlipStorage: vi.fn(),
   paymentRepository: { allocateSlip: vi.fn(), beginPut: vi.fn(), createIntent: vi.fn(), failSlip: vi.fn(), finalizeSlip: vi.fn(), recoverIntent: vi.fn() },
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/shared/supabase/server", () => ({ createClient: mocks.createClient }));
-vi.mock("@/features/payments/data/payment-gateway-client.server", () => ({ createPaymentGatewayClient: mocks.createPaymentGatewayClient }));
+vi.mock("@/shared/supabase/service-role-client.server", () => ({ createServiceRoleClient: mocks.createServiceRoleClient }));
 vi.mock("@/features/payments/data/payment-repository", () => ({ createPaymentRepository: mocks.createPaymentRepository }));
 vi.mock("@/features/payments/data/admin-payment-repository.server", () => ({ createAdminPaymentRepository: mocks.createAdminPaymentRepository }));
 vi.mock("@/features/payments/storage/r2-slip-storage.server", () => ({ createR2SlipStorage: mocks.createR2SlipStorage, normalizeEtag: (value: string) => value.replace(/^W\//, "").replace(/^\"|\"$/g, "").trim() }));
@@ -54,7 +54,7 @@ beforeEach(() => {
   mocks.paymentRepository.recoverIntent.mockReset();
   mocks.storage.deleteObject.mockReset().mockResolvedValue(undefined);
   mocks.workflowGateway.rpc.mockReset().mockResolvedValue({ data: [{ job_id: "job-1", queue_entry_id: "queue-1" }], error: null });
-  mocks.createPaymentGatewayClient.mockReturnValue(mocks.workflowGateway);
+  mocks.createServiceRoleClient.mockReturnValue(mocks.workflowGateway);
   process.env.PROMPTPAY_ID = "0812345678";
   mocks.createClient.mockResolvedValue(authClient());
   mocks.createPaymentRepository.mockReturnValue(mocks.paymentRepository);
@@ -88,7 +88,7 @@ describe("payment mutation routes", () => {
   });
 
   it("validates the server-only Supabase secret before creating an intent", async () => {
-    mocks.createPaymentGatewayClient.mockImplementationOnce(() => { throw new Error("payment_gateway_not_configured"); });
+    mocks.createServiceRoleClient.mockImplementationOnce(() => { throw new Error("service_role_not_configured"); });
     const response = await createIntent(post(`/api/member/payments/${quoteId}/intent`, { depositSatang: 50_000, idempotencyKey, requestId }), { params: Promise.resolve({ id: quoteId }) });
     expect(response.status).toBe(503);
     expect(mocks.paymentRepository.createIntent).not.toHaveBeenCalled();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import type { Locale } from "@/shared/i18n/locales";
-import type { DocumentSummary } from "@/shared/types/public-content";
+import type { DocumentSummary } from "@/features/documents/domain/document";
 import { richTextPlainText } from "@/features/documents/domain/rich-text";
 
 import { getDocumentCategoryLabel } from "./document-category";

@@ -1,7 +1,20 @@
 import { z } from "zod";
 
 import { parseSafeRichText, type SafeRichTextDocument } from "@/features/documents/domain/rich-text";
-import type { DocumentSummary, LocalizedText, PublicMedia } from "@/shared/types/public-content";
+import type { LocalizedText, PublicMedia } from "@/shared/types/public-content";
+
+export type DocumentSummary = {
+  slug: string;
+  category: string;
+  title: LocalizedText;
+  summary: LocalizedText;
+  content: Record<"en" | "th", SafeRichTextDocument>;
+  tags: LocalizedText[];
+  pinned: boolean;
+  displayOrder: number;
+  published: boolean;
+  coverMedia?: PublicMedia;
+};
 
 export const documentCategories = ["terms", "guide", "privacy"] as const;
 export type DocumentCategory = (typeof documentCategories)[number];

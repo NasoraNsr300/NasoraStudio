@@ -11,18 +11,18 @@
 
 ## Selected stack
 
-| Layer | Choice | Responsibility |
-|---|---|---|
-| Web application | Next.js with TypeScript | Public UI, member UI, admin UI, route handlers, static and dynamic rendering |
-| Hosting | Cloudflare Workers through OpenNext | Application runtime, static assets, cache, R2 binding, scheduled cleanup |
-| Database | Supabase PostgreSQL | Product data, requests, quotes, jobs, payments, content, audit history |
-| Authentication | Supabase Auth | Email/password, Google OAuth, sessions, password reset |
-| Realtime | Supabase Realtime | Member messages, notifications, and status refresh |
-| Object storage | Cloudflare R2 | Public derivatives, private originals, private customer assets |
-| Email | Brevo SMTP connected to Supabase/custom notification service | Auth email and administrator notifications before a custom domain exists |
-| Analytics | Cloudflare Web Analytics | Privacy-first traffic and Core Web Vitals monitoring |
+| Layer           | Choice                              | Responsibility                                                               |
+| --------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| Web application | Next.js with TypeScript             | Public UI, member UI, admin UI, route handlers, static and dynamic rendering |
+| Hosting         | Cloudflare Workers through OpenNext | Application runtime, static assets, cache, R2 binding, scheduled cleanup     |
+| Database        | Supabase PostgreSQL                 | Product data, requests, quotes, jobs, payments, content, audit history       |
+| Authentication  | Supabase Auth                       | Email/password, Google OAuth, sessions, password reset                       |
+| Realtime        | Supabase Realtime                   | Member messages, notifications, and status refresh                           |
+| Object storage  | Cloudflare R2                       | Public derivatives, private originals, private customer assets               |
+| Email           | Resend API and SMTP                 | Administrator notifications and Supabase Auth mail                           |
+| Analytics       | Cloudflare Web Analytics            | Privacy-first traffic and Core Web Vitals monitoring                         |
 
-Brevo Free currently supports transactional mail and 300 sends per day, which is sufficient for the expected initial volume. A custom sending domain improves deliverability but is not a condition for the temporary-URL launch.
+Resend's API handles the administrator outbox with an idempotency key per event. Supabase Auth uses Resend SMTP after a dedicated sending domain is verified. The test sender is limited to the Resend account owner's address and is suitable only for development checks.
 
 ## System context
 
@@ -34,7 +34,7 @@ flowchart LR
     Auth["Supabase Auth"]
     RT["Supabase Realtime"]
     R2["Cloudflare R2"]
-    SMTP["Brevo SMTP"]
+    SMTP["Resend API + SMTP"]
     Analytics["Cloudflare Web Analytics"]
 
     Browser --> App
@@ -112,6 +112,8 @@ src/
 ```
 
 Feature modules own their data adapters, validation, business rules, and composite UI. The shared `ui/primitives` layer may contain stable low-level controls such as Button, Input, Dialog, Badge, and Table. It must not contain a shared gallery or page layout used by Home, Portfolio, and Commission.
+
+Component placement follows ownership rather than Atomic Design folder names. Core code in `src/shared` cannot import a product feature; `src/app` is the composition layer; and generic infrastructure used by multiple domains belongs to Core. The complete ownership matrix, promotion rule, and review checklist live in [`docs/architecture/component-ownership.md`](docs/architecture/component-ownership.md).
 
 ## Page layout isolation
 
@@ -264,7 +266,7 @@ Supabase and R2 remain unchanged, so this is a compute migration rather than a d
 
 ### Email
 
-Brevo SMTP is used for the temporary-domain launch. When a custom domain is purchased, authenticate a dedicated sender domain and update SPF, DKIM, and DMARC without changing application email events.
+Resend's test sender may be used for administrator-only development checks. Before customer-facing email is enabled, authenticate a dedicated sending subdomain with SPF and DKIM, add DMARC, and configure the verified sender in both the application and Supabase Auth.
 
 ### Supabase inactivity and backup
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpc = vi.fn(); const deleteObject = vi.fn();
-vi.mock("@/features/payments/data/payment-gateway-client.server", () => ({ createPaymentGatewayClient: () => ({ rpc }) }));
+vi.mock("@/shared/supabase/service-role-client.server", () => ({ createServiceRoleClient: () => ({ rpc }) }));
 vi.mock("@/features/collaboration/storage/r2-private-assets.server", () => ({ createR2PrivateAssetsStorage: () => ({ deleteObject }) }));
 
 import { processCollaborationCleanup } from "../collaboration-cleanup.server";
