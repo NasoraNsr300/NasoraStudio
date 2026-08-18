@@ -13,7 +13,8 @@ This ledger reconciles the broad product checklist in `ACCEPTANCE_CRITERIA.md` w
 - Private avatar upload/replacement and unauthorized R2 access denial.
 - Resend development delivery request accepted with HTTP 200.
 - Cloudflare authentication and R2 lifecycle inspection.
-- Real request → Admin review → quote → customer deposit-intent flow using the owner Admin and dedicated test member, followed by a successful scoped reset.
+- Full real lifecycle using the owner Admin and dedicated test member: request `REQ-B3DE9BC8CC` → review → ฿900 quote → ฿450 deposit intent/slip/verification → job creation → Google Drive delivery → ฿450 final payment/slip/verification → completion → customer delivery unlock with 0 THB balance.
+- Successful scoped reset after the lifecycle: 1 job, 1 quote, 1 request, 2 payment slips, and 2 payment intents deleted; Auth user retained; `commissions_open=false` restored. Three orphaned R2 test objects are covered by lifecycle expiry.
 
 ## Automated code evidence
 
@@ -29,7 +30,6 @@ This ledger reconciles the broad product checklist in `ACCEPTANCE_CRITERIA.md` w
 - OAuth and Auth redirect behavior on the final hostname.
 - Worker secrets, production route, and scheduled maintenance Worker.
 - Production-like Worker preview smoke.
-- Complete real slip upload/Admin verification/job/delivery lifecycle followed by dedicated test-customer reset.
 - Owner desktop/mobile visual approval and accessibility spot-check.
 
 ## Evidence policy

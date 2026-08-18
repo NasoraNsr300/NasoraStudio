@@ -20,7 +20,7 @@ Deployment target: Cloudflare Workers through OpenNext. Production deployment re
 
 ## Supabase
 
-Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). The worktree is linked and all 31 local migrations match the remote migration history as of 14 Aug 2026.
+Authenticated CLI project found: `nasora-studio-dev` (`rmcxkrqgbggaxqptxubd`, Singapore). The worktree is linked and all 32 local migrations match the remote migration history as of 19 Aug 2026.
 
 ```bash
 npx supabase link --project-ref rmcxkrqgbggaxqptxubd

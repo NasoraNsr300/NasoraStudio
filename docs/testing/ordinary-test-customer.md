@@ -22,7 +22,13 @@ Verified 19 Aug 2026 against the linked non-production project:
 - estimate submission/cancellation while commissions were temporarily open;
 - member Supabase draft restore and Guest browser draft restore;
 - private avatar upload, replacement, reload synchronization, and R2 access denial;
+- full owner-Admin lifecycle: request, quote, deposit slip, verification, job creation, delivery, final-payment slip, completion, and member delivery unlock;
+- verified final account state before cleanup: 900 THB paid, 0 THB balance, and the delivery route visible as `Ready to download`;
 - reset cleanup and return of `commissions_open` to its original closed state.
+
+The final lifecycle reset deleted 1 job, 1 quote, 1 request, 2 payment slips,
+and 2 payment intents while retaining the Auth user. Three unreachable R2 fixture
+objects remain scheduled for lifecycle expiry.
 
 The complete functional Chromium suite runs independently from visual snapshots. Visual snapshots require `RUN_VISUAL_REGRESSION=1` and an approved deterministic database/media seed; live mutable catalog data must not be compared with fixture-era baselines. The owner Admin identity is deliberately immutable, so the Admin quote/payment/delivery browser flow uses the real owner session and must end with the dedicated customer reset. Do not create a disposable Admin bypass and do not run reset against production.
 
