@@ -21,6 +21,17 @@ const albumCopy: Record<Locale, { recommended: string; typeCount: (count: number
   th: { recommended: "แนะนำ", typeCount: (count) => `${count} รูปแบบ`, view: (name) => `ดูอัลบั้ม ${name}` },
 };
 
+const fallbackCoverMedia = {
+  alt: { en: "Nasora Studio sample artwork", th: "ภาพตัวอย่าง Nasora Studio" },
+  cardSrc: "/fixtures/derivatives/violet-card.webp",
+  detailSrc: "/fixtures/derivatives/violet-detail.webp",
+  height: 1500,
+  id: "nasora-catalog-fallback",
+  kind: "image" as const,
+  thumbnailSrc: "/fixtures/derivatives/violet-thumbnail.webp",
+  width: 1200,
+};
+
 export function AlbumTile({ category, eager = false, locale = "en", onSelect }: AlbumTileProps) {
   const copy = albumCopy[locale];
   const countLabel = copy.typeCount(category.typeCount);
@@ -37,7 +48,18 @@ export function AlbumTile({ category, eager = false, locale = "en", onSelect }: 
           priority={eager}
           sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
         />
-      ) : <span aria-hidden="true" className={styles.albumMediaPlaceholder} data-catalog-cover="empty" />}
+      ) : (
+        <span aria-hidden="true" data-catalog-cover="fallback">
+          <ResponsiveMedia
+            className={styles.albumMedia}
+            crop={{ aspectRatio: "4 / 5", objectPosition: "50% 45%" }}
+            locale={locale}
+            media={fallbackCoverMedia}
+            priority={eager}
+            sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, (max-width: 1180px) 33vw, 25vw"
+          />
+        </span>
+      )}
       <span className={styles.albumGradient} />
       {category.recommended ? <span className={styles.recommendedBadge}>{copy.recommended}</span> : null}
       <span className={`${styles.availabilityBadge} ${styles[category.availability]}`}>{availabilityCopy[locale][category.availability]}</span>

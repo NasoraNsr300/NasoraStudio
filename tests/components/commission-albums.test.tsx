@@ -40,7 +40,7 @@ describe("Commission albums", () => {
     expect(screen.queryByRole("button", { name: /request/i })).not.toBeInTheDocument();
   });
 
-  it("renders an accessible neutral album cover when live catalog media is absent", () => {
+  it("renders the local branded fallback cover when live catalog media is absent", () => {
     const chibi = serviceCategories.find((category) => category.slug === "chibi");
     if (!chibi) throw new Error("Expected Chibi category");
 
@@ -48,8 +48,8 @@ describe("Commission albums", () => {
 
     const tile = screen.getByRole("button", { name: /view chibi album/i });
     expect(tile).toBeVisible();
-    expect(tile.querySelector("[data-catalog-cover='empty']")).toBeVisible();
-    expect(tile.querySelector("img")).not.toBeInTheDocument();
+    expect(tile.querySelector("[data-catalog-cover='fallback']")).toBeVisible();
+    expect(tile.querySelector("img")).toHaveAttribute("src", "/fixtures/derivatives/violet-card.webp");
   });
 
   it("localizes album badges and service price guidance for Thai and English visitors", () => {

@@ -123,6 +123,10 @@ describe("HomePage", () => {
     />);
 
     expect(screen.getByRole("heading", { name: "รับวาดภาพในโลกของคุณ" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "ภาพประกอบ Nasora Studio" })).toHaveAttribute(
+      "src",
+      "/fixtures/derivatives/moonlit-detail.webp",
+    );
     expect(screen.getByText("เรื่องราว")).toBeVisible();
     expect(screen.getByText("ยังไม่มีผลงานแนะนำ")).toBeVisible();
   });

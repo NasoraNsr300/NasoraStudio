@@ -1,5 +1,7 @@
 # ACCEPTANCE CRITERIA — Nasora Phase 1
 
+> Status note (19 Aug 2026): this file remains the owner acceptance checklist, not a count of implementation defects. Current verified evidence and final-environment gaps are recorded in [`docs/testing/prelaunch-evidence-2026-08-19.md`](docs/testing/prelaunch-evidence-2026-08-19.md) and [`docs/deployment/production-readiness-2026-08-19.md`](docs/deployment/production-readiness-2026-08-19.md). Criteria stay unchecked until they pass in a production-like environment and, where applicable, receive owner visual approval.
+
 ## Definition of done
 
 Phase 1 is accepted only when every mandatory criterion below passes in the production-like preview environment, required automated tests pass, no critical security finding remains, and the owner approves the final visual review.

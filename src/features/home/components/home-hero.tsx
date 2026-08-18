@@ -19,6 +19,12 @@ export type HomeHeroProps = {
 };
 
 const HERO_IMAGE_SIZES = "(min-width: 900px) 52vw, 100vw";
+const EMPTY_HERO_MEDIA = {
+  alt: { en: "Nasora Studio illustration", th: "ภาพประกอบ Nasora Studio" },
+  height: 1000,
+  src: "/fixtures/derivatives/moonlit-detail.webp",
+  width: 1600,
+};
 
 const copy = {
   en: {
@@ -84,7 +90,17 @@ export function HomeHero({ heroItems, locale, randomValue, settings }: HomeHeroP
           <a className={styles.secondaryAction} href="#featured-work">{labels.explore}</a>
         </div>
       </div>
-      <div aria-label={locale === "th" ? "พื้นที่ภาพผลงาน" : "Artwork placeholder"} className={`${styles.heroArtwork} ${styles.heroArtworkEmpty}`} role="img">✦</div>
+      <div className={`${styles.heroArtwork} ${styles.heroArtworkEmpty}`}>
+        {/* This local asset keeps the public Home complete before Admin publishes Hero media. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt={EMPTY_HERO_MEDIA.alt[locale]}
+          className={styles.heroImage}
+          height={EMPTY_HERO_MEDIA.height}
+          src={EMPTY_HERO_MEDIA.src}
+          width={EMPTY_HERO_MEDIA.width}
+        />
+      </div>
     </section>;
   }
 

@@ -62,6 +62,15 @@ test("Queue and Documents responses contain meaningful static HTML before hydrat
   expect(documentsHtml).toMatch(/No documents|ยังไม่มีเอกสาร|Read document/);
 });
 
+test("public metadata exposes the Nasora SVG icon without a missing favicon request", async ({ page, request }) => {
+  await page.goto("/en");
+  const iconHref = await page.locator("link[rel~='icon']").first().getAttribute("href");
+  expect(iconHref).toContain("/icon.svg");
+  const iconResponse = await request.get(iconHref!);
+  expect(iconResponse.ok()).toBe(true);
+  expect(iconResponse.headers()["content-type"]).toContain("image/svg+xml");
+});
+
 test("commission contextual search finds categories and subtypes from both commission route shapes", async ({ page }) => {
   await page.goto("/en/commission");
   await page.getByRole("searchbox", { name: "Search commissions" }).fill("VTuber");
