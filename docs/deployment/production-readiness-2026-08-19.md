@@ -2,7 +2,7 @@
 
 ## Decision
 
-**GO for the closed temporary preview; NO-GO for a public production launch.** The application is deployed at `https://nasora-public.nasora-nsr300.workers.dev` with commissions closed. The remaining launch gate is a verified Resend domain plus final owner visual/Auth acceptance; do not treat the temporary Worker as the final production hostname.
+**GO for the closed temporary preview; NO-GO for a public production launch.** The application is deployed at `https://nasora-public.nasora-nsr300.workers.dev` with commissions closed. Remaining launch gates include credential rotation, a verified Resend domain, and final owner visual acceptance; do not treat the temporary Worker as the final production hostname.
 
 ## Verified service gates
 
@@ -31,10 +31,12 @@
 - Email/password sign-in completed with the dedicated ordinary member, loaded `/en/member/requests`, and was redirected away from `/admin` to the public authentication flow.
 - Public Worker smoke passed for `/en`, `/th`, `/en/commission`, `/en/queue`, and `/icon.svg`; the commission page remained closed.
 - Cloudflare builds now run through `scripts/build-cloudflare.mjs`, which temporarily removes `.env.local` from the production build and passes only `NEXT_PUBLIC_*` values. Verification found no Supabase secret, R2/Resend/cron value, PromptPay ID, or test credential in `.open-next`.
+- The initial preview versions were built before that guard existed and captured local runtime values in private Cloudflare version history. The active version is clean and preview aliases are disabled, but all captured credentials must be rotated before a public production launch because historical deployments cannot be deleted individually.
 
 ## Release blockers
 
 - Verify the real sending domain in Resend (SPF/DKIM) and replace the development sender with a domain-owned `ADMIN_EMAIL_SENDER`.
+- Rotate the Supabase secret key, R2 access key pair, Resend API key, cron secret, and dedicated test password; update local/runtime configuration and re-run the protected endpoint/auth smoke afterward.
 - Complete owner visual review at desktop and mobile sizes. Mutable live catalog data must not overwrite deterministic visual baselines without explicit acceptance.
 - Enable Cloudflare Web Analytics for the final hostname if launch analytics are desired.
 

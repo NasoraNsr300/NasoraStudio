@@ -32,6 +32,7 @@ This ledger reconciles the broad product checklist in `ACCEPTANCE_CRITERIA.md` w
 ## Requires final-environment evidence
 
 - Resend delivery from the verified production domain to a non-team mailbox.
+- Rotation of runtime/test credentials captured by the superseded initial Worker versions, followed by Auth, R2, email, and maintenance re-verification.
 - Repeat both authentication methods on the final hostname.
 - Owner desktop/mobile visual approval and accessibility spot-check.
 
