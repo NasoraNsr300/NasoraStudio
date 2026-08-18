@@ -12,8 +12,9 @@
     "test:performance": "node scripts/measure-public-performance.mjs",
     "test:customer:reset": "node --env-file=.env.local scripts/reset-test-customer.mjs",
     "build": "next build",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "preview": "npm run build:cloudflare && opennextjs-cloudflare preview",
+    "deploy": "npm run build:cloudflare && opennextjs-cloudflare deploy"
   },
   "private": true,
   "type": "module",

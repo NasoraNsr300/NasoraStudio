@@ -1,6 +1,6 @@
 # Cloudflare Workers deployment gate
 
-Deployment target: Cloudflare Workers through OpenNext. Production deployment remains blocked until every gate in this document passes.
+Deployment target: Cloudflare Workers through OpenNext. The closed temporary preview is live at `https://nasora-public.nasora-nsr300.workers.dev`; a public production launch remains blocked until every remaining gate in this document passes.
 
 ## Verified locally
 
@@ -10,6 +10,7 @@ Deployment target: Cloudflare Workers through OpenNext. Production deployment re
 - Maintenance Worker dry-run (13 Aug 2026): 1.36 KiB raw / 0.67 KiB gzip.
 - Worker observability is enabled.
 - Public fixture media is pre-generated WebP. Runtime image conversion remains disabled to protect Free-plan CPU.
+- Version preview aliases are disabled. The maintenance Worker has no public `workers.dev` route and retains only its five-minute scheduled trigger.
 
 ## Merge gate
 
@@ -70,6 +71,8 @@ Main Worker secrets/variables:
 
 Do not commit secret values.
 
+Do not allow `.env.local` runtime or test values into a production bundle. `npm run build:cloudflare` temporarily hides that file, passes only `NEXT_PUBLIC_*` values to the build, restores the file even on failure, and is the required local Worker build entrypoint.
+
 ## Deploy order
 
 ```bash
@@ -77,7 +80,7 @@ npm ci
 npm test -- --run --maxWorkers=2
 npm run typecheck
 npm run lint
-npx opennextjs-cloudflare build
+npm run build:cloudflare
 npx wrangler deploy --dry-run
 npm run deploy
 ```
@@ -94,4 +97,4 @@ npx wrangler deploy --config wrangler.maintenance.jsonc --dry-run
 npx wrangler deploy --config wrangler.maintenance.jsonc
 ```
 
-Enable Cloudflare Web Analytics in the dashboard. Smoke-test Thai/English public pages, authentication, estimate submission, quote, PromptPay upload, Admin verification, messages, progress, delivery, email dispatch, and scheduled cleanup before attaching a custom domain.
+Verified 19 Aug 2026: main and maintenance Workers are deployed; public Thai/English routes, commission/queue/icon responses, protected cleanup, and protected email dispatch pass. Keep commissions closed, complete temporary-host Auth and owner visual smoke, then repeat critical checks before attaching a custom domain.

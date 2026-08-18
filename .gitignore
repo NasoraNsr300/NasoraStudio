@@ -10,6 +10,7 @@ test-results/
 .env
 .env.local
 .env.*.local
+.env.local.runtime-backup
 !.env.example
 *.tsbuildinfo
 .DS_Store

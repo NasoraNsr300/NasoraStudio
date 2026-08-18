@@ -15,6 +15,10 @@ This ledger reconciles the broad product checklist in `ACCEPTANCE_CRITERIA.md` w
 - Cloudflare authentication and R2 lifecycle inspection.
 - Full real lifecycle using the owner Admin and dedicated test member: request `REQ-B3DE9BC8CC` → review → ฿900 quote → ฿450 deposit intent/slip/verification → job creation → Google Drive delivery → ฿450 final payment/slip/verification → completion → customer delivery unlock with 0 THB balance.
 - Successful scoped reset after the lifecycle: 1 job, 1 quote, 1 request, 2 payment slips, and 2 payment intents deleted; Auth user retained; `commissions_open=false` restored. Three orphaned R2 test objects are covered by lifecycle expiry.
+- Temporary Worker public smoke: HTTP 200 for Thai/English home, commission, queue, and SVG icon routes; the live commission page remained closed.
+- Runtime maintenance smoke: protected cleanup returned HTTP 200 with 0 failures; protected email dispatch returned HTTP 200 and sent all 7 queued development notifications with 0 failures.
+- Temporary-host Google OAuth returned to the Worker as the owner account and passed the `/admin` authorization boundary while commissions remained closed.
+- Temporary-host email/password sign-in loaded the dedicated member's requests page, and the ordinary member was denied `/admin` and redirected to the public authentication flow.
 
 ## Automated code evidence
 
@@ -22,14 +26,13 @@ This ledger reconciles the broad product checklist in `ACCEPTANCE_CRITERIA.md` w
 - Latest Vitest result: 180 files passed, 2 skipped; 619 tests passed, 4 skipped.
 - Latest functional Playwright result: 49 passed, 21 intentionally skipped; the added icon check also passes independently in `public-pages.spec.ts`.
 - ESLint, TypeScript, Next.js production build, OpenNext build, and both Worker dry-runs pass.
+- `npm run build:cloudflare` restores `.env.local` after the build and excludes all checked runtime/test credentials from `.open-next`; only public build-time values are passed to Next/OpenNext.
 - Functional Playwright and visual regression are intentionally separate. Visual checks require deterministic content and explicit baseline acceptance.
 
 ## Requires final-environment evidence
 
 - Resend delivery from the verified production domain to a non-team mailbox.
-- OAuth and Auth redirect behavior on the final hostname.
-- Worker secrets, production route, and scheduled maintenance Worker.
-- Production-like Worker preview smoke.
+- Repeat both authentication methods on the final hostname.
 - Owner desktop/mobile visual approval and accessibility spot-check.
 
 ## Evidence policy

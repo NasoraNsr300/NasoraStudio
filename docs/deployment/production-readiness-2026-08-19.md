@@ -2,7 +2,7 @@
 
 ## Decision
 
-**NO-GO for production deployment.** The project and external development services are usable, but the temporary Worker hostname is not deployed or registered with the authentication providers, and the transactional-email domain is not verified. No production Worker was deployed during this review.
+**GO for the closed temporary preview; NO-GO for a public production launch.** The application is deployed at `https://nasora-public.nasora-nsr300.workers.dev` with commissions closed. The remaining launch gate is a verified Resend domain plus final owner visual/Auth acceptance; do not treat the temporary Worker as the final production hostname.
 
 ## Verified service gates
 
@@ -23,17 +23,21 @@
 - Next.js 16.3.0 production build passes with 48 generated pages, including `/icon.svg`.
 - OpenNext Cloudflare 1.20.2 build passes on Windows with its documented WSL/Linux recommendation.
 - Main Worker dry-run passes at 11,372.25 KiB raw / 2,182.82 KiB gzip; maintenance Worker dry-run passes at 1.36 KiB raw / 0.67 KiB gzip.
-- Local runtime configuration is complete and points `APP_BASE_URL` / `NASORA_BASE_URL` to `nasora-public.nasora-nsr300.workers.dev`; Cloudflare confirms that the `nasora-public` Worker does not exist yet, so no remote Worker secrets or public route have been created.
+- The main Worker is live at `https://nasora-public.nasora-nsr300.workers.dev`; remote runtime secrets are configured, `workers_dev` is explicit, and version preview aliases are disabled.
+- The maintenance Worker is deployed with no public `workers.dev` route and runs every five minutes. Its cleanup and email-dispatch endpoints both returned HTTP 200.
+- The email outbox delivered 7 queued development notifications successfully after normalizing `ADMIN_EMAIL_SENDER` to an address-only value. A separate Resend configuration message was also accepted with HTTP 200.
+- Supabase Auth uses the temporary Worker as Site URL and allows its exact `/auth/callback`. Google OAuth allows the temporary Worker origin while retaining the Supabase `/auth/v1/callback` redirect URI.
+- Google OAuth completed on the temporary Worker and returned an authenticated owner session that could load `/admin`; the Admin dashboard still showed commissions closed.
+- Email/password sign-in completed with the dedicated ordinary member, loaded `/en/member/requests`, and was redirected away from `/admin` to the public authentication flow.
+- Public Worker smoke passed for `/en`, `/th`, `/en/commission`, `/en/queue`, and `/icon.svg`; the commission page remained closed.
+- Cloudflare builds now run through `scripts/build-cloudflare.mjs`, which temporarily removes `.env.local` from the production build and passes only `NEXT_PUBLIC_*` values. Verification found no Supabase secret, R2/Resend/cron value, PromptPay ID, or test credential in `.open-next`.
 
 ## Release blockers
 
 - Verify the real sending domain in Resend (SPF/DKIM) and replace the development sender with a domain-owned `ADMIN_EMAIL_SENDER`.
-- Confirm `nasora-public.nasora-nsr300.workers.dev` as the temporary launch hostname, then add it to the Supabase Site URL/redirect allow-list and Google OAuth origin/redirect entries before the first deployment.
-- Create the main Worker and add its production secrets without printing or committing them: Supabase secret, PromptPay ID, R2 credentials/buckets, Resend key/sender, base URL, and cron secret. The required values are present locally, but the remote Worker does not yet exist.
-- Run the complete functional browser suite and a production-like Worker preview against the final configuration.
 - Complete owner visual review at desktop and mobile sizes. Mutable live catalog data must not overwrite deterministic visual baselines without explicit acceptance.
 - Enable Cloudflare Web Analytics for the final hostname if launch analytics are desired.
 
 ## Deployment rule
 
-Do not run `npm run deploy` or deploy `nasora-maintenance` until every blocker above is cleared. A passing dry-run proves the bundle is uploadable; it does not prove DNS, secrets, OAuth callbacks, email authentication, or the customer workflow in production.
+Keep `commissions_open=false` and do not attach or announce a final custom domain until the launch blockers above are cleared. Future Cloudflare builds must use `npm run build:cloudflare` or `npm run deploy`; do not call `opennextjs-cloudflare build` directly while `.env.local` contains runtime secrets.
