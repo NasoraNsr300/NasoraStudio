@@ -40,7 +40,6 @@ src/
       page.tsx
       portfolio/page.tsx
       commission/page.tsx
-      commission/[category]/page.tsx
       queue/page.tsx
       documents/page.tsx
       documents/[slug]/page.tsx
@@ -485,6 +484,8 @@ git commit -m "feat: add independent portfolio gallery"
 
 ### Task 6: Commission albums, subtype cards, and service details
 
+Execute the approved focused plan in `docs/superpowers/plans/2026-08-06-commission-in-page-albums-and-cta-labels.md` for this task; it preserves this task's detail and pricing requirements while replacing category-route navigation with same-URL in-page album browsing.
+
 **Files:**
 - Create: `src/features/commission/components/commission-albums-page.tsx`
 - Create: `src/features/commission/components/album-tile.tsx`
@@ -493,7 +494,6 @@ git commit -m "feat: add independent portfolio gallery"
 - Create: `src/features/commission/components/service-detail-dialog.tsx`
 - Create: `src/features/commission/components/commission.module.css`
 - Create: `src/app/[locale]/commission/page.tsx`
-- Create: `src/app/[locale]/commission/[category]/page.tsx`
 - Test: `tests/components/commission-albums.test.tsx`
 - Test: `tests/components/service-detail-dialog.test.tsx`
 
@@ -503,7 +503,7 @@ git commit -m "feat: add independent portfolio gallery"
 
 - [ ] **Step 1: Write failing album and detail tests**
 
-Assert that album tiles show cover, title, count, availability/recommended badge, and do not show prices or request actions. Assert subtype cards show reference price and request/detail actions. Assert closed services disable request action. Assert detail dialog separates Personal/Commercial, Rush, additions, timing, four standard revisions, document link, samples, and final-price guidance.
+Assert that album tiles show cover, title, count, availability/recommended badge, and do not show prices or request actions. Assert that selecting an album swaps the overview for its subtype cards without changing the Commission URL and that the visitor can return to the overview. Assert subtype cards show reference price and exactly two localized actions: `ประเมินราคา` / `Request Estimate` and `ดูรายละเอียดและเรทราคา` / `View Details & Rates`, without the service name appended. Assert closed services disable request action. Assert detail dialog separates Personal/Commercial, Rush, additions, timing, four standard revisions, document link, samples, and final-price guidance.
 
 Run: `npm test -- tests/components/commission-albums.test.tsx tests/components/service-detail-dialog.test.tsx`
 
@@ -515,11 +515,11 @@ Use a cover image filling the tile, dark bottom gradient, title at bottom-left, 
 
 - [ ] **Step 3: Implement subtype browsing and details**
 
-Render subtype filter controls and page-specific service cards. Service details use a large dialog with independently scrollable body and sticky actions. Prices remain typed THB integers with formatted display-only USD strings from fixture data.
+Keep the album overview and selected-album view inside `CommissionAlbumsPage`. Selecting a tile updates component state and renders subtype filter controls and service cards in the same page without route navigation or URL mutation; provide a visible back-to-albums control. Each card reads its two fixed labels from shared locale messages and never interpolates the service name. Service details use a large dialog with independently scrollable body and sticky actions. Prices remain typed THB integers with formatted display-only USD strings from fixture data.
 
 - [ ] **Step 4: Connect routes and the non-submitting request preview**
 
-Unknown or unpublished category slugs call `notFound()`. The request button opens a Stage 1 informational panel stating that the interactive estimate form arrives in Stage 2; it must not submit or collect data.
+Missing or unpublished album data falls back to the category overview with a non-blocking unavailable message. The request button opens a Stage 1 informational panel stating that the interactive estimate form arrives in Stage 2; it must not submit or collect data.
 
 - [ ] **Step 5: Verify and commit**
 
@@ -625,8 +625,10 @@ Cover:
 test("visitor can browse the public commission journey", async ({ page }) => {
   await page.goto("/th");
   await page.getByRole("link", { name: /คอมมิชชัน/ }).click();
-  await page.getByRole("link", { name: /ILLUSTRATION/ }).click();
-  await page.getByRole("button", { name: /ดูรายละเอียดและราคา/ }).first().click();
+  const commissionUrl = page.url();
+  await page.getByRole("button", { name: /ILLUSTRATION/ }).click();
+  await expect(page).toHaveURL(commissionUrl);
+  await page.getByRole("button", { name: "ดูรายละเอียดและเรทราคา" }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 ```

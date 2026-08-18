@@ -56,6 +56,11 @@ Phase 1 is accepted only when every mandatory criterion below passes in the prod
 - [ ] Admin can add future categories and subtypes without code changes
 - [ ] Category overview tile displays its cover, bottom gradient, title, subtype count, optional recommendation, and availability state
 - [ ] Category overview tile does not display service-level pricing or a request action
+- [ ] Selecting a category album renders its subtype cards in the existing Commission page without a document navigation or URL change
+- [ ] Visitor can return from an opened album to the category overview without leaving the Commission page
+- [ ] Every Thai subtype card labels its actions exactly `ประเมินราคา` and `ดูรายละเอียดและเรทราคา`
+- [ ] Every English subtype card labels its actions exactly `Request Estimate` and `View Details & Rates`
+- [ ] Subtype action labels never append or repeat the service name
 - [ ] Global, category, and subtype availability controls work independently and compose correctly
 - [ ] Closed subtype disables its request action and rejects stale submissions
 - [ ] Each subtype owns its descriptions, media, pricing guidance, modifiers, documents, status workflow, and form
