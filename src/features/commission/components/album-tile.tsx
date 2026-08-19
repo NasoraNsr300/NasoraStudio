@@ -1,3 +1,6 @@
+"use client";
+
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceCategory } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
@@ -33,6 +36,8 @@ const fallbackCoverMedia = {
 };
 
 export function AlbumTile({ category, eager = false, locale = "en", onSelect }: AlbumTileProps) {
+  const settings = useOptionalPublicSiteSettings();
+  const availability = settings?.commissionsOpen === false ? "closed" : category.availability;
   const copy = albumCopy[locale];
   const countLabel = copy.typeCount(category.typeCount);
   const viewLabel = copy.view(category.name[locale]);
@@ -62,7 +67,7 @@ export function AlbumTile({ category, eager = false, locale = "en", onSelect }: 
       )}
       <span className={styles.albumGradient} />
       {category.recommended ? <span className={styles.recommendedBadge}>{copy.recommended}</span> : null}
-      <span className={`${styles.availabilityBadge} ${styles[category.availability]}`}>{availabilityCopy[locale][category.availability]}</span>
+      <span className={`${styles.availabilityBadge} ${styles[availability]}`}>{availabilityCopy[locale][availability]}</span>
       <span className={styles.albumTitle}>{category.name[locale]}</span>
       <span className={styles.countPill}>{countLabel}</span>
     </button>

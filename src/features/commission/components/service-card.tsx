@@ -1,4 +1,5 @@
 import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance";
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceType } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
@@ -40,8 +41,10 @@ function displayUsd(amount: number, locale: Locale) {
 }
 
 export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, service }: ServiceCardProps) {
+  const settings = useOptionalPublicSiteSettings();
+  const availability = settings?.commissionsOpen === false ? "closed" : service.availability;
   const fromPrice = service.referencePrices[0];
-  const isClosed = service.availability === "closed";
+  const isClosed = availability === "closed";
   const copy = serviceCopy[locale];
   const messages = getDictionary(locale).commission;
   const example = service.examples[0];
@@ -52,7 +55,7 @@ export function ServiceCard({ eager = false, locale, onRequest, onViewDetails, s
         {example ? <ResponsiveMedia className={styles.serviceMedia} crop={example.crop} locale={locale} media={example.media} priority={eager} sizes="(max-width: 720px) 100vw, 33vw" /> : null}
       </div>
       <div className={styles.serviceContent}>
-        <span className={`${styles.status} ${styles[service.availability]}`}>{copy.availability[service.availability]}</span>
+        <span className={`${styles.status} ${styles[availability]}`}>{copy.availability[availability]}</span>
         <h2>{service.name[locale]}</h2>
         <p>{service.description[locale]}</p>
         <p className={styles.price}><span>{copy.priceGuidance}</span><strong>{formatThb(fromPrice.amountThb)}</strong><span>{displayUsd(fromPrice.amountThb, locale)}</span></p>

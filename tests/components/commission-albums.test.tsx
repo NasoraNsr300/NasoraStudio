@@ -8,6 +8,18 @@ vi.mock("next/navigation", () => ({ useRouter: navigation.useRouter }));
 import { serviceCategories, serviceTypes } from "@/data/fixtures/public-content";
 import { CommissionAlbumsPage } from "@/features/commission/components/commission-albums-page";
 import { ServiceCategoryPage } from "@/features/commission/components/service-category-page";
+import { PublicSiteSettingsProvider } from "@/features/site-settings/components/public-site-settings-provider";
+
+const closedSettings = {
+  businessHours: "11:00 – 22:00",
+  commissionsOpen: false,
+  discordContact: "nasora",
+  homeDescription: { en: "Story", th: "เรื่อง" },
+  homeHeading: { en: "Draw", th: "วาด" },
+  particlesEnabled: true,
+  queueCapacity: 10,
+  shootingStarsEnabled: true,
+};
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -64,6 +76,25 @@ describe("Commission albums", () => {
 
     rerender(<ServiceCategoryPage category={serviceCategories.find((category) => category.slug === closedService.categorySlug)!} locale="en" services={[closedService]} />);
     expect(screen.getByText("Starting reference price")).toBeVisible();
+  });
+
+  it("overrides album and service availability when commissions are globally closed", async () => {
+    const user = userEvent.setup();
+    const chibi = serviceCategories.find((category) => category.slug === "chibi");
+    if (!chibi) throw new Error("Expected Chibi category");
+
+    render(
+      <PublicSiteSettingsProvider settings={closedSettings}>
+        <CommissionAlbumsPage categories={[chibi]} locale="th" services={serviceTypes.filter((service) => service.categorySlug === chibi.slug)} />
+      </PublicSiteSettingsProvider>,
+    );
+
+    expect(screen.getByText("ปิดรับ")).toBeVisible();
+    expect(screen.queryByText("เปิดรับ")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /ดูอัลบั้ม/i }));
+    expect(screen.getByText("● CLOSED")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "ประเมินราคา" }).every((button) => button.hasAttribute("disabled"))).toBe(true);
   });
 
   it("shows service-level price and actions only within a category, and disables requests for closed services", async () => {

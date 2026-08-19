@@ -8,6 +8,7 @@ import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { ServiceCategory, ServiceType } from "@/shared/types/public-content";
 import { ResponsiveMedia } from "@/shared/components/media/responsive-media";
 import { useCatalogSync } from "@/features/catalog/client/use-catalog-sync";
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 
 import { ServiceCard } from "./service-card";
 import { ServiceDetailDialog } from "./service-detail-dialog";
@@ -28,6 +29,9 @@ const copy = {
 
 export function ServiceCategoryPage({ category, locale, onBack, services }: ServiceCategoryPageProps) {
   useCatalogSync();
+  const settings = useOptionalPublicSiteSettings();
+  const commissionsOpen = settings?.commissionsOpen ?? true;
+  const categoryAvailability = commissionsOpen ? category.availability : "closed";
   const [filter, setFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list" | "gallery">("grid");
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
@@ -45,7 +49,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
         </p>
         <div className={styles.categoryTitleRow}>
           <h1>{category.name[locale]}</h1>
-          <span className={`${styles.categoryAvailability} ${styles[category.availability]}`}>● {category.availability.toUpperCase()}</span>
+          <span className={`${styles.categoryAvailability} ${styles[categoryAvailability]}`}>● {categoryAvailability.toUpperCase()}</span>
         </div>
         <span>{category.description[locale]}</span>
       </header>
@@ -78,7 +82,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
         <section aria-label={`${category.name[locale]} ${labels.suffix}`} className={styles.serviceList}>
           {visibleServices.map((service, index) => {
             const example = service.examples[0];
-            const isClosed = service.availability === "closed";
+            const isClosed = !commissionsOpen || service.availability === "closed";
             return (
               <article className={styles.serviceListItem} key={service.slug}>
                 <div className={styles.listMedia}>
@@ -110,7 +114,7 @@ export function ServiceCategoryPage({ category, locale, onBack, services }: Serv
         <section aria-label={`${category.name[locale]} ${labels.suffix}`} className={styles.serviceGallery}>
           {visibleServices.map((service, index) => {
             const example = service.examples[0];
-            const isClosed = service.availability === "closed";
+            const isClosed = !commissionsOpen || service.availability === "closed";
             return (
               <article className={styles.serviceGalleryItem} key={service.slug}>
                 <div className={styles.galleryMedia}>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { serviceReferenceUsd } from "@/features/commission/lib/pricing-guidance";
+import { useOptionalPublicSiteSettings } from "@/features/site-settings/components/public-site-settings-provider";
 import { getDictionary } from "@/shared/i18n/dictionaries";
 import type { Locale } from "@/shared/i18n/locales";
 import type { ServiceAvailability, ServiceType } from "@/shared/types/public-content";
@@ -166,6 +167,8 @@ function useDialogFocus(
 }
 
 export function ServiceDetailDialog({ initialPreview = false, locale = "en", onClose, open, service }: ServiceDetailDialogProps) {
+  const settings = useOptionalPublicSiteSettings();
+  const availability = settings?.commissionsOpen === false ? "closed" : service.availability;
   const copy = dialogCopy[locale];
   const messages = getDictionary(locale).commission;
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -193,7 +196,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
         <header className={styles.detailHeroHeader}>
           <div className={styles.detailTitleLine}><Sparkles aria-hidden="true" /><h2 aria-label={service.name[locale]} id={`service-${service.slug}`}>{serviceName}</h2><span>—</span><strong>{categoryName}</strong></div>
           <div className={styles.detailIntro}>
-            <span className={`${styles.detailAvailability} ${styles[service.availability]}`}>● {copy.availability[service.availability]}</span>
+            <span className={`${styles.detailAvailability} ${styles[availability]}`}>● {copy.availability[availability]}</span>
             <p>{service.description[locale]}</p>
           </div>
           <button aria-label={messages.closeDetails} className={styles.detailClose} onClick={close} ref={closeRef} type="button"><X /></button>
@@ -247,7 +250,7 @@ export function ServiceDetailDialog({ initialPreview = false, locale = "en", onC
 
         <footer className={styles.detailFooter}>
           <p><Info />{copy.finalPrice}</p>
-          <div><button disabled={service.availability === "closed"} onClick={() => setPreviewOpen(true)} ref={requestRef} type="button"><Sparkles />{messages.estimate}</button><button onClick={close} type="button">{messages.closeEstimate}</button></div>
+          <div><button disabled={availability === "closed"} onClick={() => setPreviewOpen(true)} ref={requestRef} type="button"><Sparkles />{messages.estimate}</button><button onClick={close} type="button">{messages.closeEstimate}</button></div>
         </footer>
       </section>
     </div>
