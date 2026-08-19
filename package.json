@@ -13,8 +13,12 @@
     "test:customer:reset": "node --env-file=.env.local scripts/reset-test-customer.mjs",
     "build": "next build",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "build:vercel": "node scripts/build-vercel.mjs",
     "preview": "npm run build:cloudflare && opennextjs-cloudflare preview",
-    "deploy": "npm run build:cloudflare && opennextjs-cloudflare deploy"
+    "deploy": "npm run build:cloudflare && opennextjs-cloudflare deploy",
+    "vercel:link": "npx --yes vercel@59.1.4 link",
+    "vercel:pull": "npx --yes vercel@59.1.4 pull --yes --environment=preview",
+    "vercel:build": "npx --yes vercel@59.1.4 build"
   },
   "private": true,
   "type": "module",

@@ -3,6 +3,7 @@ node_modules/
 .next/
 .open-next/
 .wrangler/
+.vercel/
 coverage/
 playwright-report/
 .playwright-cli/

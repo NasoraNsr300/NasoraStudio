@@ -11,3 +11,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unable to dispatch email" }, { status: 503 });
   }
 }
+
+// Vercel Cron invokes route handlers with GET; Cloudflare maintenance uses POST.
+export const GET = POST;

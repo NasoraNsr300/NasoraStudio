@@ -1,16 +1,85 @@
 # Vercel secondary deployment
 
-Cloudflare Workers is the primary target. Vercel is a secondary build of the same branch and must use a separate deployment project, not a forked UI.
+Cloudflare Workers remains the active temporary host. Vercel is prepared as a secondary deployment of the same Next.js application; do not fork application code or copy the UI into a second repository.
 
-## Build settings
+## Commercial plan gate
 
-- Framework preset: Next.js
-- Install: `npm ci`
-- Build: `npm run build`
-- Root directory: repository root
+Nasora advertises paid commission services and processes payments, so a public Vercel deployment must use Vercel Pro or Enterprise. Vercel Hobby is restricted to personal, non-commercial use. The five-minute cron schedules in `vercel.json` also require Pro or Enterprise; Hobby allows at most one invocation per day.
 
-Copy the application variables listed in `cloudflare-workers.md`. R2 variables continue to use the Cloudflare R2 S3 API. Never commit secret values. Configure both Vercel Preview and Production callback URLs in Supabase Auth before testing Google login.
+## Repository configuration
 
-The current Edge `middleware.ts` is intentionally compatible with both Vercel and OpenNext Cloudflare. Do not rename it to Next.js 16 Node `proxy.ts` until OpenNext Cloudflare supports that runtime.
+`vercel.json` pins the Next.js framework preset, `npm ci`, the guarded Vercel build, Singapore (`sin1`) functions, and two protected five-minute cron jobs:
 
-Before an authorized Vercel deployment, run full tests, `npm run build`, and a Preview smoke test. This prelaunch task does not deploy.
+- `/api/internal/email-outbox/dispatch`
+- `/api/internal/cleanup/dispatch`
+
+Vercel invokes cron routes with `GET` and automatically sends `Authorization: Bearer <CRON_SECRET>` when `CRON_SECRET` is configured. The routes accept protected `GET` for Vercel and protected `POST` for the existing Cloudflare maintenance Worker.
+
+`npm run build:vercel` requires every runtime variable before building. It temporarily hides `.env.local`, passes only `NEXT_PUBLIC_*` values to `next build`, restores the local file even on failure, and prevents local runtime/test values from being copied into build output.
+
+## Required Vercel environment variables
+
+Configure all of these for both Preview and Production. Mark every server-only value as Sensitive in Vercel:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `PROMPTPAY_ID`
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_PAYMENT_SLIPS_BUCKET`
+- `R2_PRIVATE_ASSETS_BUCKET`
+- `RESEND_API_KEY`
+- `ADMIN_EMAIL_SENDER` — address only, without a display name or angle brackets
+- `CRON_SECRET` — random value of at least 16 characters
+
+Do not add `TEST_CUSTOMER_EMAIL`, `TEST_CUSTOMER_PASSWORD`, or `RUN_TEST_CUSTOMER_E2E` to Vercel. `NASORA_BASE_URL` belongs only to the standalone Cloudflare maintenance Worker and is unnecessary when Vercel Cron is active. R2 continues to use Cloudflare's S3-compatible API from Vercel Functions.
+
+Environment changes affect only new deployments. Redeploy after adding, rotating, or correcting a value.
+
+## Authentication URLs
+
+The stable candidate URL is `https://nasorastudio.vercel.app`.
+
+- Supabase already allows `https://nasorastudio.vercel.app/auth/callback`.
+- Google OAuth keeps `https://rmcxkrqgbggaxqptxubd.supabase.co/auth/v1/callback` as its redirect URI; the application callback must not replace it.
+- Before testing changing Vercel Preview URLs, add the narrow Supabase pattern `https://*-<team-or-account-slug>.vercel.app/**`, replacing the placeholder with the actual Vercel slug. Keep the exact callback for Production.
+- Supabase Site URL stays on the active Cloudflare Worker until Vercel becomes the primary host. Change it only during an intentional cutover.
+
+The application derives `/auth/callback` from `window.location.origin`, so the same code supports Cloudflare, the stable Vercel alias, and allowed Preview deployments.
+
+## CLI workflow
+
+The CLI is pinned in scripts but intentionally not installed as a project dependency because its current transitive dependency audit is substantially noisier than the application dependency tree.
+
+```bash
+npm run vercel:link
+npm run vercel:pull
+npm run build:vercel
+npm run vercel:build
+```
+
+`vercel:link` creates `.vercel/`, which is ignored by Git. `vercel:pull` downloads Preview project settings locally; never commit generated environment files.
+
+To create deployments after environment and plan review:
+
+```bash
+npx --yes vercel@59.1.4
+npx --yes vercel@59.1.4 --prod
+```
+
+Do not run the production command merely to test configuration. Use a Preview deployment first.
+
+## Preview and cutover checklist
+
+1. Confirm the Vercel account is Pro or Enterprise and link the private GitHub repository/project.
+2. Rotate credentials listed in the production-readiness gate, then configure fresh values in Vercel Preview and Production.
+3. Add the exact/narrow Supabase redirects before an OAuth test.
+4. Run lint, typecheck, unit tests, `npm run build:vercel`, and `npm run vercel:build`.
+5. Deploy Preview and smoke-test Thai/English pages, Google and email/password Auth, member/Admin boundaries, R2 upload/download, PromptPay intent/slip, Resend, and both protected maintenance routes.
+6. Deploy Production only after owner desktop/mobile approval. Keep `commissions_open=false` throughout the cutover.
+7. Verify Vercel Cron logs. Disable the standalone Cloudflare maintenance schedule, or repoint it deliberately, so two schedulers do not poll the same database indefinitely.
+8. Change Supabase Site URL and public links only when Vercel is intentionally promoted to primary.
+
+The current Edge `middleware.ts` remains intentional and compatible with Vercel plus OpenNext Cloudflare. Do not rename it to Next.js 16 Node `proxy.ts` until the Cloudflare adapter supports that runtime.
