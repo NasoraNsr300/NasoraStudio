@@ -69,7 +69,7 @@ One owner account manages the entire service catalog, media, content, forms, quo
 - Consider purchasing a custom domain after approximately 6–10 interested customers
 - Use Supabase for PostgreSQL, Auth, and Realtime
 - Use Cloudflare R2 for media and private files
-- Deploy a static-first Next.js application to Cloudflare Workers through OpenNext
+- Deploy a Next.js application to Vercel
 - No footer
 - Desktop-first design with a complete responsive mobile experience
 - One administrator in Phase 1

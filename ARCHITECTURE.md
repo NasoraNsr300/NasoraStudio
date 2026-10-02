@@ -7,20 +7,20 @@
 - Protect customer files, slips, messages, quotes, and payment history
 - Let the service catalog, forms, pricing guidance, documents, and status workflows evolve without code changes
 - Isolate Home, Portfolio, and Commission layouts so changes do not leak across pages
-- Preserve a migration path if Cloudflare Workers Free CPU becomes restrictive
+- Keep the runtime deployable through Vercel's Git integration
 
 ## Selected stack
 
 | Layer           | Choice                              | Responsibility                                                               |
 | --------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
 | Web application | Next.js with TypeScript             | Public UI, member UI, admin UI, route handlers, static and dynamic rendering |
-| Hosting         | Cloudflare Workers through OpenNext | Application runtime, static assets, cache, R2 binding, scheduled cleanup     |
+| Hosting         | Vercel                             | Application runtime, static assets, functions, and scheduled cleanup          |
 | Database        | Supabase PostgreSQL                 | Product data, requests, quotes, jobs, payments, content, audit history       |
 | Authentication  | Supabase Auth                       | Email/password, Google OAuth, sessions, password reset                       |
 | Realtime        | Supabase Realtime                   | Member messages, notifications, and status refresh                           |
 | Object storage  | Cloudflare R2                       | Public derivatives, private originals, private customer assets               |
 | Email           | Resend API and SMTP                 | Administrator notifications and Supabase Auth mail                           |
-| Analytics       | Cloudflare Web Analytics            | Privacy-first traffic and Core Web Vitals monitoring                         |
+| Analytics       | Vercel Web Analytics                | Traffic and Core Web Vitals monitoring                                       |
 
 Resend's API handles the administrator outbox with an idempotency key per event. Supabase Auth uses Resend SMTP after a dedicated sending domain is verified. The test sender is limited to the Resend account owner's address and is suitable only for development checks.
 
@@ -29,13 +29,13 @@ Resend's API handles the administrator outbox with an idempotency key per event.
 ```mermaid
 flowchart LR
     Browser["Visitor, member, or admin browser"]
-    App["Next.js on Cloudflare Workers"]
+    App["Next.js on Vercel"]
     DB["Supabase PostgreSQL + RLS"]
     Auth["Supabase Auth"]
     RT["Supabase Realtime"]
     R2["Cloudflare R2"]
     SMTP["Resend API + SMTP"]
-    Analytics["Cloudflare Web Analytics"]
+    Analytics["Vercel Web Analytics"]
 
     Browser --> App
     Browser --> Auth
@@ -245,24 +245,15 @@ The job uses cursors and bounded batches so one invocation cannot grow without l
 
 ## Observability
 
-- Cloudflare Web Analytics for page and Core Web Vitals data
-- Workers logs for CPU time, errors, and scheduled invocations
+- Vercel Web Analytics for page and Core Web Vitals data
+- Vercel logs for function errors and scheduled invocations
 - Supabase Auth, database, and Realtime logs for backend issues
 - Application audit log for business actions
 - Admin dashboard warning when cleanup or email delivery fails
 
-## Free-tier contingency
+## Runtime operations
 
-### Cloudflare CPU
-
-If repeated Worker CPU-limit errors occur:
-
-1. Profile and remove unnecessary SSR work
-2. Increase static/ISR coverage and cache hit rate
-3. Move privileged compute to Supabase Edge Functions where appropriate
-4. Move the Next.js runtime to a commercial-compatible host if required
-
-Supabase and R2 remain unchanged, so this is a compute migration rather than a data migration.
+Review Vercel function errors, cron executions, and Core Web Vitals after each production release. Keep Supabase and R2 endpoints independent of the deployment lifecycle so application releases remain reversible.
 
 ### Email
 

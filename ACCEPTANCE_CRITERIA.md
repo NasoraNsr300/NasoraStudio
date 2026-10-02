@@ -1,6 +1,6 @@
 # ACCEPTANCE CRITERIA — Nasora Phase 1
 
-> Status note (19 Aug 2026): this file remains the owner acceptance checklist, not a count of implementation defects. Current verified evidence and final-environment gaps are recorded in [`docs/testing/prelaunch-evidence-2026-08-19.md`](docs/testing/prelaunch-evidence-2026-08-19.md) and [`docs/deployment/production-readiness-2026-08-19.md`](docs/deployment/production-readiness-2026-08-19.md). Criteria stay unchecked until they pass in a production-like environment and, where applicable, receive owner visual approval.
+> Status note: this file remains the owner acceptance checklist, not a count of implementation defects. Criteria stay unchecked until they pass in Vercel Preview or Production and, where applicable, receive owner visual approval.
 
 ## Definition of done
 
@@ -264,9 +264,9 @@ Measured separately for representative desktop and mobile traffic at the 75th pe
 - [ ] INP ≤ 200 milliseconds
 - [ ] CLS ≤ 0.1
 - [ ] Public route does not ship admin feature code
-- [ ] Worker dynamic routes remain under Free CPU limit in production-like profiling or have an approved fallback
+- [ ] Vercel function duration and error rates remain within the selected plan limits
 - [ ] Particle effect maintains a smooth experience on the agreed test devices and degrades adaptively
-- [ ] Cloudflare Web Analytics receives production Core Web Vitals
+- [ ] Vercel Web Analytics receives production Core Web Vitals
 
 ## Operations and launch
 
@@ -275,7 +275,7 @@ Measured separately for representative desktop and mobile traffic at the 75th pe
 - [ ] Database export and restore drill succeeds
 - [ ] R2 private access test fails anonymously and succeeds with authorized access
 - [ ] Scheduled cleanup is rehearsed in report-only mode before deletion is enabled
-- [ ] Production smoke test passes on temporary Cloudflare URL
+- [ ] Production smoke test passes on the Vercel production URL
 - [ ] Initial services remain closed until owner explicitly opens them
 - [ ] Error, CPU, email, storage, and database dashboards are documented
 - [ ] Domain purchase is optional and does not block temporary-URL launch

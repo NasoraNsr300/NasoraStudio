@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { readSupabasePublicEnv } from "@/shared/supabase/env";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nasora-path", request.nextUrl.pathname);
   let response = NextResponse.next({ request: { headers: requestHeaders } });

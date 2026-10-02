@@ -13,7 +13,7 @@ describe("Vercel deployment readiness", () => {
     };
 
     expect(config).toMatchObject({
-      buildCommand: "npm run build:vercel",
+      buildCommand: "npm run build",
       framework: "nextjs",
       installCommand: "npm ci",
       regions: ["sin1"],
@@ -22,6 +22,11 @@ describe("Vercel deployment readiness", () => {
       { path: "/api/internal/email-outbox/dispatch", schedule: "*/5 * * * *" },
       { path: "/api/internal/cleanup/dispatch", schedule: "*/5 * * * *" },
     ]);
+  });
+
+  it("uses the Next.js 16 proxy convention without a legacy middleware file", () => {
+    expect(readFileSync("src/proxy.ts", "utf8")).toContain("export async function proxy");
+    expect(() => readFileSync("src/middleware.ts", "utf8")).toThrow();
   });
 
   it("keeps server and test values out of the production build environment", () => {

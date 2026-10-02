@@ -11,11 +11,8 @@
     "test:e2e": "playwright test",
     "test:performance": "node scripts/measure-public-performance.mjs",
     "test:customer:reset": "node --env-file=.env.local scripts/reset-test-customer.mjs",
-    "build": "next build",
-    "build:cloudflare": "node scripts/build-cloudflare.mjs",
-    "build:vercel": "node scripts/build-vercel.mjs",
-    "preview": "npm run build:cloudflare && opennextjs-cloudflare preview",
-    "deploy": "npm run build:cloudflare && opennextjs-cloudflare deploy",
+    "build": "node scripts/build-vercel.mjs",
+    "start": "next start",
     "vercel:link": "npx --yes vercel@59.1.4 link",
     "vercel:pull": "npx --yes vercel@59.1.4 pull --yes --environment=preview",
     "vercel:build": "npx --yes vercel@59.1.4 build"
@@ -46,7 +43,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
-    "@opennextjs/cloudflare": "^1.20.2",
     "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
@@ -58,12 +54,6 @@
     "eslint-config-next": "^16.3.0",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10",
-    "wrangler": "^4.118.0"
-  },
-  "overrides": {
-    "miniflare": {
-      "undici": "7.29.0"
-    }
+    "vitest": "^4.1.10"
   }
 }

@@ -6,8 +6,8 @@ Web application for Nasora Studio's public portfolio, commission requests, membe
 
 - Next.js 16 / React 19 / TypeScript
 - Supabase Auth and Postgres with RLS
-- Cloudflare Workers through OpenNext
-- Cloudflare R2 for private assets and payment slips
+- Vercel for the application runtime and scheduled jobs
+- Cloudflare R2 for private assets and payment slips through its S3-compatible API
 - Resend for transactional email
 - Vitest and Playwright
 
@@ -52,8 +52,8 @@ See [ordinary-test-customer.md](docs/testing/ordinary-test-customer.md) for the 
 
 Migrations live in `supabase/migrations`. Discover the installed CLI commands with `supabase --help`; do not hand-invent migration timestamps. Before release, verify local/remote migration parity and run the linked database lint.
 
-## Cloudflare release boundary
+## Vercel deployment
 
-`npm run preview` builds and previews the Worker. `npm run deploy` changes the live Cloudflare account and must only run after the production hostname, Worker secrets, OAuth redirects, email sender domain, current build, and browser smoke checks are all accepted.
+Vercel is the only application runtime. `vercel.json` runs the guarded `npm run build` command in Singapore and schedules the protected email-outbox and cleanup routes every five minutes. Configure the required values documented in [the Vercel deployment guide](docs/deployment/vercel.md) for both Preview and Production, then redeploy after changing an environment variable.
 
-The maintenance Worker uses `wrangler.maintenance.jsonc`. Payment slips in `nasora-payment-slips/payment-slips/` are covered by a 30-day R2 lifecycle rule; private application assets remain governed by application cleanup and retention rules.
+Cloudflare R2 remains object storage only. Payment slips in `nasora-payment-slips/payment-slips/` are covered by a 30-day R2 lifecycle rule; private application assets remain governed by application cleanup and retention rules.

@@ -29,4 +29,4 @@ Measured with Chromium against `next start`, reduced motion enabled, linked non-
 | Home | 390Ã—844 | 232 ms | 0 | 22 | 858 KB |
 | Portfolio | 390Ã—844 | 260 ms | 0 | 23 | 856 KB |
 
-All runs stay below the checked local thresholds of LCP 2.5 s and CLS 0.1. No source optimization was justified by this measurement, so Desktop UI and loading behavior remain unchanged. Repeat with Cloudflare Web Analytics after deployment because local results do not include real user network latency.
+All runs stay below the checked local thresholds of LCP 2.5 s and CLS 0.1. No source optimization was justified by this measurement, so Desktop UI and loading behavior remain unchanged. Repeat with Vercel Web Analytics after deployment because local results do not include real user network latency.

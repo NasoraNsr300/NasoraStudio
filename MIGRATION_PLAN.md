@@ -15,7 +15,7 @@ Nasora is a greenfield project. There is no existing application database or pro
 - Configure Node.js and pinned package versions with a committed lockfile
 - Create development, preview, and production environment definitions
 - Establish lint, type-check, unit-test, build, and migration verification commands
-- Store secrets only in local environment/Cloudflare/Supabase secret stores
+- Store secrets only in local environment, Vercel, and Supabase secret stores
 - Add CI that does not deploy when tests or migrations fail
 
 Exit criteria:
@@ -34,13 +34,13 @@ Exit criteria:
 - Create database schemas and required extensions
 - Confirm Data API exposure settings
 
-### Cloudflare
+### Vercel and R2
 
-- Create application Worker
-- Create three R2 buckets: public media, original media, and customer files
-- Configure least-privilege R2 credentials and CORS
-- Enable Cloudflare Web Analytics
-- Configure scheduled cleanup trigger
+- Create the Vercel project and configure Preview and Production environments
+- Create the R2 buckets for media and customer files
+- Configure least-privilege R2 credentials for Vercel Functions
+- Enable Vercel Web Analytics
+- Configure Vercel Cron for scheduled cleanup
 
 Exit criteria:
 
@@ -160,12 +160,12 @@ Perform:
 - Accessibility checks
 - Desktop/mobile visual regression
 - Lighthouse and real-device performance tests
-- Worker CPU profiling on dynamic routes
+- Vercel function duration profiling on dynamic routes
 - Database export and restore drill
 
 ## Stage 6 — Temporary URL launch
 
-- Deploy production build to Cloudflare temporary URL
+- Deploy production build to the Vercel production URL
 - Use Resend SMTP with a verified sending domain
 - Keep customer email notifications disabled except required Auth flows
 - Enable administrator email notifications
@@ -207,26 +207,15 @@ The cleanup job is deployed in report-only mode first:
 
 This prevents a retention bug from deleting valid customer files during initial rollout.
 
-## Cloudflare CPU fallback
+## Vercel runtime capacity
 
-Trigger: repeated production `Exceeded CPU Time Limits` errors after optimization, or an authenticated route consistently approaches the Free limit.
-
-Plan:
-
-1. Confirm the route and profile CPU usage
-2. Move more public routes to static/ISR and reduce server bundle work
-3. Move isolated privileged tasks to Supabase Edge Functions
-4. If still necessary, deploy Next.js compute to another commercial-compatible provider
-5. Keep Supabase and R2 endpoints unchanged
-6. Update DNS only after a custom domain exists; before then switch the published temporary URL
-
-No database transformation is required for this compute migration.
+Monitor Vercel function duration and error rates after release. Reduce avoidable SSR work or move isolated privileged tasks to Supabase Edge Functions if the selected plan limits are approached. Supabase and R2 remain unchanged, so this does not require a data migration.
 
 ## Custom domain migration
 
 When a domain is purchased:
 
-- Attach domain to Cloudflare deployment
+- Attach domain to the Vercel project
 - Add production Auth redirect URLs
 - Configure R2 public media custom domain if selected
 - Authenticate dedicated email subdomain with SPF, DKIM, and DMARC

@@ -1,6 +1,6 @@
 # Nasora Stage 1 public preview checklist
 
-Review both `http://localhost:3000/th` and `http://localhost:3000/en` at Desktop 1440×900 and Mobile 390×844. Use the temporary Cloudflare preview origin in place of `http://localhost:3000` when reviewing the deployed build.
+Review both `http://localhost:3000/th` and `http://localhost:3000/en` at Desktop 1440×900 and Mobile 390×844. Use the Vercel Preview URL in place of `http://localhost:3000` when reviewing the deployed build.
 
 ## Approved screen checkpoints
 
@@ -36,4 +36,4 @@ Review both `http://localhost:3000/th` and `http://localhost:3000/en` at Desktop
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
-- `npm run preview` (OpenNext build plus bounded preview verification; Windows native-runtime warnings are recorded in the task report)
+- `npm run build`
